@@ -24,10 +24,10 @@ set -e
 cd "$PWD/$actionHome"
 
 echo "Installing Dependencies"
-npm install
+yarn install
 
 echo "Building Source"
-npm run build
+yarn build
 
 if [ -e ./temp/event-receiver ]; then
     echo "Clearing previously packed action file."
@@ -42,7 +42,7 @@ echo "Copying files to temporary directory"
 
 cd ./temp/event-receiver
 
-npm install --only=prod
+yarn install --production=true
 
 zip -r event-receiver.zip *
 
