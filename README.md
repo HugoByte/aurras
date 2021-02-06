@@ -40,6 +40,18 @@ cd aurras-event-manager
 ```text
 ./deploy.sh
 ```
+### Testing
+
+Run Unit test suites
+
+#### Actions
+
+* Event Receiver
+
+```text
+cd actions/event-receiver
+yarn test
+```
 
 ### License
 
