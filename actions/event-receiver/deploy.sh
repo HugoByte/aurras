@@ -41,7 +41,7 @@ fi
 mkdir -p ./temp/event-receiver
 echo "Creating temporary directory"
 
-cp -r -t ./temp/event-receiver ./package.json ./dist
+cp -r ./package.json ./dist ./temp/event-receiver
 echo "Copying files to temporary directory"
 
 cd ./temp/event-receiver
