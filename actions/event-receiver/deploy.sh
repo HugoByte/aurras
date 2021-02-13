@@ -7,7 +7,11 @@ openwhiskApiHost=${openwhiskApiHost:-https://localhost:31001}
 openwhiskApiKey=${openwhiskApiKey:-23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP}
 openwhiskNamespace=${openwhiskNamespace:-guest}
 actionHome=${actionHome:-actions/event-receiver}
-WSK_CLI="$PWD/wsk"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    WSK_CLI="$PWD/binaries/wsk-darwin"
+else
+    WSK_CLI="$PWD/binaries/wsk"
+fi    
 PACKAGE_HOME="$PWD/${actionHome}/temp/event-receiver"
 
 while [ $# -gt 0 ]; do
