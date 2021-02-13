@@ -50,6 +50,8 @@ yarn install --production=true
 
 zip -r event-receiver.zip *
 
+chmod +x WSK_CLI
+
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update --kind nodejs:default event-receiver "$PACKAGE_HOME/event-receiver.zip" \
     --auth "$openwhiskApiKey"
 
