@@ -41,7 +41,7 @@ fi
 mkdir -p ./temp/event-receiver
 echo "Creating temporary directory"
 
-cp -r -t ./temp/event-receiver ./package.json ./dist
+cp -r ./package.json ./dist ./temp/event-receiver
 echo "Copying files to temporary directory"
 
 cd ./temp/event-receiver
@@ -49,6 +49,8 @@ cd ./temp/event-receiver
 yarn install --production=true
 
 zip -r event-receiver.zip *
+
+chmod +x $WSK_CLI
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update --kind nodejs:default event-receiver "$PACKAGE_HOME/event-receiver.zip" \
     --auth "$openwhiskApiKey"

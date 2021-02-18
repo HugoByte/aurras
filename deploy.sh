@@ -21,6 +21,7 @@ done
 set -e
 
 for index in ${!actions[@]};
-do
+do  
+    chmod +x "$PWD/${actions[$index]}/deploy.sh"
     "$PWD/${actions[$index]}/deploy.sh" --openwhiskApiHost "$openwhiskApiHost" --openwhiskApiKey "$openwhiskApiKey" --openwhiskNamespace "openwhiskNamespace"
 done
