@@ -7,11 +7,14 @@ openwhiskApiHost=${openwhiskApiHost:-https://localhost:31001}
 openwhiskApiKey=${openwhiskApiKey:-23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP}
 openwhiskNamespace=${openwhiskNamespace:-guest}
 actionHome=${actionHome:-actions/event-receiver}
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    WSK_CLI="$PWD/binaries/wsk-darwin"
-else
-    WSK_CLI="$PWD/binaries/wsk"
-fi    
+WSK_CLI="wsk"
+
+if ! command -v $WSK_CLI &> /dev/null
+then
+    echo "wsk cli not found in path. Please get the cli from https://github.com/apache/openwhisk-cli/releases"
+    exit
+fi
+    
 PACKAGE_HOME="$PWD/${actionHome}/temp/event-receiver"
 
 while [ $# -gt 0 ]; do
@@ -49,8 +52,6 @@ cd ./temp/event-receiver
 yarn install --production=true
 
 zip -r event-receiver.zip *
-
-chmod +x $WSK_CLI
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update --kind nodejs:default event-receiver "$PACKAGE_HOME/event-receiver.zip" \
     --auth "$openwhiskApiKey"

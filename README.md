@@ -10,6 +10,7 @@ The Event Manager as a core component of aurras system is composed of multiple a
 ### Prerequisites
 
 1. [Openwhisk](http://openwhisk.apache.org/)
+2. [Openwhisk CLI](https://github.com/apache/openwhisk-cli)
 
 ### Components
 
