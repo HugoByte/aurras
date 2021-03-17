@@ -7,6 +7,9 @@ Aurras is a middleware that acts as an event processor and a low code workflow o
 
 The Event Manager as a core component of aurras system is composed of multiple actions including using a database to store trigger URLs and their respective auth, and Kafka provider, consumer, and producer. Once the event manager receives an event from the event feed, this data is produced to a topic. The feed action in the manager lets the user hook into the system. That is, once an event is indexed to a particular topic, it can invoke a particular action. While creating the workflow, users can choose the event trigger as feed and provide necessary parameters from which chain it should be listening to.
 
+### Architecture
+![](https://storage.googleapis.com/hugobyte-2.appspot.com/aurras.png)
+
 ### Prerequisites
 
 1. [Openwhisk](http://openwhisk.apache.org/)
