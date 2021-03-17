@@ -5,7 +5,7 @@
 2. Make sure [wsk cli](https://github.com/apache/openwhisk-cli) is added to the path
 3. Install the [event manager action](../#installation)
 4. Perform a transaction to emit an event from the chain.
-5. Navigate to [aurras-event-manager](../) source directory.
+5. Navigate to [aurras-event-manager](../../) source directory.
 6. Use wsk cli to list activation ids.
 
 ```
