@@ -4,9 +4,10 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::{Error, Value};
 use uuid::Uuid;
 mod types;
-use chesterfield::sync::{Client, Database};
+use chesterfield::{sync::{Client, Database}};
 use types::{Source};
 use actions_common::{Context, Trigger};
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
     name: String,
@@ -35,6 +36,14 @@ impl Action {
         self.context = Some(Context::new(db, &self.params.auth));
     }
 
+    #[cfg(test)]
+    fn connect_db(&self, db_url: &String, db_name: &String) -> Database {
+        let client = Client::new(db_url).unwrap();
+        let db = client.database(db_name).unwrap();
+        db
+    }
+
+    #[cfg(not(test))]
     fn connect_db(&self, db_url: &String, db_name: &String) -> Database {
         let client = Client::new(db_url).unwrap();
         let db = client.database(db_name).unwrap();
@@ -74,4 +83,24 @@ pub fn main(args: Value) -> Result<Value, Error> {
     action.init();
     let trigger = serde_json::from_value::<Trigger>(action.register_trigger(&event_id)?)?;
     action.register_source(&event_id, &trigger.name)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn generate_event_id() {
+        let input = serde_json::from_value::<Input>(json!({
+            "name": "node-template",
+            "auth": "789c46b1-71f6-4ed5-8c54-816aa4f8c502:abczO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",
+            "db_name": "test",
+            "db_url": "http://localhost:5984"
+
+        })).unwrap();
+        let mut action = Action::new(input);
+        let event_id = action.generate_event_id();
+        action.init();
+    }
 }
