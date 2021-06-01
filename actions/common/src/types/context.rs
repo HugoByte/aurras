@@ -1,9 +1,9 @@
 use chesterfield::sync::Database;
 use reqwest::blocking::Client;
 use reqwest::StatusCode;
-use serde_json::{Value, Error, from_str};
+use serde_json::{Value, Error, from_str, to_value};
 use std::env;
-
+use super::Trigger;
 pub struct Context {
     pub host: String,
     pub name: String,
@@ -12,6 +12,7 @@ pub struct Context {
     user: String,
     pass: String
 }
+
 
 
 #[cfg(test)]
@@ -39,10 +40,11 @@ impl Context {
 
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
         let client = Client::new();
-        if let Ok(response) = client.put(format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name)).basic_auth(self.user.clone(), Some(self.pass.clone())).send() {
-            match response.status() {
-                StatusCode::OK => return from_str(&response.text().unwrap()),
-                _ => return Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
+        let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
+        if let Ok(response) = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send() {
+            return match response.status() {
+                StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
+                _ => Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
             }
         };
         Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
@@ -73,10 +75,11 @@ impl Context {
 
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
         let client = Client::new();
-        if let Ok(response) = client.put(format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name)).basic_auth(self.user.clone(), Some(self.pass.clone())).send() {
-            match response.status() {
-                StatusCode::OK => return from_str(&response.text().unwrap()),
-                _ => return Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
+        let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
+        if let Ok(response) = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send() {
+            return match response.status() {
+                StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
+                _ => Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
             }
         };
         Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
