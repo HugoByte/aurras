@@ -1,4 +1,6 @@
 [workspace]
 members = [
-    "actions/common"
+    "actions/common",
+    "actions/event-registration",
+    "actions/notification"
 ]

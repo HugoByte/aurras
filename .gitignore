@@ -125,3 +125,6 @@ temp
 #lock files
 yarn.lock
 package-lock.json
+
+##rust builds
+**/target/**
