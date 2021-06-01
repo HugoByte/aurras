@@ -1,8 +1,8 @@
 use serde_derive::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Trigger {
-    name: String,
-    url: String
+    pub name: String,
+    pub url: String
 }
 
 impl Trigger {
