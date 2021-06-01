@@ -1,2 +1,2 @@
 mod types;
-pub use types::Context;
+pub use types::{Context, Trigger};
