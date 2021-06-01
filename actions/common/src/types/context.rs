@@ -22,8 +22,8 @@ impl Context {
         Context { host: "host.docker.internal".to_string(), db, name: "action".to_string(), namespace: "guest".to_string(), user: auth[0].to_string(), pass: auth[1].to_string() }
     }
 
-    pub fn insert_document(&mut self, mut doc: Value) -> Result<String, String> {
-        match self.db.insert(&mut doc, None).send() {
+    pub fn insert_document(&mut self, mut doc: Value, id: Option<String>) -> Result<String, String> {
+        match self.db.insert(&mut doc, id).send() {
             Ok(r) => {
                 return Ok(r.id)
             }
@@ -48,6 +48,13 @@ impl Context {
             }
         };
         Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
+    }
+
+    pub fn get_all(&self) -> Result<Value, Error> {
+        match self.db.get("_all_docs").send::<Value>() {
+            Ok(v) => return Ok(v.into_inner().unwrap()),
+            Err(err) => return Err(format!("error fetching list {:?}", err)).map_err(serde::de::Error::custom),
+        }
     }
 }
 
@@ -85,8 +92,8 @@ impl Context {
         Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
     }
 
-    pub fn insert_document(&mut self, mut doc: Value) -> Result<String, String> {
-        match self.db.insert(&mut doc, None).send() {
+    pub fn insert_document(&mut self, mut doc: Value, id: Option<String>) -> Result<String, String> {
+        match self.db.insert(&mut doc, id).send() {
             Ok(r) => {
                 return Ok(r.id)
             }
@@ -98,6 +105,13 @@ impl Context {
         match self.db.get(id).send::<Value>() {
             Ok(v) => return Ok(v.into_inner().unwrap()),
             Err(err) => return Err(format!("error fetching document {}: {:?}", id, err)).map_err(serde::de::Error::custom),
+        }
+    }
+
+    pub fn get_all(&self) -> Result<Value, Error> {
+        match self.db.get("_all_docs").send::<Value>() {
+            Ok(v) => return Ok(v.into_inner().unwrap()),
+            Err(err) => return Err(format!("error fetching list {:?}", err)).map_err(serde::de::Error::custom),
         }
     }
 }
