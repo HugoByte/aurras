@@ -21,7 +21,7 @@ pub struct Context {
 impl Context {
     pub fn get_headers(&self) -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(HOST, self.host.parse().unwrap());
+        headers.insert(HOST, HeaderValue::from_static("172.17.0.1:8888"));
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
         headers
@@ -106,7 +106,7 @@ impl Context {
         headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
         headers
     }
-    
+
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
         let client = Client::builder().default_headers(self.get_headers()).build().map_err(serde::de::Error::custom)?;
         let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
