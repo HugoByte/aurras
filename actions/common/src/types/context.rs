@@ -39,7 +39,7 @@ impl Context {
     }
 
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
-        let client = Client::new();
+        let client = Client::builder().danger_accept_invalid_certs(true).build().map_err(serde::de::Error::custom)?;
         let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
         let response = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
         match response.status() {
@@ -92,7 +92,7 @@ impl Context {
     }
 
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
-        let client = Client::new();
+        let client = Client::builder().danger_accept_invalid_certs(true).build().map_err(serde::de::Error::custom)?;
         let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
         let response = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
         match response.status() {
