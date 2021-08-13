@@ -4,16 +4,18 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::{Error, Value};
 use uuid::Uuid;
 mod types;
-use chesterfield::{sync::{Client, Database}};
-use types::{Source};
 use actions_common::{Context, Trigger};
+use chesterfield::sync::{Client, Database};
+use types::Source;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
     name: String,
     db_name: String,
     db_url: String,
+    feed: String,
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Output {
     topic: String,
@@ -21,13 +23,15 @@ struct Output {
 
 struct Action {
     params: Input,
-    context: Option<Context>
+    context: Option<Context>,
 }
 
 impl Action {
-
     pub fn new(params: Input) -> Self {
-        Action { params, context: None }
+        Action {
+            params,
+            context: None,
+        }
     }
 
     pub fn init(&mut self) {
@@ -61,17 +65,37 @@ impl Action {
     }
 
     pub fn register_source(&mut self, topic: &str, trigger: &str) -> Result<Value, Error> {
-        let source = Source::new(self.params.name.to_string(), topic.to_string(), trigger.to_string());
+        let source = Source::new(
+            self.params.name.to_string(),
+            topic.to_string(),
+            trigger.to_string(),
+        );
         let doc = serde_json::to_value(source).unwrap();
         if let Ok(id) = self.get_context().insert_document(doc, None) {
             let doc = self.get_context().get_document(&id)?;
-            return serde_json::from_value(doc)
+            return serde_json::from_value(doc);
         }
         Err("Failed to register".to_string()).map_err(serde::de::Error::custom)
     }
 
     pub fn register_trigger(&mut self, topic: &str) -> Result<Value, Error> {
-        self.get_context().create_trigger(topic)
+        let feed = self.params.feed.clone();
+        self.get_context().create_trigger(
+            topic,
+             &serde_json::json!({
+                "annotations": [{
+                    "key": "feed",
+                    "value": feed 
+                }],
+                "parameters": [{
+                    "key": "topic",
+                    "value": topic
+                },{
+                    "key": "isJSONData",
+                    "value": true
+                }]
+            }),
+        )
     }
 }
 
