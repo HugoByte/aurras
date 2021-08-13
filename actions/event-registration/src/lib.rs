@@ -11,7 +11,6 @@ use actions_common::{Context, Trigger};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
     name: String,
-    auth: String,
     db_name: String,
     db_url: String,
 }
@@ -33,7 +32,7 @@ impl Action {
 
     pub fn init(&mut self) {
         let db = self.connect_db(&self.params.db_url, &self.params.db_name);
-        self.context = Some(Context::new(db, &self.params.auth));
+        self.context = Some(Context::new(db));
     }
 
     #[cfg(test)]

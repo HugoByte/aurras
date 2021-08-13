@@ -13,7 +13,6 @@ struct Input {
     topic: String,
     token: String,
     address: String,
-    auth: String,
     db_name: String,
     db_url: String,
     event_registration_db: String,
@@ -40,7 +39,7 @@ impl Action {
     }
     pub fn init(&mut self) {
         let db = self.get_db(&self.params.db_url, &self.params.db_name);
-        self.context = Some(Context::new(db, &self.params.auth));
+        self.context = Some(Context::new(db));
     }
     #[cfg(test)]
     fn get_db(&self, db_url: &String, db_name: &String) -> Database {
@@ -65,7 +64,7 @@ impl Action {
     }
     pub fn get_chains(&self) -> Result<Value, Error> {
         let db = self.get_db(&self.params.db_url, &self.params.event_registration_db);
-        let context = Context::new(db, &self.params.auth);
+        let context = Context::new(db);
         context.get_all(&self.params.db_url, &self.params.event_registration_db)
     }
     pub fn get_address(&mut self, id: &String) -> Result<Value, Error> {
@@ -76,7 +75,7 @@ impl Action {
             &self.params.db_url,
             &format!("{}_{}", &body.topic, &self.params.balance_filter_db),
         );
-        let mut context = Context::new(db, &self.params.auth);
+        let mut context = Context::new(db);
         context
             .insert_document(
                 serde_json::json!({
