@@ -41,15 +41,17 @@ impl Context {
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
         let client = Client::new();
         let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
-        if let Ok(response) = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send() {
-            return match response.status() {
+        return match client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send() {
+            Ok(response) => match response.status() {
                 StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
                 error => {
                     return Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
                 }
+            },
+            error => {
+                return Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
             }
-        };
-        Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
+        }
     }
 
     pub fn get_all(&self, db_url: &str, db_name: &str) -> Result<Value, Error> {
@@ -96,15 +98,17 @@ impl Context {
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
         let client = Client::new();
         let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
-        if let Ok(response) = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send() {
-            return match response.status() {
+        return match client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send() {
+            Ok(response) => match response.status() {
                 StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
                 error => {
                     return Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
                 }
+            },
+            error => {
+                return Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
             }
-        };
-        Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
+        }
     }
 
     pub fn insert_document(&mut self, mut doc: Value, id: Option<String>) -> Result<String, String> {
