@@ -1,7 +1,7 @@
 use chesterfield::sync::Database;
 use reqwest::blocking::Client;
 use reqwest::StatusCode;
-use reqwest::header::{HeaderValue, CONTENT_TYPE, HOST};
+use reqwest::header::{HeaderValue, CONTENT_TYPE, HOST, ACCEPT, HeaderMap};
 
 use serde_json::{Value, Error, from_str, to_value};
 use std::env;
@@ -19,6 +19,14 @@ pub struct Context {
 
 #[cfg(test)]
 impl Context {
+    pub fn get_headers(&self) -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        headers.insert(HOST, self.host.parse().unwrap());
+        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+        headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
+        headers
+    }
+
     pub fn new(db: Database) -> Self {
         let auth: Vec<&str> = "test:test".split(":").collect();
         Context { host: "host.docker.internal".to_string(), db, name: "action".to_string(), namespace: "guest".to_string(), user: auth[0].to_string(), pass: auth[1].to_string() }
@@ -41,9 +49,9 @@ impl Context {
     }
 
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
-        let client = Client::new();
+        let client = Client::builder().default_headers(self.get_headers()).build().map_err(serde::de::Error::custom)?;
         let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
-        let response = client.put(url.clone()).header("Host", &self.host).basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
+        let response = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
         match response.status() {
             StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
             error => Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
@@ -91,8 +99,16 @@ impl Context {
         Context { host, db, name, namespace, user: auth[0].to_string(), pass: auth[1].to_string() }
     }
 
+    pub fn get_headers(&self) -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        headers.insert(HOST, self.host.parse().unwrap());
+        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+        headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
+        headers
+    }
+    
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
-        let client = Client::new();
+        let client = Client::builder().default_headers(self.get_headers()).build().map_err(serde::de::Error::custom)?;
         let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
         let response = client.put(url.clone()).header("Host", &self.host).basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
         match response.status() {
