@@ -44,7 +44,10 @@ impl Context {
         if let Ok(response) = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send() {
             return match response.status() {
                 StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
-                _ => Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
+                error => {
+                    println!("{:?}", error);
+                    return Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom) 
+                }
             }
         };
         Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
@@ -97,7 +100,10 @@ impl Context {
         if let Ok(response) = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send() {
             return match response.status() {
                 StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
-                _ => Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
+                error => {
+                    println!("{:?}", error);
+                    return Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom) 
+                }
             }
         };
         Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
