@@ -64,7 +64,7 @@ impl Action {
     pub fn register_source(&mut self, topic: &str, trigger: &str) -> Result<Value, Error> {
         let source = Source::new(self.params.name.to_string(), topic.to_string(), trigger.to_string());
         let doc = serde_json::to_value(source).unwrap();
-        if let Ok(id) = self.get_context().insert_document(doc) {
+        if let Ok(id) = self.get_context().insert_document(doc, None) {
             let doc = self.get_context().get_document(&id)?;
             return serde_json::from_value(doc)
         }
