@@ -44,7 +44,7 @@ zip -r - Cargo.toml src | docker run -e RELEASE=true -i ${DOCKER_IMAGE} -compile
 cd ./temp/${ACTION}
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PACKAGE_HOME/main.zip" --docker "$DOCKER_IMAGE" \
-    --auth "$openwhiskApiKey"
+    --auth "$openwhiskApiKey" --param db_name "event_registration" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --param feed "$openwhiskNamespace/messaging/kafkaFeed"
 
 if [ -e ./temp/${ACTION} ]; then
     echo "Clearing temporary packed action file."
