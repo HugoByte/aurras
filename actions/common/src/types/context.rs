@@ -17,8 +17,8 @@ pub struct Context {
 
 #[cfg(test)]
 impl Context {
-    pub fn new(db: Database, auth: &str) -> Self {
-        let auth: Vec<&str> = auth.split(":").collect();
+    pub fn new(db: Database) -> Self {
+        let auth: Vec<&str> = "test:test".split(":").collect();
         Context { host: "host.docker.internal".to_string(), db, name: "action".to_string(), namespace: "guest".to_string(), user: auth[0].to_string(), pass: auth[1].to_string() }
     }
 
@@ -66,8 +66,13 @@ impl Context {
 
 #[cfg(not(test))]
 impl Context {
-    pub fn new(db: Database, auth: &str) -> Self {
-        let auth: Vec<&str> = auth.split(":").collect();
+    pub fn new(db: Database) -> Self {
+        let api_key = if env::var("__OW_API_KEY").is_ok() {
+            env::var("__OW_API_KEY").unwrap()
+        } else {
+            "host.docker.internal".to_string()
+        };
+        let auth: Vec<&str> = api_key.split(":").collect();
         let host = if env::var("__OW_API_HOST").is_ok() {
             env::var("__OW_API_HOST").unwrap()
         } else {
