@@ -1,42 +1,40 @@
 use chesterfield::sync::Database;
 use reqwest::blocking::Client;
 use reqwest::StatusCode;
-use reqwest::header::{HeaderValue, CONTENT_TYPE, HOST, ACCEPT, HeaderMap};
 
-use serde_json::{Value, Error, from_str, to_value};
-use std::env;
 use super::Trigger;
+use serde_json::{to_value, Error, Value};
+use std::env;
 pub struct Context {
     pub host: String,
     pub name: String,
     pub namespace: String,
     db: Database,
     user: String,
-    pass: String
+    pass: String,
 }
-
-
 
 #[cfg(test)]
 impl Context {
-    pub fn get_headers(&self) -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        headers.insert(HOST, HeaderValue::from_static("172.17.0.1:8888"));
-        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-        headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
-        headers
-    }
-
     pub fn new(db: Database) -> Self {
         let auth: Vec<&str> = "test:test".split(":").collect();
-        Context { host: "host.docker.internal".to_string(), db, name: "action".to_string(), namespace: "guest".to_string(), user: auth[0].to_string(), pass: auth[1].to_string() }
+        Context {
+            host: "host.docker.internal".to_string(),
+            db,
+            name: "action".to_string(),
+            namespace: "guest".to_string(),
+            user: auth[0].to_string(),
+            pass: auth[1].to_string(),
+        }
     }
 
-    pub fn insert_document(&mut self, mut doc: Value, id: Option<String>) -> Result<String, String> {
+    pub fn insert_document(
+        &mut self,
+        mut doc: Value,
+        id: Option<String>,
+    ) -> Result<String, String> {
         match self.db.insert(&mut doc, id).send() {
-            Ok(r) => {
-                return Ok(r.id)
-            }
+            Ok(r) => return Ok(r.id),
             Err(err) => return Err(format!("error creating document {}: {:?}", doc, err)),
         };
     }
@@ -44,17 +42,29 @@ impl Context {
     pub fn get_document(&self, id: &str) -> Result<Value, Error> {
         match self.db.get(id).send::<Value>() {
             Ok(v) => return Ok(v.into_inner().unwrap()),
-            Err(err) => return Err(format!("error fetching document {}: {:?}", id, err)).map_err(serde::de::Error::custom),
+            Err(err) => {
+                return Err(format!("error fetching document {}: {:?}", id, err))
+                    .map_err(serde::de::Error::custom)
+            }
         }
     }
 
-    pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
-        let client = Client::builder().default_headers(self.get_headers()).build().map_err(serde::de::Error::custom)?;
-        let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
-        let response = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
+    pub fn create_trigger(&self, name: &str, value: &Value) -> Result<Value, Error> {
+        let client = Client::new();
+        let url = format!(
+            "{}/api/v1/namespaces/{}/triggers/{}?overwrite=true",
+            self.host, self.namespace, name
+        );
+        let response = client
+            .put(url.clone())
+            .basic_auth(self.user.clone(), Some(self.pass.clone()))
+            .json(value)
+            .send()
+            .map_err(serde::de::Error::custom)?;
         match response.status() {
-            StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
-            error => Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
+            StatusCode::OK => to_value(Trigger::new(name.to_string(), url)),
+            error => Err(format!("failed to create trigger {} {:?}", name, error))
+                .map_err(serde::de::Error::custom),
         }
     }
 
@@ -64,8 +74,9 @@ impl Context {
         if let Ok(response) = client.get(url.clone()).send() {
             return match response.status() {
                 StatusCode::OK => response.json().map_err(serde::de::Error::custom),
-                _ => Err(format!("error fetching list {}", db_name)).map_err(serde::de::Error::custom)
-            }
+                _ => Err(format!("error fetching list {}", db_name))
+                    .map_err(serde::de::Error::custom),
+            };
         };
 
         Err(format!("error fetching list {}", db_name)).map_err(serde::de::Error::custom)
@@ -96,32 +107,42 @@ impl Context {
         } else {
             "guest".to_string()
         };
-        Context { host, db, name, namespace, user: auth[0].to_string(), pass: auth[1].to_string() }
-    }
-
-    pub fn get_headers(&self) -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        headers.insert(HOST, self.host.parse().unwrap());
-        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-        headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
-        headers
-    }
-
-    pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
-        let client = Client::builder().default_headers(self.get_headers()).build().map_err(serde::de::Error::custom)?;
-        let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
-        let response = client.put(url.clone()).header("Host", &self.host).basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
-        match response.status() {
-            StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
-            error => Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
+        Context {
+            host,
+            db,
+            name,
+            namespace,
+            user: auth[0].to_string(),
+            pass: auth[1].to_string(),
         }
     }
 
-    pub fn insert_document(&mut self, mut doc: Value, id: Option<String>) -> Result<String, String> {
+    pub fn create_trigger(&self, name: &str, value: &Value) -> Result<Value, Error> {
+        let client = Client::new();
+        let url = format!(
+            "{}/api/v1/namespaces/{}/triggers/{}?overwrite=true",
+            self.host, self.namespace, name
+        );
+        let response = client
+            .put(url.clone())
+            .basic_auth(self.user.clone(), Some(self.pass.clone()))
+            .json(value)
+            .send()
+            .map_err(serde::de::Error::custom)?;
+        match response.status() {
+            StatusCode::OK => to_value(Trigger::new(name.to_string(), url)),
+            error => Err(format!("failed to create trigger {} {:?}", name, error))
+                .map_err(serde::de::Error::custom),
+        }
+    }
+
+    pub fn insert_document(
+        &mut self,
+        mut doc: Value,
+        id: Option<String>,
+    ) -> Result<String, String> {
         match self.db.insert(&mut doc, id).send() {
-            Ok(r) => {
-                return Ok(r.id)
-            }
+            Ok(r) => return Ok(r.id),
             Err(err) => return Err(format!("error creating document {}: {:?}", doc, err)),
         };
     }
@@ -129,7 +150,10 @@ impl Context {
     pub fn get_document(&self, id: &str) -> Result<Value, Error> {
         match self.db.get(id).send::<Value>() {
             Ok(v) => return Ok(v.into_inner().unwrap()),
-            Err(err) => return Err(format!("error fetching document {}: {:?}", id, err)).map_err(serde::de::Error::custom),
+            Err(err) => {
+                return Err(format!("error fetching document {}: {:?}", id, err))
+                    .map_err(serde::de::Error::custom)
+            }
         }
     }
 
@@ -139,8 +163,9 @@ impl Context {
         if let Ok(response) = client.get(url.clone()).send() {
             return match response.status() {
                 StatusCode::OK => response.json().map_err(serde::de::Error::custom),
-                _ => Err(format!("error fetching list {}", db_name)).map_err(serde::de::Error::custom)
-            }
+                _ => Err(format!("error fetching list {}", db_name))
+                    .map_err(serde::de::Error::custom),
+            };
         };
 
         Err(format!("error fetching list {}", db_name)).map_err(serde::de::Error::custom)
