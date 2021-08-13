@@ -50,11 +50,17 @@ impl Context {
         Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom)
     }
 
-    pub fn get_all(&self) -> Result<Value, Error> {
-        match self.db.get("_all_docs").send::<Value>() {
-            Ok(v) => return Ok(v.into_inner().unwrap()),
-            Err(err) => return Err(format!("error fetching list {:?}", err)).map_err(serde::de::Error::custom),
-        }
+    pub fn get_all(&self, db_url: &str, db_name: &str) -> Result<Value, Error> {
+        let client = Client::new();
+        let url = format!("{}/{}/_all_docs", db_url, db_name);
+        if let Ok(response) = client.get(url.clone()).send() {
+            return match response.status() {
+                StatusCode::OK => response.json().map_err(serde::de::Error::custom),
+                _ => Err(format!("error fetching list {}", db_name)).map_err(serde::de::Error::custom)
+            }
+        };
+
+        Err(format!("error fetching list {}", db_name)).map_err(serde::de::Error::custom)
     }
 }
 
@@ -108,10 +114,16 @@ impl Context {
         }
     }
 
-    pub fn get_all(&self) -> Result<Value, Error> {
-        match self.db.get("_all_docs").send::<Value>() {
-            Ok(v) => return Ok(v.into_inner().unwrap()),
-            Err(err) => return Err(format!("error fetching list {:?}", err)).map_err(serde::de::Error::custom),
-        }
+    pub fn get_all(&self, db_url: &str, db_name: &str) -> Result<Value, Error> {
+        let client = Client::new();
+        let url = format!("{}/{}/_all_docs", db_url, db_name);
+        if let Ok(response) = client.get(url.clone()).send() {
+            return match response.status() {
+                StatusCode::OK => response.json().map_err(serde::de::Error::custom),
+                _ => Err(format!("error fetching list {}", db_name)).map_err(serde::de::Error::custom)
+            }
+        };
+
+        Err(format!("error fetching list {}", db_name)).map_err(serde::de::Error::custom)
     }
 }

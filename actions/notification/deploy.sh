@@ -43,8 +43,8 @@ zip -r - Cargo.toml src | docker run -e RELEASE=true -i ${DOCKER_IMAGE} -compile
 
 cd ./temp/${ACTION}
 
-$WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PACKAGE_HOME/main.zip" --web true --docker "$DOCKER_IMAGE" \
-    --auth "$openwhiskApiKey" --param event_registration_db "event_registration" --param balance_filter_db 
+$WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PACKAGE_HOME/main.zip" --docker "$DOCKER_IMAGE" \
+    --auth "$openwhiskApiKey" --param event_registration_db "event_registration" --param balance_filter_db "balance_filter" --param db_name "notification" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --web true
 
 if [ -e ./temp/${ACTION} ]; then
     echo "Clearing temporary packed action file."
