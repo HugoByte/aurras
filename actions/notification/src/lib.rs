@@ -8,10 +8,11 @@ use types::Body;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
     __ow_method: String,
-    #[serde(default = "empty_value")]
-    __ow_body: Body,
     #[serde(default = "empty_string")]
     __ow_query: String,
+    topic: String,
+    token: String,
+    address: String,
     auth: String,
     db_name: String,
     db_url: String,
@@ -22,9 +23,7 @@ struct Input {
 struct Output {
     topic: String,
 }
-fn empty_value() -> Body {
-    Body{ address: "".to_string(), topic: "".to_string(), token: "".to_string()}
-}
+
 fn empty_string() -> String {
     String::new()
 }
@@ -94,8 +93,7 @@ pub fn main(args: Value) -> Result<Value, Error> {
     action.init();
     match action.method().as_ref() {
         "post" => {
-            let body = action.params.__ow_body.clone();
-            let id = action.add_address(&body)?;
+            let id = action.add_address(&Body{ topic: action.params.topic.clone(), address: action.params.address.clone(), token: action.params.token.clone()})?;
             return action.get_address(&id);
         }
         "get" => return action.get_chains(),

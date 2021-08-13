@@ -8,7 +8,7 @@ openwhiskApiKey=${openwhiskApiKey:-23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZ
 openwhiskNamespace=${openwhiskNamespace:-guest}
 actionHome=${actionHome:-actions/event-registration}
 WSK_CLI="wsk"
-DOCKER_IMAGE="hugobyte/openwhisk-runtime-rust:latest"
+DOCKER_IMAGE="hugobyte/openwhisk-runtime-rust:v0.2"
 if ! command -v $WSK_CLI &> /dev/null
 then
     echo "wsk cli not found in path. Please get the cli from https://github.com/apache/openwhisk-cli/releases"
