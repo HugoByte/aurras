@@ -70,7 +70,7 @@ impl Context {
         let api_key = if env::var("__OW_API_KEY").is_ok() {
             env::var("__OW_API_KEY").unwrap()
         } else {
-            "host.docker.internal".to_string()
+            "test:test".to_string()
         };
         let auth: Vec<&str> = api_key.split(":").collect();
         let host = if env::var("__OW_API_HOST").is_ok() {
