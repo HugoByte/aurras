@@ -41,13 +41,9 @@ impl Context {
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
         let client = Client::new();
         let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
-        return match client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send() {
-            Ok(response) => match response.status() {
-                StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
-                error => {
-                    return Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
-                }
-            },
+        let response = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
+        match response.status() {
+            StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
             error => {
                 return Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
             }
@@ -98,13 +94,9 @@ impl Context {
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
         let client = Client::new();
         let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
-        return match client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send() {
-            Ok(response) => match response.status() {
-                StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
-                error => {
-                    return Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
-                }
-            },
+        let response = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
+        match response.status() {
+            StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
             error => {
                 return Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
             }
