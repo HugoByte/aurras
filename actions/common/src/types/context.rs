@@ -1,6 +1,8 @@
 use chesterfield::sync::Database;
 use reqwest::blocking::Client;
 use reqwest::StatusCode;
+use reqwest::header::{HeaderValue, CONTENT_TYPE, HOST};
+
 use serde_json::{Value, Error, from_str, to_value};
 use std::env;
 use super::Trigger;
@@ -41,12 +43,10 @@ impl Context {
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
         let client = Client::builder().danger_accept_invalid_certs(true).build().map_err(serde::de::Error::custom)?;
         let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
-        let response = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
+        let response = client.put(url.clone()).header(HOST, &self.host).header(CONTENT_TYPE, "application/json").basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
         match response.status() {
             StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
-            error => {
-                return Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
-            }
+            error => Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
         }
     }
 
@@ -94,12 +94,10 @@ impl Context {
     pub fn create_trigger(&self, name: &str) -> Result<Value, Error> {
         let client = Client::builder().danger_accept_invalid_certs(true).build().map_err(serde::de::Error::custom)?;
         let url = format!("{}/api/v1/namespaces/{}/triggers/{}?overwrite=true", self.host, self.namespace, name);
-        let response = client.put(url.clone()).basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
+        let response = client.put(url.clone()).header(HOST, &self.host).header(CONTENT_TYPE, "application/json").basic_auth(self.user.clone(), Some(self.pass.clone())).send().map_err(serde::de::Error::custom)?;
         match response.status() {
             StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
-            error => {
-                return Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
-            }
+            error => Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
         }
     }
 
