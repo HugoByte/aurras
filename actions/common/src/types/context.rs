@@ -45,8 +45,7 @@ impl Context {
             return match response.status() {
                 StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
                 error => {
-                    println!("{:?}", error);
-                    return Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom) 
+                    return Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
                 }
             }
         };
@@ -101,8 +100,7 @@ impl Context {
             return match response.status() {
                 StatusCode::OK =>  to_value(Trigger::new(name.to_string(), url)),
                 error => {
-                    println!("{:?}", error);
-                    return Err(format!("failed to create trigger {}", name)).map_err(serde::de::Error::custom) 
+                    return Err(format!("failed to create trigger {} {:?}", name, error)).map_err(serde::de::Error::custom) 
                 }
             }
         };
