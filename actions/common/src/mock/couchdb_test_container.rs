@@ -13,8 +13,8 @@ impl CouchDB {
             .pull_on_build(true)
             .name("couchdb")
             .slug_length(6)
-            .environment_variable(format!("COUCHDB_USER: {}", user))
-            .environment_variable(format!("COUCHDB_PASSWORD: {}", pass))
+            .environment_variable(format!("COUCHDB_USER={}", user))
+            .environment_variable(format!("COUCHDB_PASSWORD={}", pass))
             .expose(5984, host_port, Protocol::Tcp)
             .build()
             .await?;

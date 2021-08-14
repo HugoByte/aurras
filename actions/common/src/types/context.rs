@@ -5,6 +5,7 @@ use reqwest::StatusCode;
 use super::Trigger;
 use serde_json::{to_value, Error, Value};
 use std::env;
+
 pub struct Context {
     pub host: String,
     pub name: String,
