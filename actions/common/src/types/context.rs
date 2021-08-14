@@ -28,7 +28,7 @@ impl Context {
         }
     }
 
-    pub fn insert_document(&mut self, doc: &Value, id: Option<String>) -> Result<String, Error> {
+    pub fn insert_document(&self, doc: &Value, id: Option<String>) -> Result<String, Error> {
         match self.db.insert(doc, id).send() {
             Ok(r) => return Ok(r.id),
             Err(err) => {
