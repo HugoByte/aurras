@@ -28,3 +28,14 @@ serde = "1.0"
 serde_derive = "1.0"
 chesterfield = "0.0.1"
 reqwest = { version = "0.11", features = ["blocking", "json", "native-tls"] }
+
+[dependencies.harbourmaster]
+version = "0.4.0"
+optional = true
+
+[dependencies.shiplift]
+version = "0.5.0"
+optional = true
+
+[features]
+mock_containers = ["shiplift", "harbourmaster"]
