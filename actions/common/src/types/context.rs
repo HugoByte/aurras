@@ -28,14 +28,23 @@ impl Context {
         }
     }
 
-    pub fn insert_document(
-        &mut self,
-        mut doc: Value,
-        id: Option<String>,
-    ) -> Result<String, String> {
-        match self.db.insert(&mut doc, id).send() {
+    pub fn insert_document(&mut self, doc: &Value, id: Option<String>) -> Result<String, Error> {
+        match self.db.insert(doc, id).send() {
             Ok(r) => return Ok(r.id),
-            Err(err) => return Err(format!("error creating document {}: {:?}", doc, err)),
+            Err(err) => {
+                return Err(format!("error creating document {}: {:?}", doc, err))
+                    .map_err(serde::de::Error::custom)
+            }
+        };
+    }
+
+    pub fn update_document(&self, id: &str, rev: &str, doc: &Value ) -> Result<String, Error> {
+        match self.db.update(doc, id, rev).send() {
+            Ok(r) => return Ok(r.id),
+            Err(err) => {
+                return Err(format!("error creating document {}: {:?}", doc, err))
+                    .map_err(serde::de::Error::custom)
+            }
         };
     }
 
@@ -117,6 +126,7 @@ impl Context {
         }
     }
 
+    // Create Rule
     pub fn create_trigger(&self, name: &str, value: &Value) -> Result<Value, Error> {
         let client = Client::new();
         let url = format!(
@@ -136,14 +146,23 @@ impl Context {
         }
     }
 
-    pub fn insert_document(
-        &mut self,
-        mut doc: Value,
-        id: Option<String>,
-    ) -> Result<String, String> {
-        match self.db.insert(&mut doc, id).send() {
+    pub fn update_document(&self, id: &str, rev: &str, doc: &Value ) -> Result<String, Error> {
+        match self.db.update(doc, id, rev).send() {
             Ok(r) => return Ok(r.id),
-            Err(err) => return Err(format!("error creating document {}: {:?}", doc, err)),
+            Err(err) => {
+                return Err(format!("error updating document {}: {:?}", doc, err))
+                    .map_err(serde::de::Error::custom)
+            }
+        };
+    }
+
+    pub fn insert_document(&mut self, doc: &Value, id: Option<String>) -> Result<String, Error> {
+        match self.db.insert(doc, id).send() {
+            Ok(r) => return Ok(r.id),
+            Err(err) => {
+                return Err(format!("error creating document {}: {:?}", doc, err))
+                    .map_err(serde::de::Error::custom)
+            }
         };
     }
 
