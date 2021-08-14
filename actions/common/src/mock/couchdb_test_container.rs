@@ -9,7 +9,8 @@ pub struct CouchDB {
 impl CouchDB {
     pub async fn new(user: String, pass: String) -> Result<Self, Error> {
         let host_port = get_unused_port()?;
-        let container = Container::builder("apache/couchdb:2.3")
+        let container = Container::builder("apache/couchdb")
+            .tag("2.3")
             .pull_on_build(true)
             .name("couchdb")
             .slug_length(6)
