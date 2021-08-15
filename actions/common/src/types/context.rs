@@ -4,15 +4,12 @@ use reqwest::StatusCode;
 
 use super::Trigger;
 use serde_json::{to_value, Error, Value};
-
-#[cfg(not(test))]
 use std::env;
 
 #[cfg(test)]
 use tokio::runtime::Handle;
 
-#[cfg(test)]
-#[derive(new, Debug)]
+#[derive(new, Debug, Clone)]
 pub struct Config {
     #[new(value = r#""test:test".to_string()"#)]
     pub api_key: String,
@@ -57,28 +54,39 @@ fn invoke_client(
 }
 
 impl Context {
-    #[cfg(not(test))]
-    pub fn new(db: Database) -> Self {
+    pub fn new(db: Database, config: Option<&Config>) -> Self {
         let api_key = if env::var("__OW_API_KEY").is_ok() {
             env::var("__OW_API_KEY").unwrap()
         } else {
-            "test:test".to_string()
+            match config {
+                Some(config) => config.api_key.clone(),
+                None => "test:test".to_string(),
+            }
         };
         let auth: Vec<&str> = api_key.split(":").collect();
         let host = if env::var("__OW_API_HOST").is_ok() {
             env::var("__OW_API_HOST").unwrap()
         } else {
-            "host.docker.internal".to_string()
+            match config {
+                Some(config) => config.host.clone(),
+                None => "host.docker.internal".to_string(),
+            }
         };
         let name = if env::var("__OW_ACTION_NAME").is_ok() {
             env::var("__OW_ACTION_NAME").unwrap()
         } else {
-            "action".to_string()
+            match config {
+                Some(config) => config.name.clone(),
+                None => "action".to_string(),
+            } 
         };
         let namespace = if env::var("__OW_NAMESPACE").is_ok() {
             env::var("__OW_NAMESPACE").unwrap()
         } else {
-            "guest".to_string()
+            match config {
+                Some(config) => config.namespace.clone(),
+                None => "guest".to_string(),
+            } 
         };
         Context {
             host,
@@ -90,19 +98,6 @@ impl Context {
         }
     }
 
-    #[cfg(test)]
-    pub fn new(db: Database, config: Config) -> Self {
-        let auth: Vec<&str> = config.api_key.split(":").collect();
-        Context {
-            host: config.host,
-            db,
-            name: config.name,
-            namespace: config.namespace,
-            user: auth[0].to_string(),
-            pass: auth[1].to_string(),
-        }
-    }
-    
     // TODO: Fix return
     pub fn invoke_trigger(&self, name: &str, value: &Value) -> Result<Value, Error> {
         let client = client();
@@ -282,7 +277,7 @@ mod tests {
             .unwrap();
         sleep(Duration::from_millis(5000)).await;
         let url = format!("http://admin:password@localhost:{}", couchdb.port());
-        let context = Context::new(connect_db(&url, &"test".to_string()), config);
+        let context = Context::new(connect_db(&url, &"test".to_string()), Some(&config));
         context
             .insert_document(
                 &serde_json::json!({
@@ -330,7 +325,7 @@ mod tests {
             .unwrap();
         sleep(Duration::from_millis(5000)).await;
         let url = format!("http://admin:password@localhost:{}", couchdb.port());
-        let context = Context::new(connect_db(&url, &"test".to_string()), config);
+        let context = Context::new(connect_db(&url, &"test".to_string()), Some(&config));
         let topic = "1234".to_string();
 
         context
@@ -387,7 +382,7 @@ mod tests {
         config.host = mock_server.uri();
         sleep(Duration::from_millis(5000)).await;
         let url = format!("http://admin:password@localhost:{}", couchdb.port());
-        let context = Context::new(connect_db(&url, &"test".to_string()), config);
+        let context = Context::new(connect_db(&url, &"test".to_string()), Some(&config));
         context
             .create_trigger(&topic, &serde_json::json!({}))
             .unwrap();
@@ -415,10 +410,8 @@ mod tests {
         config.host = mock_server.uri();
         sleep(Duration::from_millis(5000)).await;
         let url = format!("http://admin:password@localhost:{}", couchdb.port());
-        let context = Context::new(connect_db(&url, &"test".to_string()), config);
-        context
-            .create_rule(&topic, "trigger", "action")
-            .unwrap();
+        let context = Context::new(connect_db(&url, &"test".to_string()), Some(&config));
+        context.create_rule(&topic, "trigger", "action").unwrap();
         let received_requests = mock_server.received_requests().await;
         assert!(received_requests.is_some());
         couchdb.delete().await.expect("Stopping Container Failed");
@@ -442,7 +435,7 @@ mod tests {
         config.host = mock_server.uri();
         sleep(Duration::from_millis(5000)).await;
         let url = format!("http://admin:password@localhost:{}", couchdb.port());
-        let context = Context::new(connect_db(&url, &"test".to_string()), config);
+        let context = Context::new(connect_db(&url, &"test".to_string()), Some(&config));
         context
             .invoke_trigger("trigger", &serde_json::json!({}))
             .unwrap();

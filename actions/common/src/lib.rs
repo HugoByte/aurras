@@ -2,7 +2,6 @@ mod types;
 pub use types::{Context, Trigger};
 mod mock;
 
-#[cfg(test)]
 #[macro_use]
 extern crate derive_new;
 
