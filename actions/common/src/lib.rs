@@ -1,5 +1,5 @@
 mod types;
-pub use types::{Context, Trigger};
+pub use types::{Context, Trigger, Config};
 mod mock;
 
 #[macro_use]
