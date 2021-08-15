@@ -28,6 +28,7 @@ serde = "1.0"
 serde_derive = "1.0"
 chesterfield = "0.0.1"
 reqwest = { version = "0.11", features = ["blocking", "json", "native-tls"] }
+derive-new = "0.5"
 
 [dependencies.harbourmaster]
 version = "0.4.0"
@@ -39,3 +40,8 @@ optional = true
 
 [features]
 mock_containers = ["shiplift", "harbourmaster"]
+
+[dev-dependencies]
+tokio = { version = "1.0.0", features = ["macros"] }
+wiremock = "0.5"
+envconfig = "0.10.0"
