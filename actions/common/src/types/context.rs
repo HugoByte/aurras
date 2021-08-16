@@ -78,7 +78,7 @@ impl Context {
             match config {
                 Some(config) => config.name.clone(),
                 None => "action".to_string(),
-            } 
+            }
         };
         let namespace = if env::var("__OW_NAMESPACE").is_ok() {
             env::var("__OW_NAMESPACE").unwrap()
@@ -86,7 +86,7 @@ impl Context {
             match config {
                 Some(config) => config.namespace.clone(),
                 None => "guest".to_string(),
-            } 
+            }
         };
         Context {
             host,
@@ -98,7 +98,28 @@ impl Context {
         }
     }
 
-    // TODO: Fix return
+    pub fn invoke_action(&self, name: &str, value: &Value) -> Result<Value, Error> {
+        let client = client();
+        let url = format!(
+            "{}/api/v1/namespaces/{}/actions/{}?result=true&blocking=true",
+            self.host, self.namespace, name
+        );
+        let response = invoke_client(
+            client
+                .post(url.clone())
+                .basic_auth(self.user.clone(), Some(self.pass.clone()))
+                .json(value),
+        )
+        .map_err(serde::de::Error::custom)?;
+        match response.status() {
+            StatusCode::OK => serde_json::json!({
+                "success": true
+            }),
+            error => Err(format!("failed to invoke trigger {} {:?}", name, error))
+                .map_err(serde::de::Error::custom),
+        }
+    }
+
     pub fn invoke_trigger(&self, name: &str, value: &Value) -> Result<Value, Error> {
         let client = client();
         let url = format!(
@@ -113,7 +134,9 @@ impl Context {
         )
         .map_err(serde::de::Error::custom)?;
         match response.status() {
-            StatusCode::OK => to_value(Trigger::new(name.to_string(), url)),
+            StatusCode::OK => serde_json::json!({
+                "success": true
+            }),
             error => Err(format!("failed to invoke trigger {} {:?}", name, error))
                 .map_err(serde::de::Error::custom),
         }
