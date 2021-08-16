@@ -112,9 +112,9 @@ impl Context {
         )
         .map_err(serde::de::Error::custom)?;
         match response.status() {
-            StatusCode::OK => serde_json::json!({
+            StatusCode::OK => Ok(serde_json::json!({
                 "success": true
-            }),
+            })),
             error => Err(format!("failed to invoke trigger {} {:?}", name, error))
                 .map_err(serde::de::Error::custom),
         }
@@ -134,9 +134,9 @@ impl Context {
         )
         .map_err(serde::de::Error::custom)?;
         match response.status() {
-            StatusCode::OK => serde_json::json!({
+            StatusCode::OK => Ok(serde_json::json!({
                 "success": true
-            }),
+            })),
             error => Err(format!("failed to invoke trigger {} {:?}", name, error))
                 .map_err(serde::de::Error::custom),
         }
