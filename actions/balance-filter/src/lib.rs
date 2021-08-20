@@ -2,26 +2,24 @@ extern crate serde_json;
 
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{Error, Value};
-use uuid::Uuid;
 mod types;
-use actions_common::{Context};
+use actions_common::Context;
 
 #[cfg(test)]
-use actions_common::{Config};
+use actions_common::Config;
 
 use chesterfield::sync::{Client, Database};
-use types::{Address, Deposit, Filter, Message, Payload, Topic};
+use types::{Message, Payload};
+
+#[cfg(test)]
+use types::{Address, Deposit, Topic};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
     messages: Vec<Message>,
+    push_notification_trigger: String,
     db_name: String,
     db_url: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct Output {
-    topic: String,
 }
 
 struct Action {
@@ -36,7 +34,6 @@ impl Action {
             context: None,
         }
     }
-    
     #[cfg(test)]
     pub fn init(&mut self, config: &Config) {
         let db = self.connect_db(&self.params.db_url, &self.params.db_name);
@@ -49,7 +46,7 @@ impl Action {
         self.context = Some(Context::new(db, None));
     }
 
-    fn connect_db(&self, db_url: &String, db_name: &String) -> Database {
+    fn connect_db(&self, db_url: &str, db_name: &str) -> Database {
         let client = Client::new(db_url).unwrap();
         let db = client.database(db_name).unwrap();
         if !db.exists().unwrap() {
@@ -88,18 +85,28 @@ impl Action {
     pub fn invoke_trigger(&mut self, payload: Payload) -> Result<Value, Error> {
         let mut failed_triggers = vec![];
         for message in payload.iter() {
-            let trigger = &message.1.filters.get(&message.0.address).unwrap().trigger;
-
+            let trigger = self.params.push_notification_trigger.clone();
             // TODO: Add attributes neccessary for push notification trigger
-            if self.get_context().invoke_trigger(trigger, &serde_json::json!({
-
-
-            })).is_err() {
-                failed_triggers.push(trigger.clone());
+            if self
+                .get_context()
+                .invoke_trigger(
+                    &trigger,
+                    &serde_json::json!({
+                        "token": message.1.filters.get(&message.0.address).unwrap().token,
+                        "message": {
+                            "title": "Amount Recieved!",
+                            "body": message.0.amount
+                        }
+                    }),
+                )
+                .is_err()
+            {
+                failed_triggers.push(message.0.address.clone());
             }
         }
         if !failed_triggers.is_empty() {
-            return Err(format!("error in triggers {}", failed_triggers.join(", "))).map_err(serde::de::Error::custom);
+            return Err(format!("error in triggers {}", failed_triggers.join(", ")))
+                .map_err(serde::de::Error::custom);
         }
         Ok(serde_json::json!({
             "action": "success"
@@ -157,6 +164,7 @@ mod tests {
             },
         ];
         let mut action = Action::new(Input {
+            push_notification_trigger: "push_notification".to_string(),
             db_url: url,
             db_name: "test".to_string(),
             messages,
@@ -180,7 +188,6 @@ mod tests {
             "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string(),
             Address {
                 token: "1".to_string(),
-                trigger: "1".to_string(),
             },
         );
 
@@ -239,6 +246,7 @@ mod tests {
             },
         ];
         let mut action = Action::new(Input {
+            push_notification_trigger: "push_notification".to_string(),
             db_url: url,
             db_name: "test".to_string(),
             messages,
@@ -262,7 +270,6 @@ mod tests {
             "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string(),
             Address {
                 token: "1".to_string(),
-                trigger: "1".to_string(),
             },
         );
 
@@ -295,7 +302,8 @@ mod tests {
     // TODO: This panic because of reqwest blocking in tokio runtime context. Should Add sync or async context.
     #[should_panic]
     #[tokio::test(flavor = "multi_thread")]
-    async fn invoke_trigger_pass() {let config = Config::new();
+    async fn invoke_trigger_pass() {
+        let config = Config::new();
         let couchdb = CouchDB::new("admin".to_string(), "password".to_string())
             .await
             .unwrap();
@@ -323,6 +331,7 @@ mod tests {
             },
         ];
         let mut action = Action::new(Input {
+            push_notification_trigger: "push_notification".to_string(),
             db_url: url,
             db_name: "test".to_string(),
             messages,
@@ -346,7 +355,6 @@ mod tests {
             "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string(),
             Address {
                 token: "1".to_string(),
-                trigger: "1".to_string(),
             },
         );
 
@@ -359,8 +367,12 @@ mod tests {
             )
             .unwrap();
         let filtered_topics = action.filter_topics();
-        assert_eq!(action.invoke_trigger(action.filter_address(filtered_topics)).unwrap(), ());
-        
+        assert_eq!(
+            action
+                .invoke_trigger(action.filter_address(filtered_topics))
+                .unwrap(),
+            ()
+        );
         couchdb.delete().await.expect("Stopping Container Failed");
     }
 }

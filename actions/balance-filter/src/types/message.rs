@@ -1,13 +1,6 @@
 use super::Topic;
 use serde_derive::{Deserialize, Serialize};
-use serde_json::{from_str, Error, Value};
-
-pub trait Filter<T> {
-    fn new() -> Self;
-    fn add(self) -> Self;
-    // Add Trait
-    fn filter(self) -> Self;
-}
+use serde_json::{from_str, Error};
 
 pub type Payload = Vec<(Deposit, Topic)>;
 

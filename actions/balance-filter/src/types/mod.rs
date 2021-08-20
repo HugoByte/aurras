@@ -1,6 +1,6 @@
-mod source;
 mod message;
+mod source;
 mod topic;
+pub use message::{Deposit, Message, Payload};
 pub use source::Source;
-pub use message::{Deposit, Message, Filter, Payload};
-pub use topic::{Topic, Address};
+pub use topic::{Address, Topic};

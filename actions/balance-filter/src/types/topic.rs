@@ -13,7 +13,6 @@ pub struct Topic {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Address {
     pub token: String,
-    pub trigger: String
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
