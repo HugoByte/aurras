@@ -53,6 +53,10 @@ cd ./temp/${ACTION}
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PACKAGE_HOME/main.zip" --docker "$DOCKER_IMAGE" \
     --auth "$openwhiskApiKey" --param api_key "$FIREBASE_API_KEY"
 
+$WSK_CLI -i --apihost "$openwhiskApiHost" trigger update "send-${ACTION}" --auth "$openwhiskApiKey"
+
+$WSK_CLI -i --apihost "$openwhiskApiHost" rule update "${ACTION}-rule" "send-${ACTION}" ${ACTION} --auth "$openwhiskApiKey"
+
 if [ -e ./temp/${ACTION} ]; then
     echo "Clearing temporary packed action file."
     rm -rf ./temp/${ACTION}
