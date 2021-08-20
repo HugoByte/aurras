@@ -6,7 +6,7 @@
 openwhiskApiHost=${openwhiskApiHost:-https://localhost:31001}
 openwhiskApiKey=${openwhiskApiKey:-23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP}
 openwhiskNamespace=${openwhiskNamespace:-guest}
-actionHome=${actionHome:-actions/notification}
+actionHome=${actionHome:-actions/push-notification}
 WSK_CLI="wsk"
 DOCKER_IMAGE="hugobyte/openwhisk-runtime-rust:v0.2"
 if ! command -v $WSK_CLI &> /dev/null
@@ -14,7 +14,14 @@ then
     echo "wsk cli not found in path. Please get the cli from https://github.com/apache/openwhisk-cli/releases"
     exit
 fi
-ACTION="notification"
+
+if [ -z "$FIREBASE_API_KEY" ]
+then
+    echo "FIREBASE_API_KEY env is not defined, Generate server token from https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging and add as env FIREBASE_API_KEY"
+    exit
+fi
+
+ACTION="push-notification"
 PACKAGE_HOME="$PWD/${actionHome}/temp/$ACTION"
 
 while [ $# -gt 0 ]; do
@@ -44,7 +51,7 @@ zip -r - Cargo.toml src | docker run -e RELEASE=true -i ${DOCKER_IMAGE} -compile
 cd ./temp/${ACTION}
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PACKAGE_HOME/main.zip" --docker "$DOCKER_IMAGE" \
-    --auth "$openwhiskApiKey" --param event_registration_db "event_registration" --param balance_filter_db "balance_filter" --param db_name "notification" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --web true
+    --auth "$openwhiskApiKey" --param api_key "$FIREBASE_API_KEY"
 
 if [ -e ./temp/${ACTION} ]; then
     echo "Clearing temporary packed action file."
