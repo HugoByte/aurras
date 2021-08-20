@@ -8,7 +8,7 @@ openwhiskApiKey=${openwhiskApiKey:-23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZ
 openwhiskNamespace=${openwhiskNamespace:-guest}
 actionHome=${actionHome:-actions/balance-filter}
 WSK_CLI="wsk"
-DOCKER_IMAGE="hugobyte/openwhisk-runtime-rust:v0.1.1"
+DOCKER_IMAGE="hugobyte/openwhisk-runtime-rust:v0.2"
 if ! command -v $WSK_CLI &> /dev/null
 then
     echo "wsk cli not found in path. Please get the cli from https://github.com/apache/openwhisk-cli/releases"
@@ -44,7 +44,7 @@ zip -r - Cargo.toml src | docker run -i ${DOCKER_IMAGE} -compile main > "$PACKAG
 cd ./temp/${ACTION}
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PACKAGE_HOME/main.zip" --docker "$DOCKER_IMAGE" \
-    --auth "$openwhiskApiKey" --param push_notification_trigger "send-push-notification"
+    --auth "$openwhiskApiKey" --param push_notification_trigger "send-push-notification" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --param db_name "balance_filter_db" -a provide-api-key true
 
 if [ -e ./temp/${ACTION} ]; then
     echo "Clearing temporary packed action file."

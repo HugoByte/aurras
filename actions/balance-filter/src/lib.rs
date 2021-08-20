@@ -87,6 +87,7 @@ impl Action {
         for message in payload.iter() {
             let trigger = self.params.push_notification_trigger.clone();
             // TODO: Add attributes neccessary for push notification trigger
+            println!("invoking trigger {}", trigger);
             if self
                 .get_context()
                 .invoke_trigger(
@@ -123,8 +124,10 @@ pub fn main(args: Value) -> Result<Value, Error> {
     action.init();
 
     let filtered_topics = action.filter_topics();
-
-    action.invoke_trigger(action.filter_address(filtered_topics))
+    println!("{:?}", filtered_topics);
+    let filtered_address = action.filter_address(filtered_topics);
+    println!("{:?}", filtered_address);
+    action.invoke_trigger(filtered_address)
 }
 
 #[cfg(test)]
@@ -224,10 +227,10 @@ mod tests {
             .unwrap();
         sleep(Duration::from_millis(5000)).await;
         let url = format!("http://admin:password@localhost:{}", couchdb.port());
-        let topic = "1234".to_string();
+        let topic = "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string();
         let messages = vec![
             Message {
-                topic: "1234".to_string(),
+                topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
                 value: serde_json::json!({
                     "from": "12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf",
                     "to":"12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf",
@@ -236,7 +239,7 @@ mod tests {
                 .to_string(),
             },
             Message {
-                topic: "1234".to_string(),
+                topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
                 value: serde_json::json!({
                     "from": "12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf",
                     "to":"15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw",
@@ -245,12 +248,18 @@ mod tests {
                 .to_string(),
             },
         ];
-        let mut action = Action::new(Input {
-            push_notification_trigger: "push_notification".to_string(),
-            db_url: url,
-            db_name: "test".to_string(),
-            messages,
-        });
+
+        let input = serde_json::from_value::<Input>(serde_json::json!({
+            "push_notification_trigger": "push_notification",
+            "db_name": "test",
+            "db_url": url,
+            "messages": [{
+                "topic":"418a8b8c-02b8-11ec-9a03-0242ac130003",
+                "value": "{\"from\":\"12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf\",\"to\":\"15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw\",\"value\":1000}"
+            }]
+        })).unwrap();
+
+        let mut action = Action::new(input);
         action.init(&config);
 
         action
@@ -330,12 +339,17 @@ mod tests {
                 .to_string(),
             },
         ];
-        let mut action = Action::new(Input {
-            push_notification_trigger: "push_notification".to_string(),
-            db_url: url,
-            db_name: "test".to_string(),
-            messages,
-        });
+        let input = serde_json::from_value::<Input>(serde_json::json!({
+            "push_notification_trigger": "test",
+            "db_name": "test",
+            "db_url": url,
+            "messages": [{
+                "topic":"418a8b8c-02b8-11ec-9a03-0242ac130003",
+                "value": "{\"from\":\"12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf\",\"to\":\"15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw\",\"value\":1000}"
+            }]
+        })).unwrap();
+        
+        let mut action = Action::new(input);
         action.init(&config);
 
         action
@@ -371,7 +385,7 @@ mod tests {
             action
                 .invoke_trigger(action.filter_address(filtered_topics))
                 .unwrap(),
-            ()
+            serde_json::json!({})
         );
         couchdb.delete().await.expect("Stopping Container Failed");
     }
