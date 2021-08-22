@@ -54,7 +54,7 @@ yarn install --production=true
 zip -r event-receiver.zip *
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update --kind nodejs:default event-receiver "$PACKAGE_HOME/event-receiver.zip" \
-    --auth "$openwhiskApiKey"
+    --auth "$openwhiskApiKey" --param event_producer "event-producer"
 
 if [ -e ./temp/event-receiver ]; then
     echo "Clearing temporary packed action file."
