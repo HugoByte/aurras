@@ -152,7 +152,7 @@ mod tests {
                 value: serde_json::json!({
                     "from": "12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf",
                     "to":"15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw",
-                    "value": 1000
+                    "value": "100.0000".to_string(),
                 })
                 .to_string(),
             },
@@ -161,7 +161,7 @@ mod tests {
                 value: serde_json::json!({
                     "from": "12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf",
                     "to":"15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw",
-                    "value": 1000
+                    "value": "100.0000".to_string(),
                 })
                 .to_string(),
             },
@@ -207,7 +207,7 @@ mod tests {
         let expected = vec![(
             Deposit {
                 address: "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string(),
-                amount: 1_000,
+                amount: "100.0000".to_string(),
             },
             Topic {
                 id: doc.id,
@@ -234,7 +234,7 @@ mod tests {
                 value: serde_json::json!({
                     "from": "12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf",
                     "to":"12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf",
-                    "value": 1_000
+                    "value": "100.0000".to_string(),
                 })
                 .to_string(),
             },
@@ -243,7 +243,7 @@ mod tests {
                 value: serde_json::json!({
                     "from": "12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf",
                     "to":"15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw",
-                    "value": 1_000
+                    "value": "100.0000".to_string(),
                 })
                 .to_string(),
             },
@@ -255,7 +255,7 @@ mod tests {
             "db_url": url,
             "messages": [{
                 "topic":"418a8b8c-02b8-11ec-9a03-0242ac130003",
-                "value": "{\"from\":\"12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf\",\"to\":\"15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw\",\"value\":1000}"
+                "value": "{\"from\":\"12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf\",\"to\":\"15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw\",\"value\":\"100.0000\"}"
             }]
         })).unwrap();
 
@@ -295,7 +295,7 @@ mod tests {
         let expected = vec![(
             Deposit {
                 address: "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string(),
-                amount: 1_000,
+                amount: "100.0000".to_string(),
             },
             Topic {
                 id: doc.id,
@@ -319,26 +319,6 @@ mod tests {
         sleep(Duration::from_millis(5000)).await;
         let url = format!("http://admin:password@localhost:{}", couchdb.port());
         let topic = "1234".to_string();
-        let messages = vec![
-            Message {
-                topic: "1234".to_string(),
-                value: serde_json::json!({
-                    "from": "12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf",
-                    "to":"12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf",
-                    "value": 1_000
-                })
-                .to_string(),
-            },
-            Message {
-                topic: "1234".to_string(),
-                value: serde_json::json!({
-                    "from": "12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf",
-                    "to":"15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw",
-                    "value": 1_000
-                })
-                .to_string(),
-            },
-        ];
         let input = serde_json::from_value::<Input>(serde_json::json!({
             "push_notification_trigger": "test",
             "db_name": "test",

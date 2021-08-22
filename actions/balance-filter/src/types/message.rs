@@ -16,7 +16,7 @@ pub struct Deposit {
     #[serde(rename = "to")]
     pub address: String,
     #[serde(rename = "value")]
-    pub amount: u32,
+    pub amount: String,
 }
 
 impl Message {
