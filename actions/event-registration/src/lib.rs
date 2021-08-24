@@ -4,6 +4,8 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::{Error, Value};
 use uuid::Uuid;
 mod types;
+#[cfg(test)]
+use actions_common::Config;
 use actions_common::{Context, Trigger};
 use chesterfield::sync::{Client, Database};
 use types::Source;
@@ -14,11 +16,6 @@ struct Input {
     db_name: String,
     db_url: String,
     feed: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct Output {
-    topic: String,
 }
 
 struct Action {
@@ -34,20 +31,19 @@ impl Action {
         }
     }
 
-    pub fn init(&mut self) {
-        let db = self.connect_db(&self.params.db_url, &self.params.db_name);
-        self.context = Some(Context::new(db));
-    }
-
     #[cfg(test)]
-    fn connect_db(&self, db_url: &String, db_name: &String) -> Database {
-        let client = Client::new(db_url).unwrap();
-        let db = client.database(db_name).unwrap();
-        db
+    pub fn init(&mut self, config: &Config) {
+        let db = self.connect_db(&self.params.db_url, &self.params.db_name);
+        self.context = Some(Context::new(db, Some(config)));
     }
 
     #[cfg(not(test))]
-    fn connect_db(&self, db_url: &String, db_name: &String) -> Database {
+    pub fn init(&mut self) {
+        let db = self.connect_db(&self.params.db_url, &self.params.db_name);
+        self.context = Some(Context::new(db, None));
+    }
+
+    fn connect_db(&self, db_url: &str, db_name: &str) -> Database {
         let client = Client::new(db_url).unwrap();
         let db = client.database(db_name).unwrap();
         if !db.exists().unwrap() {
@@ -56,7 +52,7 @@ impl Action {
         db
     }
 
-    pub fn get_context(&mut self) -> &mut Context {
+    pub fn get_context(&mut self) -> &Context {
         self.context.as_mut().expect("Action not Initialized!")
     }
 
@@ -67,11 +63,10 @@ impl Action {
     pub fn register_source(&mut self, topic: &str, trigger: &str) -> Result<Value, Error> {
         let source = Source::new(
             self.params.name.to_string(),
-            topic.to_string(),
             trigger.to_string(),
         );
         let doc = serde_json::to_value(source).unwrap();
-        if let Ok(id) = self.get_context().insert_document(doc, None) {
+        if let Ok(id) = self.get_context().insert_document(&doc, Some(topic.to_string())) {
             let doc = self.get_context().get_document(&id)?;
             return serde_json::from_value(doc);
         }
@@ -82,10 +77,10 @@ impl Action {
         let feed = self.params.feed.clone();
         self.get_context().create_trigger(
             topic,
-             &serde_json::json!({
+            &serde_json::json!({
                 "annotations": [{
                     "key": "feed",
-                    "value": feed 
+                    "value": feed
                 }],
                 "parameters": [{
                     "key": "topic",
@@ -103,6 +98,7 @@ pub fn main(args: Value) -> Result<Value, Error> {
     let input = serde_json::from_value::<Input>(args).unwrap();
     let mut action = Action::new(input);
     let event_id = action.generate_event_id();
+    #[cfg(not(test))]
     action.init();
     let trigger = serde_json::from_value::<Trigger>(action.register_trigger(&event_id)?)?;
     action.register_source(&event_id, &trigger.name)
@@ -111,19 +107,34 @@ pub fn main(args: Value) -> Result<Value, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use actions_common::mock_containers::CouchDB;
+    use tokio;
+    use tokio::time::{sleep, Duration};
     use serde_json::json;
 
-    #[test]
-    fn generate_event_id() {
+    #[tokio::test]
+    async fn register_source_pass() {
+        let config = Config::new();
+        let couchdb = CouchDB::new("admin".to_string(), "password".to_string())
+            .await
+            .unwrap();
+        sleep(Duration::from_millis(5000)).await;
+        let url = format!("http://admin:password@localhost:{}", couchdb.port());
         let input = serde_json::from_value::<Input>(json!({
-            "name": "node-template",
-            "auth": "789c46b1-71f6-4ed5-8c54-816aa4f8c502:abczO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",
+            "feed": "kafka-provider-feed",
+            "name": "polkadot",
             "db_name": "test",
-            "db_url": "http://localhost:5984"
+            "db_url": url
 
         })).unwrap();
         let mut action = Action::new(input);
         let event_id = action.generate_event_id();
-        action.init();
+        action.init(&config);
+
+        action.register_source(&event_id, &"trigger".to_string()).unwrap();
+        let source: Source = serde_json::from_value(action.get_context().get_document(&event_id).unwrap()).unwrap();
+
+        assert_eq!(source, Source::new(action.params.name.clone(), "trigger".to_string()));
+        couchdb.delete().await.expect("Stopping Container Failed");
     }
 }
