@@ -2,5 +2,9 @@
 members = [
     "actions/common",
     "actions/event-registration",
-    "actions/notification"
+    "actions/balance-notification-registration",
+    "actions/balance-filter",
+    "actions/push-notification",
+    "actions/event-receiver",
+    "actions/substrate-event-processor"
 ]
