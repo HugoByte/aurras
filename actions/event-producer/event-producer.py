@@ -27,6 +27,7 @@ import os
 import sys
 import time
 import traceback
+import json
 
 from kafka import KafkaProducer
 from kafka.errors import NoBrokersAvailable, KafkaTimeoutError, AuthenticationFailedError
@@ -93,7 +94,8 @@ def main(params):
                 future = producer.send(
                     topic, bytes(value, 'utf-8'), key=bytes(messageKey, 'utf-8'))
             else:
-                future = producer.send(topic, bytes(value, 'utf-8'))
+                payload = json.dumps(value).encode('utf-8')
+                future = producer.send(topic, payload)
 
             # future should wait all of the remaining time
             future_time_seconds = math.floor(getRemainingTime())
