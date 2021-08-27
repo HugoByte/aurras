@@ -8,13 +8,13 @@ openwhiskApiKey=${openwhiskApiKey:-23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZ
 openwhiskNamespace=${openwhiskNamespace:-guest}
 actionHome=${actionHome:-actions/event-receiver}
 WSK_CLI="wsk"
-
+DOCKER_IMAGE="hugobyte/openwhisk-runtime-rust:v0.2"
 if ! command -v $WSK_CLI &> /dev/null
 then
     echo "wsk cli not found in path. Please get the cli from https://github.com/apache/openwhisk-cli/releases"
     exit
 fi
-    
+ACTION="event-receiver"
 PACKAGE_HOME="$PWD/${actionHome}/temp/event-receiver"
 
 while [ $# -gt 0 ]; do
@@ -30,33 +30,23 @@ set -e
 
 cd "$PWD/$actionHome"
 
-echo "Installing Dependencies"
-yarn install
-
-echo "Building Source"
-yarn build
-
-if [ -e ./temp/event-receiver ]; then
+if [ -e ./temp/${ACTION} ]; then
     echo "Clearing previously packed action file."
-    rm -rf ./temp/event-receiver
+    rm -rf ./temp/${ACTION}
 fi
 
-mkdir -p ./temp/event-receiver
+mkdir -p ./temp/${ACTION}
 echo "Creating temporary directory"
 
-cp -r ./package.json ./dist ./temp/event-receiver
-echo "Copying files to temporary directory"
+echo "Building Source"
+zip -r - Cargo.toml src | docker run -e RELEASE=true -i ${DOCKER_IMAGE} -compile main > "$PACKAGE_HOME/main.zip"
 
-cd ./temp/event-receiver
+cd ./temp/${ACTION}
 
-yarn install --production=true
-
-zip -r event-receiver.zip *
-
-$WSK_CLI -i --apihost "$openwhiskApiHost" action update --kind nodejs:default event-receiver "$PACKAGE_HOME/event-receiver.zip" \
+$WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PACKAGE_HOME/main.zip" --docker "$DOCKER_IMAGE" \
     --auth "$openwhiskApiKey" --param event_producer "event-producer"
 
-if [ -e ./temp/event-receiver ]; then
+if [ -e ./temp/${ACTION} ]; then
     echo "Clearing temporary packed action file."
-    rm -rf ./temp/event-receiver
+    rm -rf ./temp/${ACTION}
 fi
