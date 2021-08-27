@@ -29,8 +29,8 @@ var moment = require('moment');
  *  @param {bool}   isBinaryKey - encode key as Base64
  *  @param {bool}   isBinaryValue - encode message as Base64
  *  @param {string} endpoint - address to OpenWhisk deployment (expected to be bound at deployment)
- *  @param {string} DB_URL - URL for the DB, must include authentication (expected to be bound at deployment)
- *  @param {string} DB_NAME - DB name (expected to be bound at deployment)
+ *  @param {string} db_url - URL for the DB, must include authentication (expected to be bound at deployment)
+ *  @param {string} db_name - DB name (expected to be bound at deployment)
  */
 function main(params) {
     var promise = new Promise((resolve, reject) => {
@@ -44,7 +44,7 @@ function main(params) {
                     validatedParams = cleanParams;
 
                     console.log(`VALIDATED: ${JSON.stringify(validatedParams, null, 2)}`);
-                    db = new Database(params.DB_URL, params.DB_NAME);
+                    db = new Database(params.db_url, params.db_name);
 
                     // do these in parallel!
                     return Promise.all([
@@ -86,7 +86,7 @@ function main(params) {
 
             return verifyTriggerAuth(triggerURL, params.authKey, true)
                 .then(() => {
-                    db = new Database(params.DB_URL, params.DB_NAME);
+                    db = new Database(params.db_url, params.db_name);
                     return db.getTrigger(params.triggerName);
                 })
                 .then((triggerDoc) => {
@@ -116,7 +116,7 @@ function main(params) {
 
             return verifyTriggerAuth(triggerURL, params.authKey, true)
                 .then(() => {
-                    db = new Database(params.DB_URL, params.DB_NAME);
+                    db = new Database(params.db_url, params.db_name);
                     return db.getTrigger(params.triggerName);
                 })
                 .then(triggerDoc => {
@@ -151,7 +151,7 @@ function main(params) {
 
             return verifyTriggerAuth(triggerURL, params.authKey, false)
                 .then(() => {
-                    db = new Database(params.DB_URL, params.DB_NAME);
+                    db = new Database(params.db_url, params.db_name);
                     return db.deleteTrigger(params.triggerName);
                 })
                 .then(() => {

@@ -6,7 +6,7 @@
 openwhiskApiHost=${openwhiskApiHost:-https://localhost:31001}
 openwhiskApiKey=${openwhiskApiKey:-23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP}
 openwhiskNamespace=${openwhiskNamespace:-guest}
-actionHome=${actionHome:-actions/event-registration}
+actionHome=${actionHome:-actions/kafka-provider-web}
 WSK_CLI="wsk"
 
 if ! command -v $WSK_CLI &> /dev/null
@@ -30,12 +30,6 @@ set -e
 
 cd "$PWD/$actionHome"
 
-echo "Installing Dependencies"
-yarn install
-
-echo "Building Source"
-yarn build
-
 if [ -e ./temp/${ACTION} ]; then
     echo "Clearing previously packed action file."
     rm -rf ./temp/${ACTION}
@@ -55,7 +49,7 @@ yarn install --production=true
 zip -r main.zip *
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PACKAGE_HOME/main.zip" --kind nodejs:default \
-    --auth "$openwhiskApiKey" --param endpoint "http://172.17.0.1:8888"
+    --auth "$openwhiskApiKey" --param endpoint "http://172.17.0.1:8888" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --param db_name "ow_kafka_triggers" -a provide-api-key true --web true
 
 if [ -e ./temp/${ACTION} ]; then
     echo "Clearing temporary packed action file."
