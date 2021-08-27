@@ -29,5 +29,5 @@ set -e
 cd "$PWD/$actionHome"
 
 
-$WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PACKAGE_HOME/event-producer.py" \
+$WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PWD/event-producer.py" \
     --auth "$openwhiskApiKey"
