@@ -65,7 +65,7 @@ function verifyTriggerAuth(triggerURL, auth, rejectNotFound) {
                 return Promise.resolve()
             } else {
                 console.log(`Trigger auth error: ${JSON.stringify(err)}`);
-                return Promise.reject({ authError: 'You are not authorized for this trigger.'});
+                return Promise.reject({ authError: 'You are not authorized for this trigger.' });
             }
         });
 }
@@ -96,7 +96,7 @@ function getTriggerFQN(triggerName) {
 }
 
 function massageParamsForWeb(rawParams) {
-    var massagedParams = Object.assign({}, rawParams);
+    var massagedParams = Object.assign({ }, rawParams);
 
     // remove these parameters as they may conflict with bound parameters of the web action
     delete massagedParams.endpoint;
@@ -109,7 +109,7 @@ function massageParamsForWeb(rawParams) {
 function getWebActionURL(endpoint, actionName) {
     var apiHost = addHTTPS(endpoint);
 
-    return `${apiHost}/api/v1/web/guest/messagingWeb/${actionName}`;
+    return `${apiHost}/api/v1/web/${process.env['__OW_NAMESPACE']}/${actionName}`;
 }
 
 function createTrigger(endpoint, params, actionName) {
@@ -119,6 +119,10 @@ function createTrigger(endpoint, params, actionName) {
         rejectUnauthorized: false,
         json: true,
         body: params,
+        auth: {
+            'user': params.authKey.split(":")[0],
+            'pass': params.authKey.split(":")[1]
+        },
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'text/plain',
@@ -145,6 +149,10 @@ function deleteTrigger(endpoint, params, actionName) {
         url: getWebActionURL(endpoint, actionName),
         rejectUnauthorized: false,
         json: true,
+        auth: {
+            'user': params.authKey.split(":")[0],
+            'pass': params.authKey.split(":")[1]
+        },
         body: params,
         headers: {
             'Content-Type': 'application/json',
@@ -169,6 +177,10 @@ function getTrigger(endpoint, params, actionName) {
         url: getWebActionURL(endpoint, actionName),
         rejectUnauthorized: false,
         json: true,
+        auth: {
+            'user': params.authKey.split(":")[0],
+            'pass': params.authKey.split(":")[1]
+        },
         qs: params,
         headers: {
             'Accept': 'application/json',
@@ -190,6 +202,10 @@ function updateTrigger(endpoint, params, actionName) {
     var options = {
         method: 'PUT',
         url: getWebActionURL(endpoint, actionName),
+        auth: {
+            'user': params.authKey.split(":")[0],
+            'pass': params.authKey.split(":")[1]
+        },
         rejectUnauthorized: false,
         json: true,
         body: params,
@@ -212,7 +228,7 @@ function updateTrigger(endpoint, params, actionName) {
 
 // perform parameter validation that is common to both feed actions
 function performCommonParameterValidation(rawParams) {
-    var validatedParams = {};
+    var validatedParams = { };
 
     // topic
     if (rawParams.topic && rawParams.topic.length > 0) {

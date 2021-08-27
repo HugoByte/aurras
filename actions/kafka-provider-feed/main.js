@@ -30,7 +30,7 @@ const common = require('./lib/common');
  */
 function main(params) {
     const endpoint = params.endpoint;
-    const webActionName = 'kafkaFeedWeb';
+    const webActionName = params.web_action;
 
     var massagedParams = common.massageParamsForWeb(params);
     massagedParams.triggerName = common.getTriggerFQN(params.triggerName);
