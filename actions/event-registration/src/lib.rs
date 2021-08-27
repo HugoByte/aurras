@@ -85,9 +85,6 @@ impl Action {
                 "parameters": [{
                     "key": "topic",
                     "value": topic
-                },{
-                    "key": "isJSONData",
-                    "value": true
                 }]
             }),
         )
