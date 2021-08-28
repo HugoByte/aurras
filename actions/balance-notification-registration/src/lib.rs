@@ -15,13 +15,15 @@ struct Input {
     __ow_method: String,
     #[serde(default = "empty_string")]
     __ow_query: String,
+    #[serde(default = "empty_string")]
     address: String,
-    balance_filter_action: String,
     balance_filter_db: String,
     db_name: String,
     db_url: String,
     event_registration_db: String,
+    #[serde(default = "empty_string")]
     token: String,
+    #[serde(default = "empty_string")]
     topic: String,
 }
 
@@ -174,7 +176,6 @@ mod tests {
             __ow_method: "post".to_string(),
             __ow_query: "".to_string(),
             address: "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string(),
-            balance_filter_action: "".to_string(),
             balance_filter_db: "balance_filter_db".to_string(),
             event_registration_db: "".to_string(),
             token: "1".to_string(),
@@ -223,7 +224,6 @@ mod tests {
             __ow_method: "post".to_string(),
             __ow_query: "".to_string(),
             address: "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string(),
-            balance_filter_action: "".to_string(),
             balance_filter_db: "balance_filter_db".to_string(),
             event_registration_db: "event_registration_db".to_string(),
             token: "1".to_string(),
