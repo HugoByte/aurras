@@ -5,7 +5,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::{Error, Value};
 mod types;
 use std::collections::HashMap;
-use types::{Address, Topic};
+use types::{Address, Response, Topic};
 
 #[cfg(test)]
 use actions_common::Config;
@@ -76,7 +76,14 @@ impl Action {
     pub fn get_event_sources(&self) -> Result<Value, Error> {
         let db = self.connect_db(&self.params.db_url, &self.params.event_registration_db);
         let context = Context::new(db, None);
-        context.get_list(&self.params.db_url, &self.params.event_registration_db)
+        let list: Response = serde_json::from_value(
+            context.get_list(&self.params.db_url, &self.params.event_registration_db)?,
+        )?;
+        Ok(serde_json::json!({
+            "statusCode": 200,
+            "headers": { "Content-Type": "application/json" },
+            "body": list.rows
+        }))
     }
 
     pub fn get_address(&mut self, id: &String) -> Result<Value, Error> {
@@ -121,7 +128,14 @@ pub fn main(args: Value) -> Result<Value, Error> {
                 &action.params.topic,
                 &action.params.address,
             )?;
-            return action.get_address(&id);
+            action.get_address(&id)?;
+            Ok(serde_json::json!({
+                "statusCode": 200,
+                "headers": { "Content-Type": "application/json" },
+                "body": {
+                    "success": true
+                }
+            }))
         }
         "get" => return action.get_event_sources(),
         method => {
@@ -137,11 +151,10 @@ mod tests {
     use actions_common::mock_containers::CouchDB;
     use tokio;
     use tokio::time::{sleep, Duration};
-    
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
     pub struct Source {
         name: String,
-        trigger: String
+        trigger: String,
     }
     impl Source {
         pub fn new(name: String, trigger: String) -> Self {
@@ -158,7 +171,6 @@ mod tests {
     pub struct View<T> {
         doc: T,
     }
-    
     #[tokio::test]
     async fn add_address_pass() {
         let config = Config::new();
@@ -187,8 +199,7 @@ mod tests {
         let context = Context::new(db, None);
 
         action.add_address(&token, &topic, &address).unwrap();
-        let doc: Topic =
-            serde_json::from_value(context.get_document(&topic).unwrap()).unwrap();
+        let doc: Topic = serde_json::from_value(context.get_document(&topic).unwrap()).unwrap();
         let mut filters = HashMap::new();
         filters.insert(
             address.clone(),
@@ -231,16 +242,31 @@ mod tests {
         });
         action.init(&config);
 
-        let event_registration_db = action.connect_db(&action.params.db_url, &action.params.event_registration_db);
+        let event_registration_db =
+            action.connect_db(&action.params.db_url, &action.params.event_registration_db);
         let event_registration_db_context = Context::new(event_registration_db, None);
 
-        event_registration_db_context.insert_document(&serde_json::json!({
-            "name": "polkadot",
-            "trigger": "trigger"
-        }), Some("event_id".to_string())).unwrap();
-        let doc: Source = serde_json::from_value(event_registration_db_context.get_document(&"event_id".to_string()).unwrap()).unwrap();
-        let sources: Row<Source> =
-            serde_json::from_value(event_registration_db_context.get_list(&url.clone(), &action.params.event_registration_db).unwrap()).unwrap();
+        event_registration_db_context
+            .insert_document(
+                &serde_json::json!({
+                    "name": "polkadot",
+                    "trigger": "trigger"
+                }),
+                Some("event_id".to_string()),
+            )
+            .unwrap();
+        let doc: Source = serde_json::from_value(
+            event_registration_db_context
+                .get_document(&"event_id".to_string())
+                .unwrap(),
+        )
+        .unwrap();
+        let sources: Row<Source> = serde_json::from_value(
+            event_registration_db_context
+                .get_list(&url.clone(), &action.params.event_registration_db)
+                .unwrap(),
+        )
+        .unwrap();
         let expected: View<Source> = View {
             doc: Source { ..doc },
         };
