@@ -32,7 +32,7 @@ pub struct Context {
 
 #[cfg(not(test))]
 fn client() -> reqwest::blocking::Client {
-    reqwest::blocking::Client::new()
+    reqwest::blocking::Client::builder().timeout(None).build().unwrap()
 }
 
 #[cfg(test)]
