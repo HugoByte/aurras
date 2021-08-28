@@ -198,6 +198,10 @@ impl Context {
         };
     }
 
+    pub fn get_auth_key(&self) -> String {
+        format!("{}:{}", self.user, self.pass)
+    }
+
     pub fn insert_document(&self, doc: &Value, id: Option<String>) -> Result<String, Error> {
         match self.db.insert(doc, id).send() {
             Ok(r) => return Ok(r.id),
