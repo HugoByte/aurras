@@ -112,9 +112,19 @@ impl Context {
         )
         .map_err(serde::de::Error::custom)?;
         match response.status() {
-            StatusCode::OK => Ok(serde_json::json!({
-                "success": true
-            })),
+            StatusCode::OK => {
+                #[cfg(not(test))]
+                return response.json().map_err(serde::de::Error::custom);
+
+                #[cfg(test)]
+                {
+                    let handle = Handle::current();
+                    return tokio::task::block_in_place(move || {
+                        handle.block_on(async { response.json().await })
+                    })
+                    .map_err(serde::de::Error::custom);
+                }
+            },
             error => Err(format!("failed to invoke trigger {} {:?}", name, error))
                 .map_err(serde::de::Error::custom),
         }
