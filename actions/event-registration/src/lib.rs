@@ -79,7 +79,7 @@ impl Action {
         let namespace = self.get_context().namespace.clone();
         let auth_key = self.get_context().get_auth_key();
         let brokers = self.params.brokers.clone();
-        self.get_context().create_trigger(
+        let trigger = self.get_context().create_trigger(
             topic,
             &serde_json::json!({
                 "annotations": [{
@@ -91,7 +91,7 @@ impl Action {
                     "value": topic
                 }]
             }),
-        )?;
+        );
         self.get_context().invoke_action(
             &feed,
             &serde_json::json!({
@@ -101,7 +101,8 @@ impl Action {
                 "topic": topic,
                 "brokers": brokers
             }),
-        )
+        )?;
+        trigger
     }
 }
 
