@@ -16,6 +16,7 @@ struct Input {
     db_name: String,
     db_url: String,
     feed: String,
+    brokers: Vec<String>
 }
 
 struct Action {
@@ -61,12 +62,12 @@ impl Action {
     }
 
     pub fn register_source(&mut self, topic: &str, trigger: &str) -> Result<Value, Error> {
-        let source = Source::new(
-            self.params.name.to_string(),
-            trigger.to_string(),
-        );
+        let source = Source::new(self.params.name.to_string(), trigger.to_string());
         let doc = serde_json::to_value(source).unwrap();
-        if let Ok(id) = self.get_context().insert_document(&doc, Some(topic.to_string())) {
+        if let Ok(id) = self
+            .get_context()
+            .insert_document(&doc, Some(topic.to_string()))
+        {
             let doc = self.get_context().get_document(&id)?;
             return serde_json::from_value(doc);
         }
@@ -75,17 +76,30 @@ impl Action {
 
     pub fn register_trigger(&mut self, topic: &str) -> Result<Value, Error> {
         let feed = self.params.feed.clone();
+        let namespace = self.get_context().namespace.clone();
+        let auth_key = self.get_context().get_auth_key();
+        let brokers = self.params.brokers.clone();
         self.get_context().create_trigger(
             topic,
             &serde_json::json!({
                 "annotations": [{
                     "key": "feed",
-                    "value": feed
+                    "value": format!("/{}/{}", namespace, feed)
                 }],
                 "parameters": [{
                     "key": "topic",
                     "value": topic
                 }]
+            }),
+        )?;
+        self.get_context().invoke_action(
+            &feed,
+            &serde_json::json!({
+                "triggerName": format!("/{}/{}", namespace, topic),
+                "lifecycleEvent": "CREATE",
+                "authKey": auth_key,
+                "topic": topic,
+                "brokers": brokers
             }),
         )
     }
@@ -105,9 +119,9 @@ pub fn main(args: Value) -> Result<Value, Error> {
 mod tests {
     use super::*;
     use actions_common::mock_containers::CouchDB;
+    use serde_json::json;
     use tokio;
     use tokio::time::{sleep, Duration};
-    use serde_json::json;
 
     #[tokio::test]
     async fn register_source_pass() {
@@ -123,15 +137,22 @@ mod tests {
             "db_name": "test",
             "db_url": url
 
-        })).unwrap();
+        }))
+        .unwrap();
         let mut action = Action::new(input);
         let event_id = action.generate_event_id();
         action.init(&config);
 
-        action.register_source(&event_id, &"trigger".to_string()).unwrap();
-        let source: Source = serde_json::from_value(action.get_context().get_document(&event_id).unwrap()).unwrap();
+        action
+            .register_source(&event_id, &"trigger".to_string())
+            .unwrap();
+        let source: Source =
+            serde_json::from_value(action.get_context().get_document(&event_id).unwrap()).unwrap();
 
-        assert_eq!(source, Source::new(action.params.name.clone(), "trigger".to_string()));
+        assert_eq!(
+            source,
+            Source::new(action.params.name.clone(), "trigger".to_string())
+        );
         couchdb.delete().await.expect("Stopping Container Failed");
     }
 }
