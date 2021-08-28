@@ -8,7 +8,6 @@ use chesterfield::sync::{Client, Database};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
-    brokers: Vec<String>,
     event: String,
     topic: String,
     #[serde(rename = "eventProcessor")]
@@ -62,13 +61,11 @@ impl Action {
     pub fn invoke_action(&mut self, event: Value) -> Result<Value, Error> {
         let event_producer = self.params.event_producer.clone();
         let topic = self.params.topic.clone();
-        let brokers = self.params.brokers.clone();
         self.get_context().invoke_action(
             &event_producer,
             &serde_json::json!({
                 "topic": topic,
                 "value": event,
-                "brokers": brokers
             }),
         )
     }
