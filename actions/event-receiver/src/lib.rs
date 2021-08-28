@@ -8,6 +8,7 @@ use chesterfield::sync::{Client, Database};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
+    brokers: Vec<String>,
     event: String,
     topic: String,
     #[serde(rename = "eventProcessor")]
@@ -29,13 +30,13 @@ impl Action {
     }
     #[cfg(test)]
     pub fn init(&mut self, config: &Config) {
-        let db = self.connect_db(&"".to_string(), &"".to_string());
+        let db = self.connect_db(&"http://localhost:5984".to_string(), &"test".to_string());
         self.context = Some(Context::new(db, Some(config)));
     }
 
     #[cfg(not(test))]
     pub fn init(&mut self) {
-        let db = self.connect_db(&"".to_string(), &"".to_string());
+        let db = self.connect_db(&"http://localhost:5984".to_string(), &"test".to_string());
         self.context = Some(Context::new(db, None));
     }
 
@@ -61,11 +62,13 @@ impl Action {
     pub fn invoke_action(&mut self, event: Value) -> Result<Value, Error> {
         let event_producer = self.params.event_producer.clone();
         let topic = self.params.topic.clone();
+        let brokers = self.params.brokers.clone();
         self.get_context().invoke_action(
             &event_producer,
             &serde_json::json!({
                 "topic": topic,
                 "value": event,
+                "brokers": brokers
             }),
         )
     }

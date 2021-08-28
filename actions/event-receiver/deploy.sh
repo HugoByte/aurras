@@ -44,7 +44,7 @@ zip -r - Cargo.toml src | docker run -e RELEASE=true -i ${DOCKER_IMAGE} -compile
 cd ./temp/${ACTION}
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PACKAGE_HOME/main.zip" --docker "$DOCKER_IMAGE" \
-    --auth "$openwhiskApiKey" --param event_producer "event-producer"
+    --auth "$openwhiskApiKey" --param event_producer "event-producer" -a provide-api-key true
 
 if [ -e ./temp/${ACTION} ]; then
     echo "Clearing temporary packed action file."
