@@ -109,7 +109,7 @@ function massageParamsForWeb(rawParams) {
 function getWebActionURL(endpoint, actionName) {
     var apiHost = addHTTPS(endpoint);
 
-    return `${apiHost}/api/v1/web/${process.env['__OW_NAMESPACE']}/${actionName}`;
+    return `${apiHost}/api/v1/web/${process.env['__OW_NAMESPACE']}/default/${actionName}`;
 }
 
 function createTrigger(endpoint, params, actionName) {

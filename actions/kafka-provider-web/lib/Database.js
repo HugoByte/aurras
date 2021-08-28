@@ -56,7 +56,7 @@ module.exports = function(dbURL, dbName) {
             'active': true,
             'dateChanged': Date.now()
         };
-
+        console.log(params);
         return new Promise((resolve, reject) => {
             this.db.insert(params, (err, result) => {
                 if(err) {
