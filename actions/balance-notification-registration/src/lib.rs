@@ -171,6 +171,7 @@ mod tests {
     pub struct View<T> {
         doc: T,
     }
+    
     #[tokio::test]
     async fn add_address_pass() {
         let config = Config::new();
@@ -217,6 +218,7 @@ mod tests {
     }
 
     // TODO: This panic because of reqwest blocking in tokio runtime context. Should Add sync or async context.
+    #[ignore]
     #[should_panic]
     #[tokio::test]
     async fn get_event_sources_pass() {

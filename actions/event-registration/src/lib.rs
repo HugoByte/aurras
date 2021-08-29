@@ -136,7 +136,8 @@ mod tests {
             "feed": "kafka-provider-feed",
             "name": "polkadot",
             "db_name": "test",
-            "db_url": url
+            "db_url": url,
+            "brokers": ["172.17.0.1:9092"]
 
         }))
         .unwrap();
