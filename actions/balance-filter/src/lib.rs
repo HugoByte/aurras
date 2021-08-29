@@ -306,6 +306,7 @@ mod tests {
     }
 
     // TODO: This panic because of reqwest blocking in tokio runtime context. Should Add sync or async context.
+    #[ignore]
     #[should_panic]
     #[tokio::test(flavor = "multi_thread")]
     async fn invoke_trigger_pass() {
