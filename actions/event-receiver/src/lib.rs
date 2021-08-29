@@ -13,7 +13,6 @@ struct Input {
     topic: String,
     #[serde(rename = "eventProcessor")]
     event_processor: String,
-    event_producer: String,
 }
 
 struct Action {
@@ -53,24 +52,16 @@ impl Action {
     pub fn process_event(&mut self) -> Result<Value, Error> {
         let event_processor = self.params.event_processor.clone();
         let event = self.params.event.clone();
+        let brokers = self.params.brokers.clone();
+        let topic = self.params.topic.clone();
         self.get_context().invoke_action(
             &event_processor,
-            &serde_json::from_str(&event)?,
-        )        
-    }
-
-    pub fn invoke_action(&mut self, event: Value) -> Result<Value, Error> {
-        let event_producer = self.params.event_producer.clone();
-        let topic = self.params.topic.clone();
-        let brokers = self.params.brokers.clone();
-        self.get_context().invoke_action(
-            &event_producer,
             &serde_json::json!({
-                "topic": topic,
-                "value": event,
-                "brokers": brokers
+                "event": event,
+                "brokers": brokers,
+                "topic": topic
             }),
-        )
+        )        
     }
 }
 pub fn main(args: Value) -> Result<Value, Error> {
@@ -80,7 +71,5 @@ pub fn main(args: Value) -> Result<Value, Error> {
 
     #[cfg(not(test))]
     action.init();
-    let processed_event = action.process_event()?;
-    println!("{}", processed_event);
-    action.invoke_action(processed_event)
+    action.process_event()
 }
