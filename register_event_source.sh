@@ -37,6 +37,6 @@ done
 TRIGGER=$($WSK_CLI -i --apihost "$openwhiskApiHost" action invoke "/${openwhiskNamespace}/${eventRegistrationAction}" \
     --auth "$openwhiskApiKey" --param name $name --blocking --result | $JSON_PARSER -r '.trigger')
 
-$WSK_CLI -i --apihost "$openwhiskApiHost" rule update "$TRIGGER-balance-filter" $TRIGGER $balanceFilterAction
+$WSK_CLI -i --apihost "$openwhiskApiHost" rule update "$TRIGGER-balance-filter" $TRIGGER $balanceFilterAction --auth "$openwhiskApiKey"
 
 echo "Add KAFKA_TOPIC=$TRIGGER as environment variable for the substrate based event feed service"
