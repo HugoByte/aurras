@@ -87,7 +87,6 @@ impl Action {
         for message in payload.iter() {
             let trigger = self.params.push_notification_trigger.clone();
             // TODO: Add attributes neccessary for push notification trigger
-            println!("invoking trigger {}", trigger);
             if self
                 .get_context()
                 .invoke_trigger(
@@ -124,9 +123,7 @@ pub fn main(args: Value) -> Result<Value, Error> {
     action.init();
 
     let filtered_topics = action.filter_topics();
-    println!("{:?}", filtered_topics);
     let filtered_address = action.filter_address(filtered_topics);
-    println!("{:?}", filtered_address);
     action.invoke_trigger(filtered_address)
 }
 
