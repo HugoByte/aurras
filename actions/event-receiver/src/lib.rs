@@ -57,7 +57,7 @@ impl Action {
         self.get_context().invoke_action(
             &event_processor,
             &serde_json::json!({
-                "event": serde_json::from_str(&event)?,
+                "event": event,
                 "brokers": brokers,
                 "topic": topic
             }),
