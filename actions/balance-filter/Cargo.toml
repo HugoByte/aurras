@@ -29,9 +29,9 @@ serde = "1.0"
 serde_derive = "1.0"
 uuid = { version = "0.8", features = ["serde", "v4"] }
 chesterfield = "0.0.1"
-actions-common = { git = "https://github.com/hugobyte/aurras", rev = '76dadaa' }
+actions-common = { git = "https://github.com/hugobyte/aurras", rev = 'ef71797' }
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 
 [dev-dependencies]
-actions-common = { git = "https://github.com/hugobyte/aurras", rev = '76dadaa', features = ["mock_containers"] }
+actions-common = { git = "https://github.com/hugobyte/aurras", rev = 'ef71797', features = ["mock_containers"] }
 tokio = { version = "1.0.0", features = ["macros"] }
