@@ -32,7 +32,10 @@ pub struct Context {
 
 #[cfg(not(test))]
 fn client() -> reqwest::blocking::Client {
-    reqwest::blocking::Client::builder().timeout(None).build().unwrap()
+    reqwest::blocking::Client::builder()
+        .timeout(None)
+        .build()
+        .unwrap()
 }
 
 #[cfg(test)]
@@ -101,7 +104,7 @@ impl Context {
     pub fn invoke_action(&self, name: &str, value: &Value) -> Result<Value, Error> {
         let client = client();
         let url = format!(
-            "{}/api/v1/namespaces/{}/actions/{}?result=true&blocking=true",
+            "{}/api/v1/namespaces/{}/actions/{}",
             self.host, self.namespace, name
         );
         let response = invoke_client(
@@ -111,22 +114,16 @@ impl Context {
                 .json(value),
         )
         .map_err(serde::de::Error::custom)?;
-        match response.status() {
-            StatusCode::OK => {
-                #[cfg(not(test))]
-                return response.json().map_err(serde::de::Error::custom);
-
-                #[cfg(test)]
-                {
-                    let handle = Handle::current();
-                    return tokio::task::block_in_place(move || {
-                        handle.block_on(async { response.json().await })
-                    })
-                    .map_err(serde::de::Error::custom);
-                }
-            },
-            error => Err(format!("failed to invoke trigger {} {:?}", name, error))
-                .map_err(serde::de::Error::custom),
+        match response.status().is_success() {
+            true => Ok(serde_json::json!({
+                "success": true
+            })),
+            false => Err(format!(
+                "failed to invoke action {} {:?}",
+                name,
+                response.error_for_status()
+            ))
+            .map_err(serde::de::Error::custom),
         }
     }
 
@@ -143,12 +140,16 @@ impl Context {
                 .json(value),
         )
         .map_err(serde::de::Error::custom)?;
-        match response.status() {
-            StatusCode::OK => Ok(serde_json::json!({
+        match response.status().is_success() {
+            true => Ok(serde_json::json!({
                 "success": true
             })),
-            error => Err(format!("failed to invoke trigger {} {:?}", name, error))
-                .map_err(serde::de::Error::custom),
+            false => Err(format!(
+                "failed to invoke trigger {} {:?}",
+                name,
+                response.error_for_status()
+            ))
+            .map_err(serde::de::Error::custom),
         }
     }
 
@@ -170,10 +171,16 @@ impl Context {
                 })),
         )
         .map_err(serde::de::Error::custom)?;
-        match response.status() {
-            StatusCode::OK => to_value(Trigger::new(name.to_string(), url)),
-            error => Err(format!("failed to create rule {} {:?}", name, error))
-                .map_err(serde::de::Error::custom),
+        match response.status().is_success() {
+            true => Ok(serde_json::json!({
+                "success": true
+            })),
+            false => Err(format!(
+                "failed to create rule {} {:?}",
+                name,
+                response.error_for_status()
+            ))
+            .map_err(serde::de::Error::custom),
         }
     }
 
@@ -191,10 +198,16 @@ impl Context {
                 .json(value),
         )
         .map_err(serde::de::Error::custom)?;
-        match response.status() {
-            StatusCode::OK => to_value(Trigger::new(name.to_string(), url)),
-            error => Err(format!("failed to create trigger {} {:?}", name, error))
-                .map_err(serde::de::Error::custom),
+        match response.status().is_success() {
+            true => Ok(serde_json::json!({
+                "success": true
+            })),
+            false => Err(format!(
+                "failed to create trigger {} {:?}",
+                name,
+                response.error_for_status()
+            ))
+            .map_err(serde::de::Error::custom),
         }
     }
 
