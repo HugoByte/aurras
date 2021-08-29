@@ -49,19 +49,23 @@ impl Action {
         self.context.as_mut().expect("Action not Initialized!")
     }
 
-    pub fn process_event(&mut self) -> Result<Value, Error> {
-        let event_processor = self.params.event_processor.clone();
+    pub fn parse_event_data(&self) -> Result<Value, Error> {
         let event = self.params.event.clone();
         let brokers = self.params.brokers.clone();
         let topic = self.params.topic.clone();
+        Ok(serde_json::json!({
+            "event": serde_json::from_str::<serde_json::Value>(&event)?,
+            "brokers": brokers,
+            "topic": topic
+        }))
+    }
+
+    pub fn process_event(&mut self, value: &Value) -> Result<Value, Error> {
+        let event_processor = self.params.event_processor.clone();
         self.get_context().invoke_action(
             &event_processor,
-            &serde_json::json!({
-                "event": event,
-                "brokers": brokers,
-                "topic": topic
-            }),
-        )        
+            value,
+        )
     }
 }
 pub fn main(args: Value) -> Result<Value, Error> {
@@ -71,5 +75,31 @@ pub fn main(args: Value) -> Result<Value, Error> {
 
     #[cfg(not(test))]
     action.init();
-    action.process_event()
+    action.process_event(&action.parse_event_data()?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_event_pass() {
+        let action = Action::new(Input {
+            brokers: vec!["172.17.0.1:9092".to_string()],
+            event: "{\"section\": \"balances\", \"method\": \"Transfer\", \"data\": [{\"AccountId\":\"148fP7zCq1JErXCy92PkNam4KZNcroG9zbbiPwMB1qehgeT4\"},{\"AccountId\":\"13bbv2rNzAKuT2oSkFJyHUJAmPVbBYNQbRQ95xW3sQBGffHa\"},{\"Balance\":\"24682100255\"}]}".to_string(),
+            topic: "7231ea34-7bc2-44e8-8601-c8cceb78f8c3".to_string(),
+            event_processor: "substrate_event_processor".to_string()
+        });
+
+        let response = action.parse_event_data().unwrap();
+
+        assert_eq!(
+            response,
+            serde_json::json!({
+                "event": {"section": "balances", "method": "Transfer", "data": [{"AccountId":"148fP7zCq1JErXCy92PkNam4KZNcroG9zbbiPwMB1qehgeT4"},{"AccountId":"13bbv2rNzAKuT2oSkFJyHUJAmPVbBYNQbRQ95xW3sQBGffHa"},{"Balance":"24682100255"}]},
+                "topic": "7231ea34-7bc2-44e8-8601-c8cceb78f8c3",
+                "brokers": ["172.17.0.1:9092"],
+            })
+        );
+    }
 }
