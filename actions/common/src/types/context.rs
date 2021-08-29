@@ -199,9 +199,7 @@ impl Context {
         )
         .map_err(serde::de::Error::custom)?;
         match response.status().is_success() {
-            true => Ok(serde_json::json!({
-                "success": true
-            })),
+            true => to_value(Trigger::new(name.to_string(), url)),
             false => Err(format!(
                 "failed to create trigger {} {:?}",
                 name,
