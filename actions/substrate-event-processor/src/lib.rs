@@ -20,7 +20,7 @@ struct Input {
     topic: String,
     brokers: Vec<String>,
     event_producer_trigger: String,
-    event: String,
+    event: Event,
 }
 
 struct Action {
@@ -58,13 +58,12 @@ impl Action {
     }
 
     pub fn parse_event_data(&self) -> Result<Value, Error> {
-        let event: Event = serde_json::from_str(&self.params.event)?;
-        return match event.section.as_str() {
+        return match self.params.event.section.as_str() {
             "balances" => {
-                return match event.method.as_str() {
+                return match self.params.event.method.as_str() {
                     "Transfer" => Ok(serde_json::json!({
-                        "to": event.data[1].get("AccountId").unwrap(),
-                        "value": format!("{:#.4}", event.data[2].get("Balance").unwrap().parse::<f64>().unwrap() / u64::pow(10,10) as f64),
+                        "to": self.params.event.data[1].get("AccountId").unwrap(),
+                        "value": format!("{:#.4}", self.params.event.data[2].get("Balance").unwrap().parse::<f64>().unwrap() / u64::pow(10,10) as f64),
                     })),
                     _ => Ok(serde_json::json!({})),
                 }
