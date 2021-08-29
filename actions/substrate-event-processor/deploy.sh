@@ -51,7 +51,7 @@ $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PACKAGE_HOME
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" trigger update "produce-event" --auth "$openwhiskApiKey"
 
-$WSK_CLI -i --apihost "$openwhiskApiHost" rule update "produce-event-rule" "produce-event" ${ACTION} --auth "$openwhiskApiKey"
+$WSK_CLI -i --apihost "$openwhiskApiHost" rule update "produce-event-rule" "produce-event" "event-producer" --auth "$openwhiskApiKey"
 
 if [ -e ./temp/${ACTION} ]; then
     echo "Clearing temporary packed action file."
