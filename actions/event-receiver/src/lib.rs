@@ -57,7 +57,7 @@ impl Action {
         self.get_context().invoke_action(
             &event_processor,
             &serde_json::json!({
-                "event": event,
+                "event": serde_json::from_str(&event)?,
                 "brokers": brokers,
                 "topic": topic
             }),
@@ -66,7 +66,7 @@ impl Action {
 }
 pub fn main(args: Value) -> Result<Value, Error> {
     // TODO: Use processor for each event source to process event to generic format as the event receiver will be generic for all event source
-    let input = serde_json::from_value::<Input>(args).unwrap();
+    let input = serde_json::from_value::<Input>(args)?;
     let mut action = Action::new(input);
 
     #[cfg(not(test))]
