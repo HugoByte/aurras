@@ -114,7 +114,7 @@ impl Action {
 }
 
 pub fn main(args: Value) -> Result<Value, Error> {
-    let input = serde_json::from_value::<Input>(args).unwrap();
+    let input = serde_json::from_value::<Input>(args)?;
     let mut action = Action::new(input);
 
     // TODO: Fix
@@ -128,8 +128,7 @@ pub fn main(args: Value) -> Result<Value, Error> {
                 &action.params.topic,
                 &action.params.address,
             )?;
-            action.get_address(&id)?;
-            Ok(serde_json::json!({
+            return Ok(serde_json::json!({
                 "statusCode": 200,
                 "headers": { "Content-Type": "application/json" },
                 "body": {
@@ -171,7 +170,7 @@ mod tests {
     pub struct View<T> {
         doc: T,
     }
-    
+
     #[tokio::test]
     async fn add_address_pass() {
         let config = Config::new();
