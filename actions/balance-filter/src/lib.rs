@@ -115,7 +115,7 @@ impl Action {
 }
 
 pub fn main(args: Value) -> Result<Value, Error> {
-    let input = serde_json::from_value::<Input>(args).unwrap();
+    let input = serde_json::from_value::<Input>(args)?;
     let mut action = Action::new(input);
 
     // TODO: Fix
