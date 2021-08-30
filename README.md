@@ -63,13 +63,10 @@ cd aurras-event-manager
 
 Run Unit test suites
 
-#### Actions
-
-* Event Receiver
+To test push-notification action it is required to have a push notification token generated from the client and Firebase API Key in TEST_DEVICE_TOKEN and FIREBASE_API_KEY environment variable respectively  
 
 ```text
-cd actions/event-receiver
-yarn test
+cargo test --all-features
 ```
 
 ### License
