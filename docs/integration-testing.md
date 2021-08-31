@@ -3,18 +3,14 @@
 ## Steps
 1. While the Aurras system is up and running
 2. Make sure [wsk cli](https://github.com/apache/openwhisk-cli) is added to the path
-3. Install the [event manager action](../../../#installation)
-4. Perform a transaction to emit an event from the chain.
-5. Navigate to [aurras-event-manager](../../../) source directory.
-6. Use wsk cli to list activation ids.
+3. Install the [actions](../../../#installation)
+4. Register event source using with name eg: polkadot-balance if connecting to polkadot
 
 ```
-wsk -i --apihost https://localhost:31001 --auth 23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP activation list
+./register_event_source.sh --name polkadot-balance
 ```
-7. To get details of an activation, where ``<Activation ID>`` is a unique id of the activation which is executed as a result for an event emitted from the chain.
-
-```
-wsk -i --apihost https://localhost:31001 --auth 23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP activation get <Activation ID>
-```
-
-8. Verify if the activation result contains event data received from the chain matches **response.result.event.data**
+5. Get the generated uuid and as even variable for the substrate event feed
+6. Connect event feed with a Substrate based chain
+7. Using [examples/susbtrate-push-notification](../../../examples/susbtrate-push-notification) Register for balance notification
+8. Perform an amount transfer transaction to the registered wallet.
+9. Verify the push notification received.

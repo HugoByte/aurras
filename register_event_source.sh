@@ -7,7 +7,7 @@ openwhiskApiHost=${openwhiskApiHost:-https://localhost:31001}
 openwhiskApiKey=${openwhiskApiKey:-23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP}
 openwhiskNamespace=${openwhiskNamespace:-guest}
 eventRegistrationAction=${eventRegistrationAction:-event-registration}
-name=${name:-polkadot}
+name=${name:-polkadot-balance}
 balanceFilterAction=${balanceFilterAction:-balance-filter}
 WSK_CLI="wsk"
 JSON_PARSER="jq"
@@ -39,4 +39,4 @@ TRIGGER=$($WSK_CLI -i --apihost "$openwhiskApiHost" action invoke "/${openwhiskN
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" rule update "$TRIGGER-balance-filter" $TRIGGER $balanceFilterAction --auth "$openwhiskApiKey"
 
-echo "Add KAFKA_TOPIC=$TRIGGER as environment variable for the substrate based event feed service"
+echo "Add TOPICS=<section>=$TRIGGER as environment variable for the substrate based event feed service, where <section> can be balances, system etc"
