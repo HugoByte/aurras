@@ -64,6 +64,15 @@ cd aurras
 ```text
 ./deploy.sh
 ```
+
+### Usage
+
+Generate Event Registration ID  
+
+```text
+./register_event_source.sh --name "Node Template Balance"
+```
+
 ### Testing
 
 Run Unit test suites
