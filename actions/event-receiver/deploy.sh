@@ -39,7 +39,7 @@ mkdir -p ./temp/${ACTION}
 echo "Creating temporary directory"
 
 echo "Building Source"
-zip -r - Cargo.toml src | docker run -e RELEASE=true -i ${DOCKER_IMAGE} -compile main > "$PACKAGE_HOME/main.zip"
+zip -r - Cargo.toml src | docker run -e RELEASE=true -it --rm ${DOCKER_IMAGE} -compile main > "$PACKAGE_HOME/main.zip"
 
 cd ./temp/${ACTION}
 
