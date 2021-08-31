@@ -11,6 +11,6 @@
 ```
 5. Get the generated uuid and add as an environment variable to the substrate [event feed](../../../../?q=aurras-event-feed)
 6. Connect event feed with a Substrate based chain
-7. Using [examples/susbtrate-push-notification](../examples/susbtrate-push-notification) Register for balance notification
+7. Using [examples/susbtrate-push-notification](examples/susbtrate-push-notification) Register for balance notification
 8. Perform an amount transfer transaction to the registered wallet.
 9. Verify the push notification received.
