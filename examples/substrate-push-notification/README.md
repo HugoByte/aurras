@@ -66,13 +66,13 @@ When writing and deploying your own front end, you should configure:
   See [Keyring](https://polkadot.js.org/api/start/keyring.html).
 
 ### API Configuration
-* Replace <API_HOST> of [config/common.json](./src/config/common.json#L5) with the endpoint to openwhisk gateway.
+* Replace <API_HOST> of [src/config/common.json](./src/config/common.json#L5) with the endpoint to openwhisk gateway.
 
 ### Push Notification Configuration
 
 * Create a firebase.google.com project
 * Create a Web App using https://console.firebase.google.com/project/<PROJECT_NAME>/settings/general
-* Add the generated config to [sw.js](./src/sw.js#L7-L13) and [config/firebase.js](./src/config/firebase.js#L4-L10)
+* Add the generated config to [src/sw.js](./src/sw.js#L7-L13) and [src/config/firebase.js](./src/config/firebase.js#L4-L10)
 
 ### Specifying Connecting Node
 
