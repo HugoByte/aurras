@@ -1,0 +1,6 @@
+{
+  "APP_NAME": "substrate-front-end-tutorial",
+  "DEVELOPMENT_KEYRING": true,
+  "RPC": {},
+  "api": "<API_HOST>/api/v1/web/guest/"
+}
