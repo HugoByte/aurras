@@ -16,8 +16,8 @@ Event Feeds sources events from numerous sources to aurras system. Events can co
 
     * [Substrate Event Feed](https://github.com/HugoByte/aurras-event-feed-substrate-js)
 
-2. **Event Trigger Manager**  
-Event trigger manager is composed of multiple actions including using a database to store trigger URLs and their respective auths, and Kafka provider, consumer and producer. Once the event manager receives an event from the event feed, this data is produced to a topic. The feed action in the trigger manager lets the user hook into the system. That is,  once an event is indexed to a particular topic, it can invoke a particular action. While creating the workflow, users can choose the event trigger as feed and provide necessary parameters from which chain it should be listening to and from which block it should start listening. Under the hood, a feed action is invoked with create lifecycle, which accepts the mandatory parameters the lifecycle, auth, trigger name, and other optional parameters of the event source. The feed action invokes the related actions of creating the entry in the database, adding to the Kafka consumer group, etc. The next component in the event trigger manager is a persistent connection to Kafka where it is used to produce and consume the stream of data. Once data is received in Kafka, the event trigger manager invokes the action to check the consumer groups for that particular topic and if found any, the trigger for the users under that particular group is invoked, which in turn invokes the workflow action.  
+2. **Event Manager (Core)**  
+Event manager is composed of multiple actions including using a database to store trigger URLs and their respective auths, and Kafka provider, consumer and producer. Once the event manager receives an event from the event feed, this data is produced to a topic. The feed action in the trigger manager lets the user hook into the system. That is,  once an event is indexed to a particular topic, it can invoke a particular action. While creating the workflow, users can choose the event trigger as feed and provide necessary parameters from which chain it should be listening to and from which block it should start listening. Under the hood, a feed action is invoked with create lifecycle, which accepts the mandatory parameters the lifecycle, auth, trigger name, and other optional parameters of the event source. The feed action invokes the related actions of creating the entry in the database, adding to the Kafka consumer group, etc. The next component in the event trigger manager is a persistent connection to Kafka where it is used to produce and consume the stream of data. Once data is received in Kafka, the event trigger manager invokes the action to check the consumer groups for that particular topic and if found any, the trigger for the users under that particular group is invoked, which in turn invokes the workflow action.  
 
 3. **Workflow Composer**  
 Workflow composer consists of an async Rust library to compose multiple triggers, deployment configuration generator, and whisk deployment tool. For creating the workflow, the only input is the configuration file which is a YAML file. The workflow composition is laid out in the YAML which in turn takes care of the deployment and composing the triggers. Once a workflow is deployed to a namespace it creates a specific topic unique workflow id in Kafka. Workflow configuration comprises the input URL of workflow tasks, primarily GitHub repo, the sequence of processing tasks, and argument structure. Arguments must match the task input parameters.  
@@ -60,7 +60,7 @@ cd aurras
 ```
 
   3. Generate server token from https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging and add as env FIREBASE_API_KEY
-  
+
   4. Deploy the actions using the deploy script. The script supports optional parameters which can be found [here](./docs/configuration.md).
 
 ```text
