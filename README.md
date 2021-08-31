@@ -34,9 +34,14 @@ This is the end user facing component to utilize the workflow. This component co
 
 #### Actions
 
+* Event Register
 * Event Receiver
-
-This action receives events from the event feed and propagates to the system.
+* Event Processor
+* Event Producer
+* Kafka Provider
+* Balance Filter
+* Balance Notification Register
+* Push Notification
 
 ### Installation
 
@@ -45,13 +50,13 @@ Assuming basic dependency such as [git](https://git-scm.com/) and [yarn](https:/
 1. Clone the repository
 
 ```text
-git clone https://github.com/HugoByte/aurras-event-manager.git
+git clone https://github.com/HugoByte/aurras.git
 ```
 
   2. Navigate to the cloned directory
 
 ```text
-cd aurras-event-manager
+cd aurras
 ```
 
   3. Deploy the actions using the deploy script. The script supports optional parameters which can be found [here](./docs/configuration.md).
