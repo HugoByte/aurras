@@ -9,7 +9,7 @@
 ```
 ./register_event_source.sh --name polkadot-balance
 ```
-5. Get the generated uuid and as even variable for the substrate event feed
+5. Get the generated uuid and add as enironment variable for the substrate event feed
 6. Connect event feed with a Substrate based chain
 7. Using [examples/susbtrate-push-notification](../../../examples/susbtrate-push-notification) Register for balance notification
 8. Perform an amount transfer transaction to the registered wallet.
