@@ -64,6 +64,9 @@ When writing and deploying your own front end, you should configure:
   See [Keyring](https://polkadot.js.org/api/start/keyring.html).
 
 ### API Configuration
+
+> When using port 31001 use https endpoint use the loopback address ie https://127.0.0.1:31001
+
 * Replace <API_HOST> of [src/config/common.json](./src/config/common.json#L5) with the endpoint to openwhisk gateway.
 
 ### Push Notification Configuration
