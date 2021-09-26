@@ -48,3 +48,32 @@ Organization space where the actions to be deployed
 ./deploy.sh --openwhiskNamespace guest
 ```
 
+###
+
+### Build Action
+
+Provide actions to be build, Accepts `none` or name of the actions separated by `,` to be build
+
+| Parameter | Default Value |
+| :--- | :--- |
+| --build | push-notification,balance-filter,event-receiver,event-registration,balance-notification-registration,event-producer,kafka-provider-feed,kafka-provider-web,substrate-event-processor |
+
+#### usage
+
+```text
+./deploy.sh --build push-notification
+```
+
+### Skip Build and Deploy Action
+
+Provide actions to be skip, Accepts name of the available actions separated by `,`
+
+| Parameter | Default Value |
+| :--- | :--- |
+| --skip | none |
+
+#### usage
+
+```text
+./deploy.sh --skip push-notification,balance-filter
+```

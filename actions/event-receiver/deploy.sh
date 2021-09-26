@@ -24,5 +24,3 @@ build
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$TEMP_DIR/main.zip" --docker "$DOCKER_IMAGE" \
 --auth "$openwhiskApiKey" -a provide-api-key true
-
-clear_temp

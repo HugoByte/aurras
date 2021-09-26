@@ -24,5 +24,3 @@ build
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$TEMP_DIR/main.zip" --kind nodejs:default \
 --auth "$openwhiskApiKey" --param endpoint "http://172.17.0.1:8888" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --param db_name "ow_kafka_triggers" -a provide-api-key true --web true
-
-clear_temp
