@@ -28,5 +28,3 @@ $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$TEMP_DIR/mai
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" trigger update "send-${ACTION}" --auth "$openwhiskApiKey"
 $WSK_CLI -i --apihost "$openwhiskApiHost" rule update "${ACTION}-rule" "send-${ACTION}" ${ACTION} --auth "$openwhiskApiKey"
-
-clear_temp

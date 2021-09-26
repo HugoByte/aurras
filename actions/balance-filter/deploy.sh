@@ -24,5 +24,3 @@ build
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$TEMP_DIR/main.zip" --docker "$DOCKER_IMAGE" \
 --auth "$openwhiskApiKey" --param push_notification_trigger "send-push-notification" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --param db_name "balance_filter_db" -a provide-api-key true
-
-clear_temp
