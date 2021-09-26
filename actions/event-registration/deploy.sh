@@ -24,5 +24,3 @@ build
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$TEMP_DIR/main.zip" --docker "$DOCKER_IMAGE" \
 --auth "$openwhiskApiKey" --param db_name "event_registration_db" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --param feed "kafka-provider-feed" --param brokers "[\"172.17.0.1:9092\"]" -a provide-api-key true
-
-clear_temp
