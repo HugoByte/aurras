@@ -9,16 +9,7 @@ openwhiskNamespace=${openwhiskNamespace:-guest}
 
 actions=("actions/push-notification" "actions/balance-filter" "actions/event-receiver" "actions/event-registration" "actions/balance-notification-registration" "actions/event-producer" "actions/kafka-provider-feed" "actions/kafka-provider-web" "actions/substrate-event-processor")
 
-while [ $# -gt 0 ]; do
-    if [[ $1 == *"--"* ]]; then
-        param="${1/--/}"
-        declare $param="${2%/}"
-    fi
-
-    shift
-done
-
-set -e
+source ./scripts/accept_params.sh
 
 for index in ${!actions[@]};
 do  

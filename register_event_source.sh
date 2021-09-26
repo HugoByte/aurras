@@ -9,33 +9,16 @@ openwhiskNamespace=${openwhiskNamespace:-guest}
 eventRegistrationAction=${eventRegistrationAction:-event-registration}
 name=${name:-polkadot-balance}
 balanceFilterAction=${balanceFilterAction:-balance-filter}
-WSK_CLI="wsk"
-JSON_PARSER="jq"
+SCRIPTS_DIR="$PWD/scripts"
 
-if ! command -v $WSK_CLI &> /dev/null
-then
-    echo "wsk cli not found in path. Please get the cli from https://github.com/apache/openwhisk-cli/releases"
-    exit
-fi
+source "$SCRIPTS_DIR/accept_params.sh"
+source "$SCRIPTS_DIR/check_dependencies.sh"
 
-if ! command -v $JSON_PARSER &> /dev/null
-then
-    echo "jq found in path. jq is needed to parse the json response kindly install it"
-    exit
-fi
-
-while [ $# -gt 0 ]; do
-    if [[ $1 == *"--"* ]]; then
-        param="${1/--/}"
-        declare $param="${2%/}"
-    fi
-
-    shift
-done
-
+check wsk
+check jq
 
 TRIGGER=$($WSK_CLI -i --apihost "$openwhiskApiHost" action invoke "/${openwhiskNamespace}/${eventRegistrationAction}" \
-    --auth "$openwhiskApiKey" --param name "$name" --blocking --result | $JSON_PARSER -r '.trigger')
+--auth "$openwhiskApiKey" --param name "$name" --blocking --result | $JSON_PARSER -r '.trigger')
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" rule update "$TRIGGER-balance-filter" $TRIGGER $balanceFilterAction --auth "$openwhiskApiKey"
 
