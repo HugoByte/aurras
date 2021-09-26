@@ -7,51 +7,22 @@ openwhiskApiHost=${openwhiskApiHost:-https://localhost:31001}
 openwhiskApiKey=${openwhiskApiKey:-23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP}
 openwhiskNamespace=${openwhiskNamespace:-guest}
 actionHome=${actionHome:-actions/kafka-provider-web}
-WSK_CLI="wsk"
 
-if ! command -v $WSK_CLI &> /dev/null
-then
-    echo "wsk cli not found in path. Please get the cli from https://github.com/apache/openwhisk-cli/releases"
-    exit
-fi
 ACTION="kafka-provider-web"
-PACKAGE_HOME="$PWD/${actionHome}/temp/$ACTION"
+ACTION_TYPE="js"
+SCRIPTS_DIR="$PWD/scripts"
+SRC_DIR="$PWD/${actionHome}"
+TEMP_DIR="$PWD/${actionHome}/temp"
 
-while [ $# -gt 0 ]; do
-    if [[ $1 == *"--"* ]]; then
-        param="${1/--/}"
-        declare $param="${2%/}"
-    fi
+source "$SCRIPTS_DIR/accept_params.sh"
+source "$SCRIPTS_DIR/check_dependencies.sh"
+source "$SCRIPTS_DIR/build_action.sh"
 
-    shift
-done
+check wsk
 
-set -e
+build
 
-cd "$PWD/$actionHome"
+$WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$TEMP_DIR/main.zip" --kind nodejs:default \
+--auth "$openwhiskApiKey" --param endpoint "http://172.17.0.1:8888" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --param db_name "ow_kafka_triggers" -a provide-api-key true --web true
 
-if [ -e ./temp/${ACTION} ]; then
-    echo "Clearing previously packed action file."
-    rm -rf ./temp/${ACTION}
-fi
-
-mkdir -p ./temp/${ACTION}
-echo "Creating temporary directory"
-
-
-cp -r ./package.json ./lib ./main.js ./temp/${ACTION}
-echo "Copying files to temporary directory"
-
-cd ./temp/${ACTION}
-
-yarn install --production=true
-
-zip -r main.zip *
-
-$WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$PACKAGE_HOME/main.zip" --kind nodejs:default \
-    --auth "$openwhiskApiKey" --param endpoint "http://172.17.0.1:8888" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --param db_name "ow_kafka_triggers" -a provide-api-key true --web true
-
-if [ -e ./temp/${ACTION} ]; then
-    echo "Clearing temporary packed action file."
-    rm -rf ./temp/${ACTION}
-fi
+clear_temp
