@@ -17,7 +17,7 @@ function check {
             echo "FIREBASE_API_KEY env is not defined, Generate server token from https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging and add as env FIREBASE_API_KEY"
             exit
         fi
-    elif [ $DEPENDENCY = "jq"]
+    elif [ $DEPENDENCY = "jq" ]
     then
         if ! command -v $JSON_PARSER &> /dev/null
         then
