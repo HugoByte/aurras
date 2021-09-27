@@ -12,12 +12,12 @@
 5. Get the generated uuid and add as an environment variable to the substrate [event feed](../../../../?q=aurras-event-feed)
 6. Connect event feed with a Substrate based chain
 7. Navigate to examples/susbtrate-push-notification
-8. Add [API configuration](../../../examples/substrate-push-notification#api-configuration) and [Firebase Push Notification Configuration](../../../examples/substrate-push-notification#push-notification-configuration)
+8. Add [API configuration](../examples/substrate-push-notification/#api-configuration) and [Firebase Push Notification Configuration](../examples/substrate-push-notification/#push-notification-configuration)
 9. Install Node Dependencies using `yarn install`
 10. Start susbtrate-push-notification using `yarn start`
 > For Brave brower enable `Use Google services for push messaging` using brave://settings/privacy
 11. Upon Notification Permission Prompt Click Allow
-![Allow Push Notification](../images/Screen-1.png)
+![Allow Push Notification](../examples/substrate-push-notification/images/Screen-1.png)
 12. Select the account for which balance notification to be received 
 13. Click Register Balance Notification button
 14. Select the Event Source 
