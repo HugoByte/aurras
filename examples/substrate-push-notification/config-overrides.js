@@ -8,12 +8,12 @@ module.exports = function override(webpackConfig) {
   });
   webpackConfig.plugins.push(new WorkboxWebpackPlugin.InjectManifest({
     swSrc: path.join(process.cwd(), '/src/sw.js'),
-    swDest: 'service-worker.js',
+    swDest: 'firebase-messaging-sw.js',
     exclude: [
       /\.map$/,
       /manifest$/,
       /\.htaccess$/,
-      /service-worker\.js$/,
+      /firebase-messaging-sw\.js$/,
       /sw\.js$/,
     ]
   }));

@@ -11,7 +11,7 @@ ReactDOM.render(<App />,
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
-      .register(`${process.env.PUBLIC_URL}/service-worker.js`)
+      .register(`${process.env.PUBLIC_URL}/firebase-messaging-sw.js`)
       .then((registration) => {
         firebase.messaging().useServiceWorker(registration);
         console.log('SW registered: ', registration);

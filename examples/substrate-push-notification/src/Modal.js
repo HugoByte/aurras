@@ -31,7 +31,10 @@ function ModalApp(props) {
         variant: ""
     });
     const [busy, setBusy] = useState(false);
-    messaging.getToken().then(token => setToken(token));
+    messaging.getToken().then(token => setToken(token))
+    .catch((err) => {
+        console.log(err);
+    });
     function openModal() {
         setIsOpen(true);
     }

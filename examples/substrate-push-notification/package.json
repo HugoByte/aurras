@@ -5,7 +5,7 @@
   "author": "Parity Technologies <admin@parity.io>",
   "license": "Unlicense",
   "scripts": {
-    "start": "NODE_ENV=production react-app-rewired start",
+    "start": "react-app-rewired start",
     "build": "react-app-rewired build",
     "test": "CI=true react-app-rewired test --env=jsdom",
     "eject": "react-app-rewired eject",
@@ -77,7 +77,7 @@
       "last 1 safari version"
     ]
   },
-  "homepage": "https://substrate-developer-hub.github.io/substrate-front-end-template",
+  "homepage": "/",
   "bugs": {
     "url": "https://github.com/substrate-developer-hub/substrate-front-end-template/issues"
   },
