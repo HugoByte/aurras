@@ -20,7 +20,8 @@
 ![Allow Push Notification](../examples/substrate-push-notification/images/Screen-1.png)
 12. Select the account for which balance notification to be received 
 13. Click Register Balance Notification button
-14. Select the Event Source 
+14. Select the Event Source
+##### Push Notification Token
 ![Allow Push Notification](../examples/substrate-push-notification/images/Screen-2.png)
 15. Click Register
 ![Allow Push Notification](../examples/substrate-push-notification/images/Screen-3.png)
