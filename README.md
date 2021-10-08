@@ -77,7 +77,9 @@ Generate Event Registration ID
 
 ### Testing
 
-Run Unit test suites
+Run Unit test suites  
+
+Please fetch the Push Notification Token using `examples/substrate-push-notification` [Image](./docs/integration-testing.md#push-notification-token) and add to TEST_DEVICE_TOKEN Environment Variable  
 
 To test push-notification action it is required to have a push notification token generated from the client and Firebase API Key in TEST_DEVICE_TOKEN and FIREBASE_API_KEY environment variable respectively  
 
