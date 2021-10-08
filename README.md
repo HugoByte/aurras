@@ -90,7 +90,7 @@ cargo test --all-features
 ### Known Issues
 - error: Invalid argument(s). Unable to get action '<ACTION_NAME>': The connection failed, or timed out. (HTTP status code 502)
 
-  This can be due to openwhisk not started completely. Please see issue [#18]
+  This can be due to openwhisk not started completely. Please see issue [#18](/../../issues/18)
 
 ### License
 
