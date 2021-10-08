@@ -87,6 +87,13 @@ To test push-notification action it is required to have a push notification toke
 cargo test --all-features
 ```
 
+### Known Issues
+- error: Invalid argument(s). Unable to get action '<ACTION_NAME>': The connection failed, or timed out. (HTTP status code 502)
+
+  This can be due to openwhisk not started completely. Please see issue [#18]
+
 ### License
 
 Licensed under [Apache-2.0](https://github.com/HugoByte/aurras-documentation/tree/f07f6727f0cb01cccf04f15ec446e2d310ca1cb9/components/event-feed/substrate-event-feed/LICENSE/README.md)
+
+
