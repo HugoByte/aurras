@@ -14,20 +14,23 @@ task_store = dict()
 
 
 # functions related to task hook for creating rust code
+create_enum = f"""
+
+"""
 
 task_struct_impl = f"""use super::*;
 
 """
-impl_task_trait = "trait_impl_task!("
-impl_get_task_trait = "trait_impl_getting_task_name!("
+impl_task_trait = "impl_execute_trait!("
 
 implement_run_method = f"""
 
-    fn run(&self) -> Value { 
+    fn run(&mut self){ 
         
         {
 
-            "self.openwhisk_client().actions().invoke(&self.action_name, serde_json::to_value(self.input.clone()).unwrap(), true, true).unwrap()"
+            "let result = self.openwhisk_client().actions().invoke(&self.action_name, serde_json::to_value(self.input.clone()).unwrap(), true, true).unwrap();"
+            "self.output = serde_json::from_value(result).unwrap();"
         
         }
 
@@ -47,8 +50,8 @@ fn get_action_name(&self) -> String {
 """
 
 def struct_generator(task_list,action_props):
-    global impl_task_trait,impl_get_task_trait,task_struct_impl,impl_stucture,run,new_method,setter,task_store
-
+    global impl_task_trait,impl_get_task_trait,task_struct_impl,impl_stucture,run,new_method,setter,task_store,create_enum
+    enum =""
     
     for task in task_list:
         task_dic = dict()
@@ -58,8 +61,6 @@ def struct_generator(task_list,action_props):
         output_args = task['output_args']
         task_name = name
         impl_task_trait += f"{task_name},"
-        impl_get_task_trait += f"{task_name},"
-
         impl_stucture += f"""
 
 impl {task_name} {{
@@ -84,11 +85,16 @@ impl {task_name} {{
         if None not in output_args:
             create_sturct(task_name, output_args, "output", None,action_props)
 
+    enum += f"""
+       #[derive(EnumFrom, EnumTryInto, PartialEq, Debug, Clone,Serialize,Deserialize)]
+pub enum Types{"{"}
+    Empty(String),
+    {create_enum}
+    """
     impl_task_trait = impl_task_trait[:-1]+");"
-    impl_get_task_trait = impl_get_task_trait[:-1]+");"
-
-    task_struct_impl += impl_get_task_trait
     task_struct_impl += impl_task_trait
+    enum = enum[:-1]+"}"
+    task_struct_impl += enum
 
     task_struct_impl += impl_stucture.replace("'", "")
     return
@@ -97,6 +103,7 @@ impl {task_name} {{
 def create_sturct(task_name: str, args: list, type: str, kind,action_properties):
     global task_struct_impl
     global impl_task_trait
+    global create_enum
     action_prop = ""
 
     for property in action_properties['action']:
@@ -118,8 +125,11 @@ def create_sturct(task_name: str, args: list, type: str, kind,action_properties)
             argument += f"""
         {field_name}:{field_type},
             """
-
+    
     if type == "input":
+        create_enum += f"""
+        {task_name}({task_name}Output),
+    """
         task_struct_impl += f"""
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize,{kind})]
@@ -127,17 +137,20 @@ def create_sturct(task_name: str, args: list, type: str, kind,action_properties)
 pub struct {task_name}{{
     action_name: String,
     pub input:{task_name}{type.title()},
+    pub output:{task_name}Output,
 }}
     """
-
+    
     if argument != "":
         task_struct_impl += f"""
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize,PartialEq)]
 pub struct {task_name}{type.title()} {{
 {argument} 
 }}
 """
-
+    
+    
+    
     task_struct_impl = task_struct_impl.replace("\\", "")
     task_struct_impl = task_struct_impl.rjust(len(task_struct_impl))
 
@@ -302,7 +315,7 @@ impl {task_name} {{
 """
             task_struct_impl += new_impl.replace("'", "")
         else:
-            setter_method += "fn setter(&mut self){}"
+            setter_method += "fn setter(&mut self,value:String){}"
             new_impl += f"""
 impl {task_name} {{
 
@@ -324,7 +337,9 @@ def create_main_function(task):
     dependency_matrix_map = ""
     initilization = ""
     workflow = ""
-    setter_trait = ""
+    workflow_dag = ""
+    result = ""
+    # setter_trait = ""
 
     for key, values in task_store_copy.items():
         new_fileds = ""
@@ -332,34 +347,49 @@ def create_main_function(task):
             new_fileds += f"input.{value},"
 
         initilization += f"""
-        let mut {key.lower()} = {key}::new({new_fileds}String::from("{key.lower()}"));
+        let {key.lower()} = {key}::new({new_fileds}String::from("{key.lower()}"));
             """
     for key, values in dependency_matrix.items():
 
         if "Init" in key:
-            workflow += f"""workflow.init(&mut {convert_to_pascalcase("".join(values)).lower()})"""
-        if "Pipe" in key or "Term" in key:
+            workflow_dag += f"""
+            vertices:Box::new({convert_to_pascalcase("".join(values)).lower()}),
+            """
+            workflow += f"""workflow.init()"""
+        if "Pipe" in key:
+            pipe_task = list(values[0].keys())
+            workflow_dag+= f"""
+                edge: Box::new({convert_to_pascalcase("".join(pipe_task[0])).lower()}_flow),
+            """
+            for key in pipe_task[1:]:
+                workflow  += f""".pipe({key.lower()}_flow)"""
+            for key in pipe_task:
+                flow += f"""
+let {key.lower()}_flow = Flow::new({key.lower()});
+"""
+
+        if "Term" in key:
+            # print(values)
             for value in values:
                 for k, v in value.items():
-                    if key == "Pipe":
-                        workflow += f""".pipe(&mut {k.lower()}_list)"""
-                    else:
-                        workflow += f""".term(&mut {k.lower()}_list)"""
-                    dependency_matrix_map += f"""
-                  dependncy_matrix.insert("{convert_to_pascalcase(k).lower()}".to_string(), "{convert_to_pascalcase("".join(v)).lower()}".to_string());
-                 """
-                    setter_trait += f"""
-                    impl Setting for {k}{{
-                        fn setting(&mut self,value: Self::Input) {{
-                        self.setter(value)
-                    }}
-                    type Input = {convert_to_pascalcase("".join(v))}Output;
-                    }}
+                    workflow += f""".term({k.lower()}_flow)"""
+                    # setter_trait += f"""
+                    # impl Setting for {k}{{
+                    #     fn setting(&mut self,value: Self::Input) {{
+                    #     self.setter(value)
+                    # }}
+                    # type Input = {convert_to_pascalcase("".join(v))}Output;
+                    # }}
                     
-                    """
+                    # """
                     flow += f"""
-let mut {k.lower()}_list : Flow<{k},{convert_to_pascalcase("".join(v))}Output> = Flow::new({k.lower()});
-"""
+let {k.lower()}_flow = Flow::new({k.lower()});
+"""             
+                    result += f"""
+                    let result: {k}Output = result.get_output().try_into().unwrap();
+                    let result = serde_json::to_value(result).unwrap();
+                    Ok(result)
+                    """
 
     main += f"""
     {global_imports}    
@@ -368,14 +398,15 @@ let mut {k.lower()}_list : Flow<{k},{convert_to_pascalcase("".join(v))}Output> =
     let input: Input = serde_json::from_value(args)?;
     {initilization}
     {flow}
-    let mut dependncy_matrix: HashMap<String, String> = HashMap::new();
-    {dependency_matrix_map}
-    let mut workflow = WorkFlows::new(dependncy_matrix);
+    let mut workflow = Workflow{{
+        {workflow_dag}
+    }};
     let result = {workflow};
-    Ok(result.unwrap())
+    {result}
+    
 }}
     """
-    task_struct_impl += setter_trait
+    # task_struct_impl += setter_trait
     main_file += main
 
 def generate_output():

@@ -1,5 +1,4 @@
 
-
 cargo_file = f"""
 [package]
 name = "action-workflow"
@@ -13,176 +12,154 @@ serde = "1.0.137"
 serde_json = "1.0.81"
 serde_derive = "1.0.81"
 paste = "1.0.7"
+dyn-clone = "1.0"
+derive-enum-from-into = "0.1.1"
 openwhisk-rust = "0.1.0"
-openwhisk_macro = "0.1.0"
-yaml-rust = "0.4.1"
-serde_yaml = "0.8.24"
+openwhisk_macro = "0.1.1"
+
 """
 common_rs_file = f"""
-use serde_json::Error;
-
 use super::*;
 
-#[derive(Debug, Default)]
-pub struct WorkFlows {{
-    output: HashMap<String, Value>,
-    dependency_matrix: HashMap<String, String>,
+#[derive(Debug, Clone)]
+pub struct Workflow {{
+    pub vertices: Box<dyn Execute>,
+    pub edge: Box<dyn FlowExecutor>,
 }}
 
-impl WorkFlows {{
-    pub fn new(dependency_matrix: HashMap<String, String>) -> Self {{
-        Self {{
-            dependency_matrix,
-            ..Default::default()
-        }}
-    }}
-
-    pub fn init<T: Execute + Getter>(&mut self, mut task: &mut T) -> &mut Self {{
-        let some_key = task.get_action_name();
-        let a = task.execute();
-        self.output.insert(some_key, a);
+impl Workflow {{
+    pub fn init(&mut self) -> &mut Self {{
+        self.vertices.execute();
+        self.edge.set_input_to_the_flow(self.vertices.clone());
+        self.edge.set_input_to_task();
         self
     }}
-
-    pub fn pipe<T: Executor + Clone>(&mut self, mut task: &mut T) -> &mut Self {{
-       
-        let key =  task.get_action_name_task();
-        let value = self.dependency_matrix.get(&key).unwrap();
-        let value = self.output.get(value).unwrap();
-        task.deserialize_output(value);
-        let result = task.executor_execute();
-        self.output.insert(key.to_string(), result);
-        self
+    pub fn pipe<T: 'static + FlowExecutor + Clone>(&mut self, task: T) -> Workflow {{
+        let mut work = Workflow {{
+            vertices: self.edge.get_flow_task(),
+            edge: Box::new(task),
+        }};
+        let workflow = work.init().to_owned();
+        workflow
     }}
-
-    pub fn term<T: Executor + Clone>(&mut self, mut task: &mut T) -> Result<Value, Error> {{
-        let key =  task.get_action_name_task();
-        let value = self.dependency_matrix.get(&key).unwrap();
-        let value = self.output.get(value).unwrap();
-        task.deserialize_output(value);
-        let result = task.executor_execute();
-        self.output.insert(key.to_string(), result.clone());
-        Ok(result)
-    }}
-}}
-
-#[macro_export]
-macro_rules! trait_impl_task{{
-    ($ ($call:ty) ,*) => {{
-        paste! {{
-            $( impl Execute for [<$call>]{{
-                type Output = Value;
-                fn execute(&self) -> Value {{
-                    self.run()
-                }}
-            }}
-            )*
-        }}
-    }}
-}}
-#[macro_export]
-macro_rules! trait_impl_getting_task_name{{
-    ($ ($call:ty) ,*) => {{
-        paste! {{
-            $( impl Getter for [<$call>]{{
-                fn get_action_name(&self) -> String {{
-                    self.get_action_name()
-                }}
-            }}
-            )*
-        }}
+    pub fn term<T: 'static + FlowExecutor + Clone>(&mut self, task: T) -> Box<dyn Execute> {{
+        let mut work = Workflow {{
+            vertices: self.edge.get_flow_task(),
+            edge: Box::new(task),
+        }};
+        let workflow = work.init().to_owned();
+        let mut res = workflow.edge.get_flow_task();
+        res.execute();
+        res
     }}
 }}
 
 
-"""
-traits_file = f"""
-use super::*;
+#[derive(Debug, Clone, Default)]
+pub struct Flow<T: Execute + Debug + Default + Clone> {{
+    input: Option<Box<(dyn traits::Execute + 'static)>>,
 
-pub trait Execute {{
-    type Output: Clone + Default + Debug;
-    fn execute(&self) -> Value;
-}}
-
-pub trait Executor {{
-    type Output;
-    fn executor_execute(&mut self) -> Value;
-    fn deserialize_output(&mut self, value: &Value);
-    fn get_action_name_task(&self) ->String;
-}}
-
-#[derive(Clone, Default, Debug)]
-pub struct Flow<T: Execute + std::fmt::Debug + Default + Setting, U: Clone> {{
-    input: U,
-    output: <T as Execute>::Output,
     task: T,
 }}
 
-impl<T: Execute + Default + Debug +Setting, U: Clone + Default + for<'de> Deserialize<'de>> Flow<T, U> {{
-    pub fn new(task: T) -> Self
-    where
-        <T as traits::Execute>::Output: Default,
-    {{
+impl<T: Execute + Default + Debug + Clone> Flow<T> {{
+    pub fn new(task: T) -> Self {{
         Self {{
-            output: Default::default(),
             task,
             input: Default::default(),
         }}
     }}
 
-    pub fn deserialize(&mut self, value: Value) {{
-        self.input = serde_json::from_value(value).unwrap();
+    fn output(&mut self) {{
+        let output: Types;
+        match self.input.clone() {{
+            Some(task) => {{
+                output = task.get_output();
+            }}
+            None => todo!(),
+        }}
+        self.task.set_input(output);
     }}
 }}
 
-impl<
-        'a,
-        T: traits::Setting + Execute + Debug + Default + Clone+ Getter,
-        U: Clone + Default + for<'de> Deserialize<'de>,
-    > Executor for Flow<T, U>
-where
-    for<'de> <T as traits::Execute>::Output: Deserialize<'de>,
-    T: traits::Setting<Input = U>,
-{{
-    type Output = Flow<T, U>;
-    fn executor_execute(&mut self) -> Value {{
-        self.task.execute()
+impl<T: 'static + Execute + Debug + Default + Clone> FlowExecutor for Flow<T> {{
+    fn set_input_to_the_flow(&mut self, task: Box<dyn Execute>) {{
+        self.input = Some(task);
     }}
-    fn deserialize_output(&mut self, value: &Value) {{
-        self.deserialize(value.to_owned());
-        self.task.setting(self.input.clone())
+
+    fn get_flow_task(&self) -> Box<dyn Execute> {{
+        Box::new(self.task.clone())
     }}
-    fn get_action_name_task(&self) ->String {{
-        self.task.get_action_name()
+
+    fn set_input_to_task(&mut self) {{
+        self.output();
     }}
 }}
 
-pub trait Setting {{
-    type Input: Clone + Default + Debug;
-    fn setting(&mut self, value: Self::Input);
+"""
+traits_file = f"""
+use std::fmt::Debug;
+use super::*;
+
+pub trait Execute: Debug + DynClone {{
+    fn execute(&mut self);
+    fn get_output(&self) -> Types;
+    fn set_input(&mut self, inp: Types);
 }}
 
-pub trait Getter {{
-    fn get_action_name(&self) -> String;
+clone_trait_object!(Execute);
+
+pub trait FlowExecutor: Debug + DynClone {{
+    fn set_input_to_the_flow(&mut self, task: Box<dyn Execute>);
+    fn get_flow_task(&self) -> Box<dyn Execute>;
+    fn set_input_to_task(&mut self);
 }}
+
+clone_trait_object!(FlowExecutor);
+
+
+#[macro_export]
+macro_rules! impl_execute_trait {{
+    ($ ($struct : ty), *) => {{
+        
+            paste!{{
+                $( impl Execute for $struct {{
+                    fn execute(&mut self) {{
+                        self.run()
+                    }}
+                
+                    fn get_output(&self) -> Types {{
+                        Types::$struct(self.output.clone())
+                    }}
+                
+                    fn set_input(&mut self, input: Types) {{
+                        self.setter(input.try_into().unwrap())
+                    }}
+                }}
+            )*
+        }}
+    }};
+}}
+
 """
 
 global_imports = f"""
-mod common;
 mod traits;
 mod types;
-use common::*;
+mod common;
 use openwhisk_macro::OpenWhisk;
 use openwhisk_rust::*;
 use paste::paste;
 use std::fmt::Debug;
 use traits::*;
 use types::*;
-
+use common::*;
+use dyn_clone::{{clone_trait_object,DynClone}};
 use serde::{{
     Deserialize, Serialize,
 }};
-
 use serde_json::{{Error, Value}};
 use std::collections::HashMap;
+use std::convert::TryInto;
+use derive_enum_from_into::{{EnumFrom, EnumTryInto}};
 """
