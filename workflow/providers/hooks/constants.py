@@ -15,7 +15,7 @@ paste = "1.0.7"
 dyn-clone = "1.0"
 derive-enum-from-into = "0.1.1"
 openwhisk-rust = "0.1.0"
-openwhisk_macro = "0.1.1"
+openwhisk_macro = "0.1.2"
 
 """
 common_rs_file = f"""
