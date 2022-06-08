@@ -1,6 +1,6 @@
 import copy
 import os
-from .constants import cargo_file,common_rs_file,traits_file,global_imports
+from .constants import dependencies,common_rs_file,traits_file,global_imports
 
 
 #global variables
@@ -23,6 +23,16 @@ main_file = ""
 def convert_to_pascalcase(string: str) -> str:
 
     return string.replace("_", " ").title().replace(" ", "")
+
+def create_workflow_config(name,version) -> str:
+    workflow_config = f"""
+[package]
+name = "{name}"
+version = "{version}"
+edition = "2018"
+
+"""
+    return workflow_config
 
 def struct_generator(task_list,action_props):
     global impl_task_trait,impl_get_task_trait,task_struct_impl,impl_stucture,run,new_method,setter,task_store,create_enum
@@ -354,13 +364,15 @@ Ok(result)
     # task_struct_impl += setter_trait
     main_file += main
 
-def generate_output():
-    global cargo_file, common_rs_file, traits_file, task_struct_impl,main_file
+def generate_output(workflow_config: str):
+    global dependencies, common_rs_file, traits_file, task_struct_impl,main_file
+    workflow_config += dependencies
+    
     output_path = "../../"
     path = os.path.join(output_path, "output/src")
     os.makedirs(path, mode=0o777)
     cargo = open(os.path.join(output_path, "output/Cargo.toml"), 'w')
-    cargo.writelines(cargo_file)
+    cargo.writelines(workflow_config)
     cargo.close()
 
     

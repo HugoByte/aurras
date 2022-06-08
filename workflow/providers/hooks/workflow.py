@@ -3,7 +3,7 @@ import os
 from pydantic import Field
 from tackle import BaseHook
 from typing import Any, List
-from .functions import struct_generator, create_main_function, create_main_input_struct, generate_output
+from .functions import struct_generator, create_main_function, create_main_input_struct, generate_output,create_workflow_config
 from .task import getTasks
 from .flow import getFlows
 
@@ -23,11 +23,13 @@ class WorkFlow(BaseHook):
         global task_store_copy
         global action_properties
 
+        workflow_config = create_workflow_config(self.name,self.version)
+
         action_properties = self.action_properties
         struct_generator(task_list, action_properties)
 
         create_main_input_struct(task_list, flow_list)
         create_main_function(task_list)
-        generate_output()
+        generate_output(workflow_config)
 
         return
