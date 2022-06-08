@@ -59,6 +59,20 @@ fn impl_openwhisk_client(ast: DeriveInput) -> TokenStream {
 
                 OpenwhiskClient::<NativeClient>::new(Some(&wskprops))
             }
+
+            fn run(&mut self){
+
+                    let result = self.openwhisk_client()
+                        .actions()
+                        .invoke(&self.action_name, serde_json::to_value(self.input.clone()).unwrap(), true, true).unwrap();
+                    self.output = serde_json::from_value(result).unwrap();
+
+            }
+
+            fn get_action_name(&self) -> String {
+                
+                self.action_name.clone()
+            }
         }
     };
     impl_whisk_client.into()
