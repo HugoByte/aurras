@@ -24,6 +24,13 @@ def convert_to_pascalcase(string: str) -> str:
 
     return string.replace("_", " ").title().replace(" ", "")
 
+"""
+    Creates Cargo.toml file using workflow config
+        # Arguments
+            `name`    - worklfow package name
+            `version` - workflow version
+"""
+
 def create_workflow_config(name,version) -> str:
     workflow_config = f"""
 [package]
@@ -34,6 +41,13 @@ edition = "2018"
 """
     return workflow_config
 
+"""
+    Creates rust struct type based on the YAML config provided
+        # Arguments
+            `task_list`    - A list of dictonary containing parsed yaml conifg from Task Hook
+            `action_props` - A list of dictonary containing parsed action properties from Workflow Hook
+
+"""
 def struct_generator(task_list,action_props):
     global impl_task_trait,impl_get_task_trait,task_struct_impl,impl_stucture,run,new_method,setter,task_store,create_enum
     enum =""
@@ -72,7 +86,16 @@ pub enum Types{"{"}
     task_struct_impl += enum
     return
 
+"""
+    Creates input and output struct
+        # Arguments
+            `task_name`    - name of the task
+            `args` - List of arguments
+            `type` - Spcifies Input or Ouput type
+            `kind` - Represents type of actions
+            `action_properties - Properties of the action from yaml config
 
+"""
 def create_sturct(task_name: str, args: list, type: str, kind,action_properties):
     global task_struct_impl
     global impl_task_trait
@@ -121,16 +144,19 @@ pub struct {task_name}{type.title()} {{
 {argument} 
 }}
 """
-    
-    
-    
     task_struct_impl = task_struct_impl.replace("\\", "")
     task_struct_impl = task_struct_impl.rjust(len(task_struct_impl))
 
     return
 
+"""
+    Creates Main Input struct
+        # Arguments
+            `task_list` - A list of dictonary containing parsed yaml conifg from Task Hook
+            `flow_list` - A list of dictonary containing parsed yaml conifg from Flow Hook
 
-# FlowHook for parsing the config and genrating required rust code from it
+"""
+
 def create_main_input_struct(task_list,flow_list):
     global  task_store, task_struct_impl, new_method, generic_input_sturct_filed, task_store_copy, dependency_matrix
     task_store_copy = copy.deepcopy(task_store)
@@ -148,10 +174,7 @@ def create_main_input_struct(task_list,flow_list):
 
     for flow in flow_list:
 
-        if flow['type'] == "Init":
-
-            # revisit
-            
+        if flow['type'] == "Init":            
             for key, values in task_store_copy[flow['task_name']].items():
                 generic_input_sturct_filed += f"pub {key}:{values},"
             if flow['depends_on'] == None:
@@ -176,7 +199,6 @@ def create_main_input_struct(task_list,flow_list):
                 dependency[flow['task_name']] = item['name'].replace(
                     "_", " ").title().replace(" ", "")
 
-                # dependency_matrix[flow['Term']] =[]
                 if flow['type'] == "Pipe":
                     dep_task.append(item['name'])
                     local_pipe_dic[flow['task_name']] = dep_task
@@ -198,10 +220,6 @@ def create_main_input_struct(task_list,flow_list):
 
             for key, values in task_store_copy[flow['task_name']].items():
                 generic_input_sturct_filed += f"pub {key}:{values},"
-            # dependency_matrix[flow['type']] = local_pipe_dic
-            # dependency_matrix[flow['type']] =[]
-            # dependency_matrix[flow['type']].append(local_pipe_list)
-            # local_pipe_list = []
             dep_task = []
 
         else:
@@ -243,7 +261,9 @@ pub struct Input{{
     implement_new_and_setter(task_list, task_store_copy, setter, dependency)
     return
 
-
+"""
+    Generates new and Setter method for respective structure
+"""
 def implement_new_and_setter(task_list, task_store_copy, setter, dependency):
     global task_struct_impl
 
@@ -295,7 +315,9 @@ impl {task_name} {{
     return
 
 
-
+"""
+    Creates main function to use and run workflow generated from yaml config
+"""
 def create_main_function(task):
     global task_store, task_store_copy, dependency_matrix, task_struct_impl, global_imports,main_file
     main = ""
@@ -319,7 +341,7 @@ def create_main_function(task):
 
         if "Init" in key:
             workflow_dag += f"""
-            vertices:Box::new({convert_to_pascalcase("".join(values)).lower()}),
+            vertex:Box::new({convert_to_pascalcase("".join(values)).lower()}),
             """
             workflow += f"""workflow.init()"""
         if "Pipe" in key:
@@ -364,10 +386,13 @@ Ok(result)
     # task_struct_impl += setter_trait
     main_file += main
 
+"""
+    To Write generated code to Rust package 
+"""
 def generate_output(workflow_config: str):
     global dependencies, common_rs_file, traits_file, task_struct_impl,main_file
     workflow_config += dependencies
-    
+
     output_path = "../../"
     path = os.path.join(output_path, "output/src")
     os.makedirs(path, mode=0o777)

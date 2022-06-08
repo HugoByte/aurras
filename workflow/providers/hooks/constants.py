@@ -16,20 +16,20 @@ use super::*;
 
 #[derive(Debug, Clone)]
 pub struct Workflow {{
-    pub vertices: Box<dyn Execute>,
+    pub vertex: Box<dyn Execute>,
     pub edge: Box<dyn FlowExecutor>,
 }}
 
 impl Workflow {{
     pub fn init(&mut self) -> &mut Self {{
-        self.vertices.execute();
-        self.edge.set_input_to_the_flow(self.vertices.clone());
+        self.vertex.execute();
+        self.edge.set_input_to_the_flow(self.vertex.clone());
         self.edge.set_input_to_task();
         self
     }}
     pub fn pipe<T: 'static + FlowExecutor + Clone>(&mut self, task: T) -> Workflow {{
         let mut work = Workflow {{
-            vertices: self.edge.get_flow_task(),
+            vertex: self.edge.get_flow_task(),
             edge: Box::new(task),
         }};
         let workflow = work.init().to_owned();
@@ -37,7 +37,7 @@ impl Workflow {{
     }}
     pub fn term<T: 'static + FlowExecutor + Clone>(&mut self, task: T) -> Box<dyn Execute> {{
         let mut work = Workflow {{
-            vertices: self.edge.get_flow_task(),
+            vertex: self.edge.get_flow_task(),
             edge: Box::new(task),
         }};
         let workflow = work.init().to_owned();
