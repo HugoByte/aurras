@@ -2,52 +2,27 @@ import copy
 import os
 from .constants import cargo_file,common_rs_file,traits_file,global_imports
 
-def convert_to_pascalcase(string: str) -> str:
 
-    return string.replace("_", " ").title().replace(" ", "")
-
-task_store = dict()
-
-# Task is a hook to generate rust code from config file
-
-
-
-
-# functions related to task hook for creating rust code
+#global variables
 create_enum = f"""
-
 """
-
 task_struct_impl = f"""use super::*;
-
 """
 impl_task_trait = "impl_execute_trait!("
-
-implement_run_method = f"""
-
-    fn run(&mut self){ 
-        
-        {
-
-            "let result = self.openwhisk_client().actions().invoke(&self.action_name, serde_json::to_value(self.input.clone()).unwrap(), true, true).unwrap();"
-            "self.output = serde_json::from_value(result).unwrap();"
-        
-        }
-
-    }
-"""
+task_store = dict()
 task_store_copy = dict()
 impl_stucture = ""
 setter = ""
 new_method = ""
 action_properties = dict()
+generic_input_sturct_filed = ""
+dependency_matrix = dict()
+main_file = ""
 
-implement_get_action_name_method = f"""
-fn get_action_name(&self) -> String {
-    {
-        "self.action_name.clone()"
-    }}
-"""
+#to convert camel_case to PascalCase
+def convert_to_pascalcase(string: str) -> str:
+
+    return string.replace("_", " ").title().replace(" ", "")
 
 def struct_generator(task_list,action_props):
     global impl_task_trait,impl_get_task_trait,task_struct_impl,impl_stucture,run,new_method,setter,task_store,create_enum
@@ -61,16 +36,6 @@ def struct_generator(task_list,action_props):
         output_args = task['output_args']
         task_name = name
         impl_task_trait += f"{task_name},"
-        impl_stucture += f"""
-
-impl {task_name} {{
-        
-        {implement_run_method}
-        {implement_get_action_name_method}
-}}
-
-
-"""
         
         if None not in input_args:
             create_sturct(task_name, input_args, "input", kind,action_props)
@@ -95,8 +60,6 @@ pub enum Types{"{"}
     task_struct_impl += impl_task_trait
     enum = enum[:-1]+"}"
     task_struct_impl += enum
-
-    task_struct_impl += impl_stucture.replace("'", "")
     return
 
 
@@ -158,13 +121,6 @@ pub struct {task_name}{type.title()} {{
 
 
 # FlowHook for parsing the config and genrating required rust code from it
-generic_input_sturct_filed = ""
-
-
-
-dependency_matrix = dict()
-
-
 def create_main_input_struct(task_list,flow_list):
     global  task_store, task_struct_impl, new_method, generic_input_sturct_filed, task_store_copy, dependency_matrix
     task_store_copy = copy.deepcopy(task_store)
@@ -328,7 +284,7 @@ impl {task_name} {{
 
     return
 
-main_file = ""
+
 
 def create_main_function(task):
     global task_store, task_store_copy, dependency_matrix, task_struct_impl, global_imports,main_file
@@ -369,28 +325,17 @@ let {key.lower()}_flow = Flow::new({key.lower()});
 """
 
         if "Term" in key:
-            # print(values)
-            for value in values:
-                for k, v in value.items():
-                    workflow += f""".term({k.lower()}_flow)"""
-                    # setter_trait += f"""
-                    # impl Setting for {k}{{
-                    #     fn setting(&mut self,value: Self::Input) {{
-                    #     self.setter(value)
-                    # }}
-                    # type Input = {convert_to_pascalcase("".join(v))}Output;
-                    # }}
-                    
-                    # """
-                    flow += f"""
-let {k.lower()}_flow = Flow::new({k.lower()});
-"""             
-                    result += f"""
-                    let result: {k}Output = result.get_output().try_into().unwrap();
-                    let result = serde_json::to_value(result).unwrap();
-                    Ok(result)
-                    """
-
+            keys = list(values[0].keys())
+            for key in keys:
+                workflow += f""".term({key.lower()}_flow)"""
+                flow += f"""
+let {key.lower()}_flow = Flow::new({key.lower()});
+"""
+                result += f"""
+let result: {key}Output = result.get_output().try_into().unwrap();
+let result = serde_json::to_value(result).unwrap();
+Ok(result)
+"""
     main += f"""
     {global_imports}    
 
