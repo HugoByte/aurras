@@ -278,6 +278,12 @@ def implement_new_and_setter(task_list, task_store_copy, setter, dependency):
         new_impl_methods = f"""
  pub fn new({method_param}action_name:String) -> Self {{ Self{{  input:{task_name}Input{{{field_assign} ..Default::default()}},action_name: action_name, ..Default::default()}}}}
 """
+        new_get_task_output = f"""
+fn get_task_output(&self) ->{task_name}Output{{
+    self.output.clone()
+}}
+"""     
+        new_get_task_output = new_get_task_output.strip().replace("'","")
         new_impl_methods = new_impl_methods.strip().replace("'", "")
         new_impl = ""
         setter_method = ""
@@ -296,6 +302,7 @@ impl {task_name} {{
 
 {new_impl_methods}
 {setter_method}
+{new_get_task_output}
 
 }}
 """
@@ -307,7 +314,7 @@ impl {task_name} {{
 
 {new_impl_methods}
 {setter_method}
-
+{new_get_task_output}
 }}
 """
             task_struct_impl += new_impl.replace("'", "")
@@ -340,15 +347,11 @@ def create_main_function(task):
     for key, values in dependency_matrix.items():
 
         if "Init" in key:
-            workflow_dag += f"""
-            vertex:Box::new({convert_to_pascalcase("".join(values)).lower()}),
-            """
-            workflow += f"""workflow.init()"""
+            workflow_dag += f""" Workflow::new({convert_to_pascalcase("".join(values)).lower()});"""
+            
         if "Pipe" in key:
             pipe_task = list(values[0].keys())
-            workflow_dag+= f"""
-                edge: Box::new({convert_to_pascalcase("".join(pipe_task[0])).lower()}_flow),
-            """
+            workflow += f"""workflow.init(Some(Box::new({convert_to_pascalcase("".join(pipe_task[0])).lower()}_flow)))"""
             for key in pipe_task[1:]:
                 workflow  += f""".pipe({key.lower()}_flow)"""
             for key in pipe_task:
@@ -359,7 +362,7 @@ let {key.lower()}_flow = Flow::new({key.lower()});
         if "Term" in key:
             keys = list(values[0].keys())
             for key in keys:
-                workflow += f""".term({key.lower()}_flow)"""
+                workflow += f""".pipe({key.lower()}_flow).term()"""
                 flow += f"""
 let {key.lower()}_flow = Flow::new({key.lower()});
 """
@@ -375,9 +378,7 @@ Ok(result)
     let input: Input = serde_json::from_value(args)?;
     {initilization}
     {flow}
-    let mut workflow = Workflow{{
-        {workflow_dag}
-    }};
+    let mut workflow = {workflow_dag}
     let result = {workflow};
     {result}
     
