@@ -18,12 +18,12 @@
 
 tasks:
   - ->: task
-      #kind filed spcifies what type of task it is. 
+      #kind filed spcifies what type of task it is.
       #(i.e for now we are focusing on openwhisk actions, future it can be any serverless functions and written in any langunage)
     kind: "OpenWhisk"
     name: "cartype"
       #for input struct to provide input for actions
-    input_args: 
+    input_args:
       - name: "car_type"
         type: "String"
       #for output struct to store output from actions for deserilization
@@ -42,7 +42,7 @@ tasks:
     output_args:
       - name: "models"
         type: "Vec<String>"
-  
+
   - ->: task
     kind: "OpenWhisk"
     name: "models_price"
@@ -52,7 +52,7 @@ tasks:
     output_args:
       - name: "model_price_list"
         type: "HashMap<String,i32>"
-  
+
   - ->: task
     kind: "OpenWhisk"
     name: "purchase"
@@ -69,13 +69,14 @@ tasks:
 
 flows:
   - ->: flow
-      #type in flow is used to mention what will be order of execution 
+    #type in flow is used to mention what will be order of execution
     type: "Init"
-    task_name: "cartype"
+    task_name:
+      "cartype"
       #to mention flow what task it is depends on
     depends_on: null
 
-  - ->: "flow"
+  - ->: flow
     type: "Pipe"
     task_name: "modelavail"
     depends_on:
@@ -85,49 +86,48 @@ flows:
         - name: "cartype"
           fields:
             - car_company_list
-  - ->: 'flow'
+  - ->: flow
     type: "Pipe"
     task_name: "models_price"
     depends_on:
       task:
         - name: "modelavail"
-          fields: 
+          fields:
             - models
-  - ->: "flow"
+  - ->: flow
     type: "Term"
     task_name: "purchase"
-    depends_on: 
-        task:
-          - name : models_price
-            fields: 
-              - model_price_list
-          
+    depends_on:
+      task:
+        - name: models_price
+          fields:
+            - model_price_list
 
 workflows:
-  ->: "workflow"
+  ->: workflow
   name: "action-purchase-workflow"
   version: "0.0.1"
   action_properties:
-    kind: 'Openwhisk'
+    kind: "Openwhisk"
     action:
       - name: cartype
         api_host: "https://65.20.70.146:31001"
         auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
         insecure: "true"
         namespace: "guest"
-    
+
       - name: modelavail
         api_host: "https://65.20.70.146:31001"
         auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
         insecure: "true"
         namespace: "guest"
-    
+
       - name: models_price
         api_host: "https://65.20.70.146:31001"
         auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
         insecure: "true"
         namespace: "guest"
-    
+
       - name: purchase
         api_host: "https://65.20.70.146:31001"
         auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
