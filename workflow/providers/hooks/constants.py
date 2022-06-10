@@ -17,36 +17,65 @@ use super::*;
 #[derive(Debug, Clone)]
 pub struct Workflow {{
     pub vertex: Box<dyn Execute>,
-    pub edge: Box<dyn FlowExecutor>,
+    pub edge: Option<Box<dyn FlowExecutor>>,
 }}
 
 impl Workflow {{
-    pub fn init(&mut self) -> &mut Self {{
+    pub fn new<T: 'static + Execute>(task: T) -> Self {{
+        Self {{
+            vertex: Box::new(task),
+            edge: None,
+        }}
+    }}
+    pub fn init(&mut self, flow: Option<Box<dyn FlowExecutor>>) -> &mut Self {{
         self.vertex.execute();
-        self.edge.set_input_to_the_flow(self.vertex.clone());
-        self.edge.set_input_to_task();
+        self.edge = flow;
+        match self.edge.clone() {{
+            Some(mut edge) => {{
+                edge.set_input_to_the_flow(self.vertex.to_owned());
+                edge.set_input_to_task();
+                self.edge = Some(edge);
+            }}
+            _ => (),
+        }}
         self
     }}
     pub fn pipe<T: 'static + FlowExecutor + Clone>(&mut self, task: T) -> Workflow {{
-        let mut work = Workflow {{
-            vertex: self.edge.get_flow_task(),
-            edge: Box::new(task),
-        }};
-        let workflow = work.init().to_owned();
-        workflow
+        if let Some(edge) = self.edge.clone() {{
+            let mut workflow = Workflow {{
+                vertex: edge.get_flow_task(),
+                edge: None,
+            }};
+
+            let workflow = workflow.init(Some(Box::new(task))).to_owned();
+            return workflow;
+        }}
+        self.clone()
     }}
-    pub fn term<T: 'static + FlowExecutor + Clone>(&mut self, task: T) -> Box<dyn Execute> {{
-        let mut work = Workflow {{
-            vertex: self.edge.get_flow_task(),
-            edge: Box::new(task),
-        }};
-        let workflow = work.init().to_owned();
-        let mut res = workflow.edge.get_flow_task();
-        res.execute();
-        res
+    pub fn term(&mut self) -> Box<dyn Execute> {{
+        if let Some(edge) = self.edge.clone() {{
+            let mut workflow = Workflow {{
+                vertex: edge.get_flow_task(),
+                edge: None,
+            }};
+            workflow.vertex.execute();
+            return workflow.vertex;
+        }}
+        self.vertex.clone()
+    }}
+
+    fn map<T: 'static + FlowExecutor + Clone>(&mut self, task: T) -> Workflow {{
+        if let Some(edge) = self.edge.clone() {{
+            let mut workflow = Workflow {{
+                vertex: edge.get_flow_task(),
+                edge: None,
+            }};
+            let workflow = workflow.init(Some(Box::new(task))).to_owned();
+            return workflow;
+        }}
+        self.clone()
     }}
 }}
-
 
 #[derive(Debug, Clone, Default)]
 pub struct Flow<T: Execute + Debug + Default + Clone> {{
@@ -122,7 +151,7 @@ macro_rules! impl_execute_trait {{
                     }}
                 
                     fn get_output(&self) -> Types {{
-                        Types::$struct(self.output.clone())
+                        Types::$struct(self.get_task_output())
                     }}
                 
                     fn set_input(&mut self, input: Types) {{
