@@ -17,98 +17,90 @@
 # ------------------------------------------------------------------------------------------------------- #                                                                                                       #
 
 tasks:
-  - task:
-      ->: task
+  - ->: task
       #kind filed spcifies what type of task it is. 
       #(i.e for now we are focusing on openwhisk actions, future it can be any serverless functions and written in any langunage)
-      kind: "OpenWhisk"
-      name: "cartype"
+    kind: "OpenWhisk"
+    name: "cartype"
       #for input struct to provide input for actions
-      input_args: 
-        - name: "car_type"
-          type: "String"
+    input_args: 
+      - name: "car_type"
+        type: "String"
       #for output struct to store output from actions for deserilization
-      output_args:
-        - name: "car_company_list"
-          type: "HashMap<String,Vec<String>>"
+    output_args:
+      - name: "car_company_list"
+        type: "HashMap<String,Vec<String>>"
 
-  - task:
-      ->: task
-      kind: "OpenWhisk"
-      name: "modelavail"
-      input_args:
-        - name: "car_company_list"
-          type: "HashMap<String,Vec<String>>"
-        - name: "company_name"
-          type: "String"
-      output_args:
-        - name: "models"
-          type: "Vec<String>"
+  - ->: task
+    kind: "OpenWhisk"
+    name: "modelavail"
+    input_args:
+      - name: "car_company_list"
+        type: "HashMap<String,Vec<String>>"
+      - name: "company_name"
+        type: "String"
+    output_args:
+      - name: "models"
+        type: "Vec<String>"
   
-  - task:
-      ->: task
-      kind: "OpenWhisk"
-      name: "models_price"
-      input_args:
-        - name: "models"
-          type: "Vec<String>"
-      output_args:
-        - name: "model_price_list"
-          type: "HashMap<String,i32>"
+  - ->: task
+    kind: "OpenWhisk"
+    name: "models_price"
+    input_args:
+      - name: "models"
+        type: "Vec<String>"
+    output_args:
+      - name: "model_price_list"
+        type: "HashMap<String,i32>"
   
-  - task:
-      ->: task
-      kind: "OpenWhisk"
-      name: "purchase"
-      input_args:
-        - name: "model_price_list"
-          type: "HashMap<String,i32>"
-        - name: "model_name"
-          type: "String"
-        - name: "price"
-          type: "i32"
-      output_args:
-        - name: "message"
-          type: "String"
+  - ->: task
+    kind: "OpenWhisk"
+    name: "purchase"
+    input_args:
+      - name: "model_price_list"
+        type: "HashMap<String,i32>"
+      - name: "model_name"
+        type: "String"
+      - name: "price"
+        type: "i32"
+    output_args:
+      - name: "message"
+        type: "String"
 
 flows:
-  - flow:
-      ->: flow
+  - ->: flow
       #type in flow is used to mention what will be order of execution 
-      type: "Init"
-      task_name: "cartype"
+    type: "Init"
+    task_name: "cartype"
       #to mention flow what task it is depends on
-      depends_on: null
+    depends_on: null
 
-  - flow:
-      ->: "flow"
-      type: "Pipe"
-      task_name: "modelavail"
-      depends_on:
+  - ->: "flow"
+    type: "Pipe"
+    task_name: "modelavail"
+    depends_on:
       #operation defines kind of operation/opeartor needs to be applied on the task being executed
-        operation: null
+      operation: null
+      task:
+        - name: "cartype"
+          fields:
+            - car_company_list
+  - ->: 'flow'
+    type: "Pipe"
+    task_name: "models_price"
+    depends_on:
+      task:
+        - name: "modelavail"
+          fields: 
+            - models
+  - ->: "flow"
+    type: "Term"
+    task_name: "purchase"
+    depends_on: 
         task:
-          - name: "cartype"
-            fields:
-              - car_company_list
-  - flow:
-      ->: 'flow'
-      type: "Pipe"
-      task_name: "models_price"
-      depends_on:
-        task:
-          - name: "modelavail"
+          - name : models_price
             fields: 
-              - models
-  - flow:
-      ->: "flow"
-      type: "Term"
-      task_name: "purchase"
-      depends_on: 
-          task:
-            - name : models_price
-              fields: 
-                - model_price_list
+              - model_price_list
           
 
 workflows:
