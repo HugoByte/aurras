@@ -1,6 +1,6 @@
 import os
 from pydantic import Field
-from tackle import BaseHook
+from tackle import BaseHook, tackle
 from typing import Any, List
 from .functions import convert_to_pascalcase
 
@@ -37,5 +37,3 @@ def getTasks() -> list:
     global task_list
 
     return task_list
-
-    

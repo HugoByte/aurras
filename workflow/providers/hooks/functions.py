@@ -1,5 +1,6 @@
 import copy
 import os
+import re
 from .constants import dependencies,common_rs_file,traits_file,global_imports
 
 
@@ -53,7 +54,7 @@ def struct_generator(task_list,action_props):
     enum =""
     
     for task in task_list:
-        task_dic = dict()
+        task_dictionary = dict()
         name = task['task_name']
         kind = task['kind']
         input_args = task['input_args']
@@ -68,9 +69,9 @@ def struct_generator(task_list,action_props):
                 field_type = item['type']
 
                 if field_name != "" and field_type != "":
-                    task_dic[field_name] = field_type
+                    task_dictionary[field_name] = field_type
         
-        task_store[task_name] = task_dic
+        task_store[task_name] = task_dictionary
         if None not in output_args:
             create_sturct(task_name, output_args, "output", None,action_props)
 
@@ -230,15 +231,16 @@ def create_main_input_struct(task_list,flow_list):
                     "_", " ").title().replace(" ", "")
 
                 for task in task_list:
-                    if map_task_name == convert_to_pascalcase(task['task_name']):
+                    if map_task_name == task['task_name']:
                         for i in task['output_args']:
                             current_task_type_map = i['type']
-                    elif depends_on_task == convert_to_pascalcase(task['task_name']):
+                    elif depends_on_task == task['task_name']:
                         for i in task['output_args']:
                             depend_task_type_map = i['type']
 
-                if depend_task_type_map == "Vec<String>":
-                    depend_task_type_map = "String"
+                if depend_task_type_map != None:
+                    dep_type = re.findall(r'\<.*?\>', depend_task_type_map)
+                    depend_task_type_map = "".join(dep_type)
 
             task_struct_impl += f"""
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -308,7 +310,7 @@ impl {task_name} {{
 """
             task_struct_impl += new_impl.replace("'", "")
         else:
-            setter_method += "fn setter(&mut self,value:String){}"
+            setter_method += "fn setter(&mut self,_value:String){}"
             new_impl += f"""
 impl {task_name} {{
 

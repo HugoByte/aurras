@@ -64,6 +64,7 @@ impl Workflow {{
         self.vertex.clone()
     }}
 
+    #[allow(dead_code)]
     fn map<T: 'static + FlowExecutor + Clone>(&mut self, task: T) -> Workflow {{
         if let Some(edge) = self.edge.clone() {{
             let mut workflow = Workflow {{
