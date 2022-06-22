@@ -33,8 +33,8 @@ fn impl_openwhisk_client(ast: DeriveInput) -> TokenStream {
             _ => (syn::Path::into(attribute.path), "".to_string()),
         };
 
-        for seg in path.segments {
-            property_map.insert(seg.ident.to_string().to_string(), value.clone());
+        for segment in path.segments {
+            property_map.insert(segment.ident.to_string(), value.clone());
         }
     }
 
@@ -50,28 +50,26 @@ fn impl_openwhisk_client(ast: DeriveInput) -> TokenStream {
     let namespace = property_map["Namespace"].clone();
 
     let impl_whisk_client = quote! {
-
         impl #name {
-
             pub fn openwhisk_client(&self) -> OpenwhiskClient<NativeClient>{
-
                 let wskprops  = WskProperties::new(#auth_token.to_string(), #api_host.to_string(), #insecure, #namespace.to_string());
-
                 OpenwhiskClient::<NativeClient>::new(Some(&wskprops))
             }
 
-            fn run(&mut self){
-
-                    let result = self.openwhisk_client()
+            fn run(&mut self) -> Result<(),String>{
+                let payload = serde_json::to_value(self.input.clone()).map_err(|e|e.to_string())?;
+                
+                let result = self.openwhisk_client()
                         .actions()
-                        .invoke(&self.action_name, serde_json::to_value(self.input.clone()).unwrap(), true, true).unwrap();
-                    self.output = serde_json::from_value(result).unwrap();
-
+                        .invoke(&self.action_name, payload, true, true)?;
+            
+                
+                self.output = serde_json::from_value(result).map_err(|e|e.to_string())?;
+                Ok(())
             }
 
-            fn get_action_name(&self) -> String {
-                
-                self.action_name.clone()
+            fn action_name(&self) -> &str {
+                self.action_name.as_str()
             }
         }
     };
