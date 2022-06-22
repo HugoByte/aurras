@@ -1,6 +1,6 @@
 [package]
 name = "openwhisk_macro"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2018"
 authors = ["HugoByte <hello@hugobyte.com>"]
 repository = "https://github.com/HugoByte/openwhisk_macro"
