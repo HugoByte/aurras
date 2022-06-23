@@ -8,7 +8,7 @@ paste = "1.0.7"
 dyn-clone = "1.0"
 derive-enum-from-into = "0.1.1"
 openwhisk-rust = "0.1.1"
-openwhisk_macro = "0.1.3"
+openwhisk_macro = "0.1.4"
 
 """
 common_rs_file = f"""
@@ -63,19 +63,6 @@ impl Workflow {{
         }}
         self.vertex.clone()
     }}
-
-    #[allow(dead_code)]
-    fn map<T: 'static + FlowExecutor + Clone>(&mut self, task: T) -> Workflow {{
-        if let Some(edge) = self.edge.clone() {{
-            let mut workflow = Workflow {{
-                vertex: edge.get_flow_task(),
-                edge: None,
-            }};
-            let workflow = workflow.init(Some(Box::new(task))).to_owned();
-            return workflow;
-        }}
-        self.clone()
-    }}
 }}
 
 #[derive(Debug, Clone, Default)]
@@ -125,7 +112,7 @@ use std::fmt::Debug;
 use super::*;
 
 pub trait Execute: Debug + DynClone {{
-    fn execute(&mut self);
+    fn execute(&mut self) -> Result<(),String>;
     fn get_output(&self) -> Types;
     fn set_input(&mut self, inp: Types);
 }}
@@ -147,7 +134,7 @@ macro_rules! impl_execute_trait {{
         
             paste!{{
                 $( impl Execute for $struct {{
-                    fn execute(&mut self) {{
+                    fn execute(&mut self) -> Result<(),String> {{
                         self.run()
                     }}
                 
