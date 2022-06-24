@@ -79,6 +79,7 @@ def struct_generator(task_list,action_props):
        #[derive(EnumFrom, EnumTryInto, PartialEq, Debug, Clone,Serialize,Deserialize)]
 pub enum Types{"{"}
     Empty(String),
+    ConCat(ConcatStruct<String,String>),
     {create_enum}
     """
     impl_task_trait = impl_task_trait[:-1]+");"
@@ -176,8 +177,8 @@ def create_main_input_struct(task_list,flow_list):
     for flow in flow_list:
 
         if flow['type'] == "Init":            
-            for key, values in task_store_copy[flow['task_name']].items():
-                generic_input_sturct_filed += f"pub {key}:{values},"
+            for field, type in task_store_copy[flow['task_name']].items():
+                generic_input_sturct_filed += f"pub {field}:{type},"
             if flow['depends_on'] == None:
                 # dependency_matrix[flow['type']] = [flow['task_name']]
                 local_pipe_list.append(flow['task_name'])
@@ -245,7 +246,7 @@ def create_main_input_struct(task_list,flow_list):
             task_struct_impl += f"""
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct {map_task_name }MapOutput{{
-    model_prize_list : HashMap<{depend_task_type_map},{current_task_type_map}>
+    field_name : HashMap<{depend_task_type_map},{current_task_type_map}>
 }}
 """
 
