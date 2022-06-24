@@ -6,5 +6,6 @@ members = [
     "actions/balance-filter",
     "actions/push-notification",
     "actions/event-receiver",
-    "actions/substrate-event-processor"
+    "actions/substrate-event-processor",
+    "workflow/openwhisk_macro"
 ]
