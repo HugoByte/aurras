@@ -79,6 +79,7 @@ def struct_generator(task_list,action_props):
        #[derive(EnumFrom, EnumTryInto, PartialEq, Debug, Clone,Serialize,Deserialize)]
 pub enum Types{"{"}
     Empty(String),
+    Concat(Vec<Types>),
     {create_enum}
     """
     impl_task_trait = impl_task_trait[:-1]+");"
@@ -192,9 +193,8 @@ def create_main_input_struct(task_list,flow_list):
 
                 poped = dict()
                 for filed in item['fields']:
-                    
-                    poped[filed] = task_store_copy[flow['task_name']].pop(
-                        filed)
+                    poped[filed] = task_store_copy[flow['task_name']].pop(filed)
+                
                 setter[flow['task_name']] = poped
                 poped = dict()
                 dependency[flow['task_name']] = item['name'].replace(
@@ -207,6 +207,7 @@ def create_main_input_struct(task_list,flow_list):
                     dependency_matrix['Pipe'] = local_pipe_list_pipe
                     local_pipe_list = []
                     # local_pipe_dic = dict()
+
                 else:
                     local_pipe_dic = dict()
                     dep_task.append(item['name'])
@@ -244,8 +245,8 @@ def create_main_input_struct(task_list,flow_list):
 
             task_struct_impl += f"""
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
-pub struct {map_task_name }MapOutput{{
-    model_prize_list : HashMap<{depend_task_type_map},{current_task_type_map}>
+pub struct {map_task_name}MapOutput{{
+    result : HashMap<{depend_task_type_map},{current_task_type_map}>
 }}
 """
 
@@ -281,7 +282,7 @@ def implement_new_and_setter(task_list, task_store_copy, setter, dependency):
  pub fn new({method_param}action_name:String) -> Self {{ Self{{  input:{task_name}Input{{{field_assign} ..Default::default()}},action_name: action_name, ..Default::default()}}}}
 """
         new_get_task_output = f"""
-fn get_task_output(&self) ->{task_name}Output{{
+fn output(&self) ->{task_name}Output{{
     self.output.clone()
 }}
 """     
@@ -297,7 +298,9 @@ fn get_task_output(&self) ->{task_name}Output{{
                     set_fileds += f"""self.input.{x} = value.{x};"""
             dep_task_out = convert_to_pascalcase(
                 " ".join(dependency[task_name].keys()))
-            setter_method += f"""fn setter(&mut self,value:{dep_task_out}Output){{{set_fileds}}}""".replace(
+            setter_method += f"""fn setter(&mut self,value:Types){{
+                let value : {dep_task_out}Output = value.try_into().unwrap();
+                    {set_fileds}}}""".replace(
                 "\\n", "").replace("'", "")
             new_impl += f"""
 impl {task_name} {{
@@ -310,7 +313,7 @@ impl {task_name} {{
 """
             task_struct_impl += new_impl.replace("'", "")
         else:
-            setter_method += "fn setter(&mut self,_value:String){}"
+            setter_method += "fn setter(&mut self,_value:Types){}"
             new_impl += f"""
 impl {task_name} {{
 
@@ -334,7 +337,6 @@ def create_main_function(task):
     dependency_matrix_map = ""
     initilization = ""
     workflow = ""
-    workflow_dag = ""
     result = ""
     # setter_trait = ""
 
@@ -346,41 +348,43 @@ def create_main_function(task):
         initilization += f"""
         let {key.lower()} = {key}::new({new_fileds}String::from("{key.lower()}"));
             """
+    
     for key, values in dependency_matrix.items():
 
         if "Init" in key:
-            workflow_dag += f""" Workflow::new({convert_to_pascalcase("".join(values)).lower()});"""
+            flow += f"""let {values[0].lower()}_index = workflow.add_node(Box::new({values[0].lower()}));"""
+            workflow += f""" workflow.init()?"""
             
         if "Pipe" in key:
-            pipe_task = list(values[0].keys())
-            workflow += f"""workflow.init(Some(Box::new({convert_to_pascalcase("".join(pipe_task[0])).lower()}_flow)))"""
-            for key in pipe_task[1:]:
-                workflow  += f""".pipe({key.lower()}_flow)"""
-            for key in pipe_task:
+            for pipe_key,pipe_value in values[0].items():
+                workflow += f""".pipe({convert_to_pascalcase(str(pipe_key)).lower()}_index,{"".join(pipe_value)}_index)?"""
+            pipe_keys = list(values[0].keys())
+            for key in pipe_keys:
                 flow += f"""
-let {key.lower()}_flow = Flow::new({key.lower()});
+let {key.lower()}_index = workflow.add_node(Box::new({key.lower()}));
 """
 
         if "Term" in key:
             keys = list(values[0].keys())
             for key in keys:
-                workflow += f""".pipe({key.lower()}_flow).term()"""
+                workflow += f""".term(Some({key.lower()}_index))?"""
                 flow += f"""
-let {key.lower()}_flow = Flow::new({key.lower()});
+let {key.lower()}_index = workflow.add_node(Box::new({key.lower()}));
 """
                 result += f"""
-let result: {key}Output = result.get_output().try_into().unwrap();
+let result: {key}Output = result.try_into().unwrap();
 let result = serde_json::to_value(result).unwrap();
 Ok(result)
 """
     main += f"""
-    {global_imports}    
-
-    pub fn main(args:Value) -> Result<Value,Error>{{
-    let input: Input = serde_json::from_value(args)?;
+    {global_imports}
+    
+    pub fn main(args:Value) -> Result<Value,String>{{
+    const LIMIT : usize = {len(task)} ;   
+    let mut workflow = WorkflowGraph::new(LIMIT);
+    let input: Input = serde_json::from_value(args).map_err(|e| e.to_string())?;
     {initilization}
     {flow}
-    let mut workflow = {workflow_dag}
     let result = {workflow};
     {result}
     
