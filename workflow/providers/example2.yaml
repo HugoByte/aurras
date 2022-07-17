@@ -13,56 +13,52 @@
 #                                                                                                         #
 # task hook for generating rust code for actions deployed on openwhisk                                    #
 # flow hook for organising order of task execution                                                        #
+# workflow hook will be used as main hook to append code generated use flow and task hook to rust package #
+# ------------------------------------------------------------------------------------------------------- #                                                                                                       #
 
 tasks:
   - ->: task
       #kind filed spcifies what type of task it is.
       #(i.e for now we are focusing on openwhisk actions, future it can be any serverless functions and written in any langunage)
     kind: "OpenWhisk"
-    name: "cartype"
+    name: "employee_ids"
       #for input struct to provide input for actions
     input_args:
-      - name: "car_type"
+      - name: "role"
         type: "String"
       #for output struct to store output from actions for deserilization
     output_args:
-      - name: "car_company_list"
-        type: "HashMap<String,Vec<String>>"
+      - name: "ids"
+        type: "Vec<i32>"
 
   - ->: task
     kind: "OpenWhisk"
-    name: "modelavail"
+    name: "salary"
     input_args:
-      - name: "car_company_list"
-        type: "HashMap<String,Vec<String>>"
-      - name: "company_name"
-        type: "String"
+      - name: "details"
+        type: "HashMap<i32,(i32,String)>"
     output_args:
-      - name: "models"
+      - name: "result"
         type: "Vec<String>"
 
   - ->: task
     kind: "OpenWhisk"
-    name: "models_price"
+    name: "getsalaries"
     input_args:
-      - name: "models"
-        type: "Vec<String>"
-    output_args:
-      - name: "model_price_list"
-        type: "HashMap<String,i32>"
-
-  - ->: task
-    kind: "OpenWhisk"
-    name: "purchase"
-    input_args:
-      - name: "model_price_list"
-        type: "HashMap<String,i32>"
-      - name: "model_name"
-        type: "String"
-      - name: "price"
+      - name: "id"
         type: "i32"
     output_args:
-      - name: "message"
+      - name: "salary"
+        type: "i32"
+
+  - ->: task
+    kind: "OpenWhisk"
+    name: "getaddress"
+    input_args:
+      - name: "id"
+        type: "i32"
+    output_args:
+      - name: "address"
         type: "String"
 
 flows:
@@ -70,37 +66,40 @@ flows:
     #type in flow is used to mention what will be order of execution
     type: "Init"
     task_name:
-      "cartype"
+      "employee_ids"
       #to mention flow what task it is depends on
     depends_on: null
 
   - ->: flow
     type: "Pipe"
-    task_name: "modelavail"
+    task_name: "getsalaries"
     depends_on:
-      #operation defines kind of operation/opeartor needs to be applied on the task being executed
-      operation: null
+    #operation defines kind of operation/opeartor needs to be applied on the task being executed
+      operation: "map"
       task:
-        - name: "cartype"
+        - name: "employee_ids"
           fields:
-            - car_company_list
+            - ids
   - ->: flow
     type: "Pipe"
-    task_name: "models_price"
+    task_name: "getaddress"
     depends_on:
+      operation: "map"
       task:
-        - name: "modelavail"
+        - name: employee_ids
           fields:
-            - models
+            - ids
   - ->: flow
-    type: "Term"
-    task_name: "purchase"
+    type: "Concat"
+    task_name: "salary"
     depends_on:
       task:
-        - name: models_price
+        - name: "getsalaries"
           fields:
-            - model_price_list
-
+            - result
+        - name: "getaddress"
+          fields:
+            - result
 workflows:
   ->: workflow
   name: "action-purchase-workflow"
@@ -108,25 +107,25 @@ workflows:
   action_properties:
     kind: "Openwhisk"
     action:
-      - name: cartype
+      - name: employee_ids
         api_host: "https://65.20.70.146:31001"
         auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
         insecure: "true"
         namespace: "guest"
 
-      - name: modelavail
+      - name: getsalaries
         api_host: "https://65.20.70.146:31001"
         auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
         insecure: "true"
         namespace: "guest"
 
-      - name: models_price
+      - name: getaddress
         api_host: "https://65.20.70.146:31001"
         auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
         insecure: "true"
         namespace: "guest"
 
-      - name: purchase
+      - name: salary
         api_host: "https://65.20.70.146:31001"
         auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
         insecure: "true"
