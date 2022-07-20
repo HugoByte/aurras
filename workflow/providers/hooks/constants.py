@@ -1,5 +1,5 @@
 
-dependencies = f"""
+cargo_dependencies = f"""
 [lib]
 crate-type = ["cdylib"]
 
@@ -18,8 +18,8 @@ common_rs_file = f"""
 use super::*;
 #[derive(Debug)]
 pub struct WorkflowGraph {{
+    edges: Vec<(usize, usize)>,
     nodes: Vec<Box<dyn Execute>>,
-    edges: Vec<()>,
 }}
 
 impl WorkflowGraph {{
@@ -38,6 +38,16 @@ impl WorkflowGraph {{
         let len = self.nodes.len();
         self.nodes.push(task);
         len
+    }}
+
+    pub fn add_edge(&mut self, parent: usize, child: usize) {{
+        self.edges.push((parent, child));
+    }}
+
+    pub fn add_edges(&mut self, edges: &[(usize, usize)]) {{
+        edges
+            .iter()
+            .for_each(|(source, destination)| self.add_edge(*source, *destination));
     }}
 
     pub fn get_task(&self, index: usize) -> &Box<dyn Execute> {{
@@ -59,19 +69,6 @@ impl WorkflowGraph {{
         }}
        
     }}
-
-    pub fn pipe(&mut self, task_index: usize, sourece_index: usize) ->  Result<&mut Self,String> {{
-        let previous_task = self.get_task(sourece_index);
-        let previous_task_output = previous_task.get_task_output();
-        let current_task = self.get_task_as_mut(task_index);
-        current_task.set_output_to_task(previous_task_output);
-        match current_task.execute(){{
-            Ok(()) => Ok(self),
-            Err(err) => Err(err),
-        }}
-
-    }}
-
     pub fn term(&mut self, task_index: Option<usize>) -> Result<Types,String> {{
 
         match task_index {{
@@ -95,24 +92,52 @@ impl WorkflowGraph {{
         
     }}
 
-    pub fn concat(&mut self, source_indices: Vec<usize>, task_index: usize) -> Result<&mut Self,String> {{
+    pub fn pipe(&mut self, task_index: usize) -> Result<&mut Self,String> {{
+        let mut list = Vec::new();
+        let edges_list = self.edges.clone();
+        edges_list.iter().for_each(|(source, destination)| {{
+            if destination == &task_index {{
+                list.push(source)
+            }}
+        }});
         let mut res: Vec<Types> = Vec::new();
-        if !source_indices.is_empty() {{
-            res = source_indices
-                .iter()
-                .map(|index| {{
-                    let previous_task = self.get_task(*index);
-                    let previous_task_output = previous_task.get_task_output();
-                    previous_task_output
-                }})
-                .collect();
+        match list.len() {{
+            0 => {{
+                match self.get_task_as_mut(task_index).execute(){{
+                    
+                    Ok(()) => Ok(self),
+                    Err(err) => Err(err),
+        
+                }}
+            }},
+            1 => {{
+                let previous_task_output = self.get_task(*list[0]).get_task_output();
+                let current_task = self.get_task_as_mut(task_index);
+                current_task.set_output_to_task(previous_task_output);
+                match current_task.execute(){{
+                Ok(()) => Ok(self),
+                Err(err) => Err(err),
+                }}
+            }}
+            _ => {{
+                res = list
+                    .iter()
+                    .map(|index| {{
+                        let previous_task = self.get_task(**index);
+                        let previous_task_output = previous_task.get_task_output();
+                        previous_task_output
+                    }})
+                    .collect();
+
+                let s: Types = res.into();
+                let current_task = self.get_task_as_mut(task_index);
+                current_task.set_output_to_task(s);
+                
+                match current_task.execute(){{
+                Ok(()) => Ok(self),
+                Err(err) => Err(err),
         }}
-        let s: Types = res.into();
-        let current_task = self.get_task_as_mut(task_index);
-        current_task.set_output_to_task(s);
-        match current_task.execute() {{
-            Ok(()) => Ok(self),
-            Err(err) => Err(err),
+            }}
         }}
     }}
 }}
@@ -140,16 +165,32 @@ macro_rules! impl_execute_trait {{
     }};
 }}
 
+pub fn join_hashmap<T: PartialEq + std::hash::Hash + Eq + Clone, U: Clone, V: Clone>(
+    first: HashMap<T, U>,
+    second: HashMap<T, V>,
+) -> HashMap<T, (U, V)> {{
+    let mut data: HashMap<T, (U, V)> = HashMap::new();
+    for (key, value) in first {{
+        for (s_key, s_value) in &second {{
+            if key.clone() == s_key.to_owned() {{
+                data.insert(key.clone(), (value.clone(), s_value.clone()));
+            }}
+        }}
+    }}
+    data
+}}
+
 """
 traits_file = f"""
 use super::*;
 
-pub trait Execute : Debug {{
+pub trait Execute : Debug + DynClone  {{
     fn execute(&mut self)-> Result<(),String>;
     fn get_task_output(&self)->Types;
     fn set_output_to_task(&mut self, inp: Types);
 }}
 
+clone_trait_object!(Execute);
 """
 
 global_imports = f"""
