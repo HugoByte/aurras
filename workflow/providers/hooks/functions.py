@@ -1,7 +1,8 @@
 import copy
+from dataclasses import field, fields
+from mimetypes import init
 import os
-import re
-from .constants import dependencies,common_rs_file,traits_file,global_imports
+from .constants import cargo_dependencies, common_rs_file, traits_file, global_imports
 
 
 #global variables
@@ -10,8 +11,7 @@ create_enum = f"""
 task_struct_impl = f"""use super::*;
 """
 impl_task_trait = "impl_execute_trait!("
-task_store = dict()
-task_store_copy = dict()
+
 impl_stucture = ""
 setter = ""
 new_method = ""
@@ -19,11 +19,17 @@ action_properties = dict()
 generic_input_sturct_filed = ""
 dependency_matrix = dict()
 main_file = ""
+map_task_name = []
+dependencies = dict()
+main_input_dict = dict()
 
-#to convert camel_case to PascalCase
+# to convert camel_case to PascalCase
+
+
 def convert_to_pascalcase(string: str) -> str:
 
     return string.replace("_", " ").title().replace(" ", "")
+
 
 """
     Creates Cargo.toml file using workflow config
@@ -32,7 +38,8 @@ def convert_to_pascalcase(string: str) -> str:
             `version` - workflow version
 """
 
-def create_workflow_config(name,version) -> str:
+
+def create_workflow_config(name, version) -> str:
     workflow_config = f"""
 [package]
 name = "{name}"
@@ -42,6 +49,7 @@ edition = "2018"
 """
     return workflow_config
 
+
 """
     Creates rust struct type based on the YAML config provided
         # Arguments
@@ -49,10 +57,11 @@ edition = "2018"
             `action_props` - A list of dictonary containing parsed action properties from Workflow Hook
 
 """
-def struct_generator(task_list,action_props):
-    global impl_task_trait,impl_get_task_trait,task_struct_impl,impl_stucture,run,new_method,setter,task_store,create_enum
-    enum =""
-    
+
+
+def struct_generator(task_list, action_props):
+    global map_task_name, impl_task_trait, impl_get_task_trait, task_struct_impl, impl_stucture, new_method, create_enum, dependencies
+    enum = ""
     for task in task_list:
         task_dictionary = dict()
         name = task['task_name']
@@ -61,22 +70,48 @@ def struct_generator(task_list,action_props):
         output_args = task['output_args']
         task_name = name
         impl_task_trait += f"{task_name},"
-        
-        if None not in input_args:
-            create_sturct(task_name, input_args, "input", kind,action_props)
-            for item in input_args:
-                field_name = item['name']
-                field_type = item['type']
 
-                if field_name != "" and field_type != "":
-                    task_dictionary[field_name] = field_type
-        
-        task_store[task_name] = task_dictionary
+        if None not in input_args:
+            create_sturct(task_name, input_args, "input")
         if None not in output_args:
-            create_sturct(task_name, output_args, "output", None,action_props)
+            create_sturct(task_name, output_args, "output")
+        for property in action_props['action']:
+            if map_task_name == [] and convert_to_pascalcase(property['name']) == task_name:
+                task_struct_impl += create_main_struct(
+                    task_name, property, "", kind)
+
+            else:
+                if task_name in map_task_name and convert_to_pascalcase(property['name']) == task_name:
+                    task_struct_impl += create_main_struct(
+                        task_name, property, "map", kind)
+                elif convert_to_pascalcase(property['name']) == task_name:
+                    task_struct_impl += create_main_struct(
+                        task_name, property, "", kind)
+        if task_name in map_task_name:
+            create_enum += f"""
+{task_name}(Mapout{task_name}),
+"""
+            type_in = ""
+            type_out = ""
+            for item in input_args:
+                type_in += item['type']
+            for item in output_args:
+                type_out += item['type']
+            task_struct_impl += f"""
+#[derive(Default, Debug, Clone, Serialize, Deserialize,PartialEq)]
+pub struct Mapout{task_name}{{
+    result : HashMap<{type_in},{type_out}>
+}}
+"""
+            type_in = ""
+            type_out = ""
+        else:
+            create_enum += f"""
+{task_name}({task_name}Output),
+"""
 
     enum += f"""
-       #[derive(EnumFrom, EnumTryInto, PartialEq, Debug, Clone,Serialize,Deserialize)]
+#[derive(EnumFrom, EnumTryInto, PartialEq, Debug, Clone,Serialize,Deserialize)]
 pub enum Types{"{"}
     Empty(String),
     Concat(Vec<Types>),
@@ -86,7 +121,9 @@ pub enum Types{"{"}
     task_struct_impl += impl_task_trait
     enum = enum[:-1]+"}"
     task_struct_impl += enum
+    implement_new_and_setter(task_list, dependencies)
     return
+
 
 """
     Creates input and output struct
@@ -98,20 +135,13 @@ pub enum Types{"{"}
             `action_properties - Properties of the action from yaml config
 
 """
-def create_sturct(task_name: str, args: list, type: str, kind,action_properties):
+
+
+def create_sturct(task_name: str, args: list, type: str):
     global task_struct_impl
     global impl_task_trait
     global create_enum
-    action_prop = ""
-
-    for property in action_properties['action']:
-        if convert_to_pascalcase(property['name']) == task_name:
-            action_prop += f"""
-#[AuthKey="{property['auth_token']}"]
-#[ApiHost="{property['api_host']}"]
-#[Insecure="{property['insecure'].lower()}"]
-#[Namespace="{property['namespace']}"]
-            """
+    global map_task_name
 
     argument = ""
     for item in args:
@@ -123,22 +153,7 @@ def create_sturct(task_name: str, args: list, type: str, kind,action_properties)
             argument += f"""
         {field_name}:{field_type},
             """
-    
-    if type == "input":
-        create_enum += f"""
-        {task_name}({task_name}Output),
-    """
-        task_struct_impl += f"""
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize,{kind})]
-{action_prop}
-pub struct {task_name}{{
-    action_name: String,
-    pub input:{task_name}{type.title()},
-    pub output:{task_name}Output,
-}}
-    """
-    
     if argument != "":
         task_struct_impl += f"""
 #[derive(Default, Debug, Clone, Serialize, Deserialize,PartialEq)]
@@ -146,10 +161,45 @@ pub struct {task_name}{type.title()} {{
 {argument} 
 }}
 """
+
     task_struct_impl = task_struct_impl.replace("\\", "")
     task_struct_impl = task_struct_impl.rjust(len(task_struct_impl))
 
     return
+
+
+def create_main_struct(task_name, property, type, kind) -> str:
+    task_struct_impl = ""
+    action_prop = ""
+    action_prop += f"""
+#[AuthKey="{property['auth_token']}"]
+#[ApiHost="{property['api_host']}"]
+#[Insecure="{property['insecure'].lower()}"]
+#[Namespace="{property['namespace']}"]
+"""
+    if type == "map":
+        task_struct_impl += f"""
+#[derive(Default, Debug, Clone, Serialize, Deserialize,{kind})]
+{action_prop}
+pub struct {task_name}{{
+    action_name: String,
+    pub input:{task_name}Input,
+    pub output:{task_name}Output,
+    pub mapout: Mapout{task_name},
+}}
+"""
+    else:
+        task_struct_impl += f"""
+#[derive(Default, Debug, Clone, Serialize, Deserialize,{kind})]
+{action_prop}
+pub struct {task_name}{{
+    action_name: String,
+    pub input:{task_name}Input,
+    pub output:{task_name}Output,
+}}
+"""
+    return task_struct_impl
+
 
 """
     Creates Main Input struct
@@ -159,222 +209,443 @@ pub struct {task_name}{type.title()} {{
 
 """
 
-def create_main_input_struct(task_list,flow_list):
-    global  task_store, task_struct_impl, new_method, generic_input_sturct_filed, task_store_copy, dependency_matrix
-    task_store_copy = copy.deepcopy(task_store)
-    setter = dict()
-    dependency = dict()
+# Dependency matrix
 
-    dep_field = dict()
-    dep_task = []
-    depend_task_type_map = ""
-    current_task_type_map = ""
-    map_task_name = ""
 
-    local_pipe_dic = dict()
-    local_pipe_list = []
+def generate_dependency_matrix(flow_list):
+    global task_store, map_task_name, dependencies, task_struct_impl, new_method, generic_input_sturct_filed, dependency_matrix
+
+    map_tasks = []
+    task_pipe = []
+    task_concat = []
+    task_term = []
+    task_init = []
 
     for flow in flow_list:
-
-        if flow['type'] == "Init":            
-            for key, values in task_store_copy[flow['task_name']].items():
-                generic_input_sturct_filed += f"pub {key}:{values},"
+        if flow['type'] == "Init":
             if flow['depends_on'] == None:
-                # dependency_matrix[flow['type']] = [flow['task_name']]
-                local_pipe_list.append(flow['task_name'])
-                dependency_matrix[flow['type']] = local_pipe_list
+                dependency = {
+                    "task_name": flow['task_name'],
+                    "dependent_task": "",
+                }
+                task_init.append(dependency)
 
         elif flow['type'] == "Pipe" or flow['type'] == "Term":
+            if flow['type'] == "Pipe":
 
-            for item in flow['depends_on']['task']:
-                local_pipe_list_pipe = []
-                local_pipe_list_term = []
-                dep_field[item['name']] = item['fields']
+                if flow['depends_on']['operation'] == "map":
+                    dependency = {
+                        "task_name": flow['task_name'],
+                        "dependent_task": flow['depends_on']['task'],
+                    }
+                    map_task_name.append(flow['task_name'])
 
-                poped = dict()
-                for filed in item['fields']:
-                    poped[filed] = task_store_copy[flow['task_name']].pop(filed)
-                
-                setter[flow['task_name']] = poped
-                poped = dict()
-                dependency[flow['task_name']] = item['name'].replace(
-                    "_", " ").title().replace(" ", "")
-
-                if flow['type'] == "Pipe":
-                    dep_task.append(item['name'])
-                    local_pipe_dic[flow['task_name']] = dep_task
-                    local_pipe_list_pipe.append(local_pipe_dic)
-                    dependency_matrix['Pipe'] = local_pipe_list_pipe
-                    local_pipe_list = []
-                    # local_pipe_dic = dict()
-
+                    map_tasks.append(dependency)
+                elif flow['depends_on']['operation'] == "concat":
+                    dependency = {
+                        "task_name": flow['task_name'],
+                        "dependent_task": flow['depends_on']['task'],
+                    }
+                    task_concat.append(dependency)
                 else:
-                    local_pipe_dic = dict()
-                    dep_task.append(item['name'])
-                    local_pipe_dic[flow['task_name']] = dep_task
+                    dependency = {
+                        "task_name": flow['task_name'],
+                        "dependent_task": flow['depends_on']['task'],
+                    }
+                    task_pipe.append(dependency)
+            else:
+                dependency = {
+                    "task_name": flow['task_name'],
+                    "dependent_task": flow['depends_on']['task'],
+                }
+                task_term.append(dependency)
 
-                    local_pipe_list_term.append(local_pipe_dic)
-                    dependency_matrix['Term'] = local_pipe_list_term
-                    local_pipe_list = []
-
-            dependency[flow['task_name']] = dep_field
-            dep_field = dict()
-
-            for key, values in task_store_copy[flow['task_name']].items():
-                generic_input_sturct_filed += f"pub {key}:{values},"
-            dep_task = []
-
-        else:
-
-            for item in flow['depends_on']['task']:
-                map_task_name = flow['task_name']
-                depends_on_task = item['name'].replace(
-                    "_", " ").title().replace(" ", "")
-
-                for task in task_list:
-                    if map_task_name == task['task_name']:
-                        for i in task['output_args']:
-                            current_task_type_map = i['type']
-                    elif depends_on_task == task['task_name']:
-                        for i in task['output_args']:
-                            depend_task_type_map = i['type']
-
-                if depend_task_type_map != None:
-                    dep_type = re.findall(r'\<.*?\>', depend_task_type_map)
-                    depend_task_type_map = "".join(dep_type)
-
-            task_struct_impl += f"""
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
-pub struct {map_task_name}MapOutput{{
-    result : HashMap<{depend_task_type_map},{current_task_type_map}>
-}}
-"""
-
-        # local_pipe_dic = dict()
-        # dependency_matrix[flow['type']] = local_pipe_list
-        local_pipe_list = []
-
-    task_struct_impl += f"""
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
-pub struct Input{{
-    {generic_input_sturct_filed.replace("'", "").replace("{", "").replace("}", "")}
-}}
-"""
-
-    implement_new_and_setter(task_list, task_store_copy, setter, dependency)
+            dependencies['pipe'] = {"map": map_tasks,
+                                    "concat": task_concat, "no_op": task_pipe}
+            dependencies['term'] = {"no_op": task_term}
+            dependencies['init'] = {"no_op": task_init}
     return
+
 
 """
     Generates new and Setter method for respective structure
 """
-def implement_new_and_setter(task_list, task_store_copy, setter, dependency):
+
+
+def implement_new_and_setter(task_list, dependency):
     global task_struct_impl
+    global map_task_name
+    global main_input_dict
+    generic_input_struct = ""
+    dep_task = []
 
     for task in task_list:
         task_name = task['task_name']
-        method_param = f"{task_store_copy[task_name]}".replace(
-            "'", "").replace("{", "").replace("}", "")
-        field_assign = ",".join(list(task_store_copy[task_name].keys()))
-        if field_assign != "" and method_param != "":
-            field_assign += ","
-            method_param += ","
-        new_impl_methods = f"""
- pub fn new({method_param}action_name:String) -> Self {{ Self{{  input:{task_name}Input{{{field_assign} ..Default::default()}},action_name: action_name, ..Default::default()}}}}
+        for key, values in dependency.items():
+
+            if key == "init":
+                input_fields = []
+                if values['no_op'][0]['task_name'] == task_name:
+                    setter_method = "fn setter(&mut self,_value:Types){}"
+                    output_method = out_put_method("", task_name)
+                    method_param = ""
+                    field_assign = ""
+                    for args in task['input_args']:
+                        method_param += f"{args['name']}:{args['type']},"
+                        generic_input_struct += f"""
+pub {args['name']}:{args['type']},"""
+                        field_assign += f"{args['name']},"
+                        input_dict = {
+                            "task_name": task_name,
+                            "field": args['name']
+                        }
+                        input_fields.append(input_dict)
+                        main_input_dict['init'] = input_fields
+
+                    new_method = new_method_gen(
+                        method_param, field_assign, task_name)
+                    task_struct_impl += method_implementer(
+                        task_name, new_method, setter_method, output_method)
+
+            if key == "pipe":
+
+                for item in values['map']:
+                    input_dict = dict()
+                    if item['task_name'] == task_name:
+                        input_field_name = ""
+                        output_field_name = ""
+                        dependent_task = ""
+                        for args in task['input_args']:
+                            input_field_name += args['name']
+                        for args in task['output_args']:
+                            output_field_name += args['name']
+                        for items in item['dependent_task']:
+                            dependent_task += convert_to_pascalcase(
+                                items['name'])
+                        setter_method = setter_map(
+                            dependent_task, input_field_name, output_field_name)
+                        method_param = ""
+                        field_assign = ""
+                        new_method = new_method_gen("", "", task_name)
+                        output_method = out_put_method("map", task_name)
+                        task_struct_impl += method_implementer(
+                            task_name, new_method, setter_method, output_method)
+                        input_dict = {"task_name": task_name, "field": []}
+                        dep_task.append(input_dict)
+                        main_input_dict['map'] = dep_task
+
+                for item in values['concat']:
+                    input_dict = dict()
+                    input_fields = []
+                    if item['task_name'] == task_name:
+                        task1 = ""
+                        task2 = ""
+                        field_name = ""
+                        depend_task = ""
+                        field_param = ""
+
+                        input_dict = {"task_name": task_name, "field": []}
+                        task1 = item['dependent_task'][0]['name']
+                        task2 = item['dependent_task'][1]['name']
+                        for args in task['input_args']:
+                            field_name += args['name']
+                        setter_method = setter_concat(task1, task2, field_name)
+                        new_method = new_method_gen("", "", task_name)
+                        output_method = out_put_method("", task_name)
+                        task_struct_impl += method_implementer(
+                            task_name, new_method, setter_method, output_method)
+                        input_fields.append(input_dict)
+                        main_input_dict['concat'] = input_fields
+            if key == "pipe":
+
+                for item in values['no_op']:
+                    input_fields = []
+                    input_dict = dict()
+                    if item['task_name'] == task_name:
+                        method_param = ""
+                        field_assign = ""
+                        depend_task = ""
+                        field_param = ""
+                        for dep in item['dependent_task']:
+                            depend_task = convert_to_pascalcase(dep['name'])
+                            field_param = "".join(dep['fields'])
+
+                        for args in task['input_args']:
+                            if field_param != args['name']:
+                                method_param += f"{args['name']}:{args['type']},"
+                                generic_input_struct += f"""
+pub {args['name']}:{args['type']},"""
+                                field_assign += f"{args['name']},"
+                                input_fields.append(args['name'])
+
+                        input_dict = {"task_name": task_name,
+                                      "field": input_fields}
+                        setter_method = setter_no_op(depend_task, field_param)
+                        output_method = out_put_method("", task_name)
+
+                        new_method = new_method_gen(
+                            method_param, field_assign, task_name)
+
+                        task_struct_impl += method_implementer(
+                            task_name, new_method, setter_method, output_method)
+                        dep_task.append(input_dict)
+                        main_input_dict['pipe'] = dep_task
+            if key == "term":
+                dependen_task = []
+                for item in values['no_op']:
+                    input_fields = []
+                    input_dict = dict()
+                    if item['task_name'] == task_name:
+                        method_param = ""
+                        field_assign = ""
+                        depend_task = ""
+                        field_param = ""
+                        local_term_list = []
+                        for dep in item['dependent_task']:
+                            depend_task = convert_to_pascalcase(dep['name'])
+                            field_param = "".join(dep['fields'])
+
+                        for args in task['input_args']:
+                            if field_param != args['name']:
+                                method_param += f"{args['name']}:{args['type']},"
+                                generic_input_struct += f"""
+pub {args['name']}:{args['type']},"""
+                                field_assign += f"{args['name']},"
+                                local_term_list.append(args['name'])
+                                input_fields.append(args['name'])
+
+                        input_dict = {"task_name": task_name,
+                                      "field": input_fields}
+
+                        setter_method = setter_no_op(depend_task, field_param)
+                        output_method = out_put_method("", task_name)
+
+                        new_method = new_method_gen(
+                            method_param, field_assign, task_name)
+
+                        task_struct_impl += method_implementer(
+                            task_name, new_method, setter_method, output_method)
+                        dependen_task.append(input_dict)
+                        main_input_dict['term'] = dependen_task
+    task_struct_impl += creat_genric_input(generic_input_struct)
+    return
+
+
+def creat_genric_input(input_struct_field) -> str:
+
+    input_struct = f"""
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub struct Input {{
+    {input_struct_field}
+    
+}}
 """
-        new_get_task_output = f"""
+
+    return input_struct
+
+
+def out_put_method(type, task_name) -> str:
+    if type == "map":
+        return f"""
+fn output(&self) ->Mapout{task_name}{{
+    self.mapout.clone()
+}}
+"""
+    else:
+        return f"""
 fn output(&self) ->{task_name}Output{{
     self.output.clone()
 }}
-"""     
-        new_get_task_output = new_get_task_output.strip().replace("'","")
-        new_impl_methods = new_impl_methods.strip().replace("'", "")
-        new_impl = ""
-        setter_method = ""
-        if task_name in setter.keys():
-            if task_name in setter.keys():
-                fields = setter[task_name].keys()
-                set_fileds = ""
-                for x in fields:
-                    set_fileds += f"""self.input.{x} = value.{x};"""
-            dep_task_out = convert_to_pascalcase(
-                " ".join(dependency[task_name].keys()))
-            setter_method += f"""fn setter(&mut self,value:Types){{
-                let value : {dep_task_out}Output = value.try_into().unwrap();
-                    {set_fileds}}}""".replace(
-                "\\n", "").replace("'", "")
-            new_impl += f"""
+"""
+
+
+def setter_no_op(depend_task, field) -> str:
+    setter = f"""
+fn setter(&mut self, value: Types) {{
+        let value: {depend_task}Output = value.try_into().unwrap();
+        self.input.{field} = value.{field};
+}}   
+"""
+    return setter
+
+
+def new_method_gen(method_param, field_assign, task_name) -> str:
+    if method_param != "" and field_assign != "":
+        new_method_str = f"""
+pub fn new({method_param}action_name:String) -> Self {{ Self{{  input:{task_name}Input{{{field_assign} ..Default::default()}},action_name: action_name, ..Default::default()}}}}
+"""
+        return new_method_str
+    else:
+        new_method_str = f"""
+pub fn new(action_name:String) -> Self {{ Self{{  input:{task_name}Input{{..Default::default()}},action_name: action_name, ..Default::default()}}}}
+"""
+        return new_method_str
+
+
+def setter_concat(task1, task2, field) -> str:
+    setter = f"""
+fn setter(&mut self, value: Types) {{
+        let value: Vec<Types> = value.try_into().unwrap();
+        let value: (Mapout{convert_to_pascalcase(task1)}, Mapout{convert_to_pascalcase(task2)}) = (
+            value[0].clone().try_into().unwrap(),
+            value[1].clone().try_into().unwrap(),
+        );
+        
+
+        
+        let res = join_hashmap(value.0.result, value.1.result);
+        
+        self.input.{field} = res;
+}} 
+"""
+    return setter
+
+
+def setter_map(dep_task, input_field, output_field) -> str:
+
+    setter = f"""
+fn setter(&mut self, value: Types) {{
+        let value: {dep_task}Output = value.try_into().unwrap();
+        let mut map: HashMap<_, _> = value
+            .ids
+            .iter()
+            .map(|x| {{
+                self.input.{input_field} = x.to_owned();
+                self.run();
+                (x.to_owned(), self.output.{output_field}.to_owned())
+            }})
+            .collect();
+        self.mapout.result = map;
+    }}
+
+"""
+    return setter
+
+
+def method_implementer(task_name, new_method, setter_method, output_method) -> str:
+    new_impl = ""
+    new_impl += f"""
 impl {task_name} {{
 
-{new_impl_methods}
+{new_method}
 {setter_method}
-{new_get_task_output}
+{output_method}
 
 }}
 """
-            task_struct_impl += new_impl.replace("'", "")
-        else:
-            setter_method += "fn setter(&mut self,_value:Types){}"
-            new_impl += f"""
-impl {task_name} {{
-
-{new_impl_methods}
-{setter_method}
-{new_get_task_output}
-}}
-"""
-            task_struct_impl += new_impl.replace("'", "")
-
-    return
+    return new_impl
 
 
 """
     Creates main function to use and run workflow generated from yaml config
 """
-def create_main_function(task):
-    global task_store, task_store_copy, dependency_matrix, task_struct_impl, global_imports,main_file
+
+
+def create_main_function(tasks, action_props):
+    global main_input_dict
+    global dependencies
+    global task_store, task_store_copy, dependency_matrix, task_struct_impl, global_imports, main_file
     main = ""
     flow = ""
-    dependency_matrix_map = ""
     initilization = ""
     workflow = ""
+    workflow_edges = ""
     result = ""
-    # setter_trait = ""
 
-    for key, values in task_store_copy.items():
-        new_fileds = ""
-        for value in values:
-            new_fileds += f"input.{value},"
+    for task in tasks:
 
-        initilization += f"""
-        let {key.lower()} = {key}::new({new_fileds}String::from("{key.lower()}"));
-            """
-    
-    for key, values in dependency_matrix.items():
-
-        if "Init" in key:
-            flow += f"""let {values[0].lower()}_index = workflow.add_node(Box::new({values[0].lower()}));"""
-            workflow += f""" workflow.init()?"""
-            
-        if "Pipe" in key:
-            for pipe_key,pipe_value in values[0].items():
-                workflow += f""".pipe({convert_to_pascalcase(str(pipe_key)).lower()}_index,{"".join(pipe_value)}_index)?"""
-            pipe_keys = list(values[0].keys())
-            for key in pipe_keys:
-                flow += f"""
-let {key.lower()}_index = workflow.add_node(Box::new({key.lower()}));
+        for key, values in main_input_dict.items():
+            if key == "init":
+                for value in values:
+                    if task['task_name'] == value['task_name']:
+                        flow += f"""
+let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task_name'].lower()}));"""
+                        task_name = ""
+                        for action in action_props['action']:
+                            if task['task_name'] == convert_to_pascalcase(action['name']):
+                                task_name = action['name']
+                        initilization += f"""
+let {value['task_name'].lower()} = {value['task_name']}::new(input.{value['field']},String::from("{task_name}"));               
 """
+            if key == "pipe" or key == "term" or key == "map" or key == "concat":
+                for value in values:
+                    if task['task_name'] == value['task_name']:
+                        if value['field'] == []:
+                            flow += create_flow_objects(value)
+                            initilization += create_initialization_object(
+                                value, "")
+                        else:
+                            fields = ""
+                            for filed_value in value['field']:
+                                fields += f"input.{filed_value},"
+                            flow += create_flow_objects(value)
+                            initilization += create_initialization_object(
+                                value, fields)
 
-        if "Term" in key:
-            keys = list(values[0].keys())
-            for key in keys:
-                workflow += f""".term(Some({key.lower()}_index))?"""
-                flow += f"""
-let {key.lower()}_index = workflow.add_node(Box::new({key.lower()}));
-"""
-                result += f"""
-let result: {key}Output = result.try_into().unwrap();
+        for key, values in dependencies.items():
+            if key == "init":
+                for items in values['no_op']:
+                    if task['task_name'] == items['task_name']:
+                        workflow += f""" workflow.init()?"""
+            if key == "pipe":
+                for items in values['map']:
+                    if task['task_name'] == items['task_name']:
+                        dependent_field = ""
+                        for dep_task in items['dependent_task']:
+                            dependent_field += convert_to_pascalcase(
+                                dep_task['name']).lower()
+                        workflow += f""".pipe({items['task_name'].lower()}_index)?"""
+                        workflow_edges += f"""
+({dependent_field}_index,{items['task_name'].lower()}_index),"""
+                for items in values['concat']:
+                    if task['task_name'] == items['task_name']:
+                        workflow += f""".pipe({items['task_name'].lower()}_index)?"""
+                        dependent_field = ""
+                        for dep_task in items['dependent_task']:
+                            dependent_field += convert_to_pascalcase(
+                                dep_task['name']).lower()
+                            workflow_edges += f"""
+({dependent_field}_index,{items['task_name'].lower()}_index),"""
+                            dependent_field = ""
+                for items in values['no_op']:
+                    if task['task_name'] == items['task_name']:
+                        workflow += f""".pipe({items['task_name'].lower()}_index)?"""
+                        dependent_field = ""
+                        for dep_task in items['dependent_task']:
+                            dependent_field += convert_to_pascalcase(
+                                dep_task['name']).lower()
+                        workflow_edges += f"""
+({dependent_field}_index,{items['task_name'].lower()}_index),"""
+
+            if key == "term":
+                for items in values['no_op']:
+                    if task['task_name'] == items['task_name']:
+                        workflow += f""".term(Some({items['task_name'].lower()}_index))?"""
+                        dependent_field = ""
+                        for dep_task in items['dependent_task']:
+                            dependent_field += convert_to_pascalcase(
+                                dep_task['name']).lower()
+                        workflow_edges += f"""
+({dependent_field}_index,{items['task_name'].lower()}_index),"""
+                        result += f"""
+let result: {items['task_name']}Output = result.try_into().unwrap();
 let result = serde_json::to_value(result).unwrap();
 Ok(result)
+"""
+
+    if "term" not in workflow:
+        workflow += f".term(None)?"
+        result += f"""
+let result: {tasks[-1]['task_name']}Output = result.try_into().unwrap();
+let result = serde_json::to_value(result).unwrap();
+Ok(result)
+"""
+
+    edges = f"""
+ workflow.add_edges(&[
+
+       {workflow_edges}
+]);
 """
     main += f"""
     {global_imports}
@@ -385,20 +656,46 @@ Ok(result)
     let input: Input = serde_json::from_value(args).map_err(|e| e.to_string())?;
     {initilization}
     {flow}
+    {edges}
     let result = {workflow};
     {result}
     
 }}
     """
-    # task_struct_impl += setter_trait
     main_file += main
+    return
+
+
+def create_flow_objects(value) -> str:
+
+    flow_object = f"""
+let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task_name'].lower()}));"""
+
+    return flow_object
+
+
+def create_initialization_object(value, fields) -> str:
+    if fields != "":
+        initializattion = f"""
+let {value['task_name'].lower()} = {value['task_name']}::new({fields}String::from("{value['task_name'].lower()}"));
+"""
+        return initializattion
+    else:
+        initializattion = f"""
+let {value['task_name'].lower()} = {value['task_name']}::new(String::from("{value['task_name'].lower()}"));
+"""
+        return initializattion
+
 
 """
     To Write generated code to Rust package 
 """
+
+
 def generate_output(workflow_config: str):
-    global dependencies, common_rs_file, traits_file, task_struct_impl,main_file
-    workflow_config += dependencies
+    global cargo_dependencies, common_rs_file, traits_file, task_struct_impl, main_file
+
+    workflow_config += cargo_dependencies
 
     output_path = "../../"
     path = os.path.join(output_path, "output/src")
@@ -407,7 +704,6 @@ def generate_output(workflow_config: str):
     cargo.writelines(workflow_config)
     cargo.close()
 
-    
     rustfile = open(os.path.join(output_path, "output/src/common.rs"), 'w')
     rustfile.writelines(common_rs_file)
     rustfile.close()
@@ -420,3 +716,4 @@ def generate_output(workflow_config: str):
     rustfile = open(os.path.join(output_path, "output/src/lib.rs"), 'w')
     rustfile.writelines(main_file)
     rustfile.close()
+    return
