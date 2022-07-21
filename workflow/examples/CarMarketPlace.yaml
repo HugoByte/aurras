@@ -28,6 +28,11 @@ tasks:
     output_args:
       - name: "car_company_list"
         type: "HashMap<String,Vec<String>>"
+    properties:
+        api_host: "https://65.20.70.146:31001"
+        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+        insecure: "true"
+        namespace: "guest"
 
   - ->: task
     kind: "OpenWhisk"
@@ -40,6 +45,11 @@ tasks:
     output_args:
       - name: "models"
         type: "Vec<String>"
+    properties:
+        api_host: "https://65.20.70.146:31001"
+        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+        insecure: "true"
+        namespace: "guest"
 
   - ->: task
     kind: "OpenWhisk"
@@ -50,6 +60,11 @@ tasks:
     output_args:
       - name: "model_price_list"
         type: "HashMap<String,i32>"
+    properties:
+        api_host: "https://65.20.70.146:31001"
+        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+        insecure: "true"
+        namespace: "guest"
 
   - ->: task
     kind: "OpenWhisk"
@@ -64,6 +79,11 @@ tasks:
     output_args:
       - name: "message"
         type: "String"
+    properties:
+        api_host: "https://65.20.70.146:31001"
+        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+        insecure: "true"
+        namespace: "guest"
 
 flows:
   - ->: flow
@@ -106,29 +126,3 @@ workflows:
   ->: workflow
   name: "workflow"
   version: "0.0.1"
-  action_properties:
-    kind: "Openwhisk"
-    action:
-      - name: cartype
-        api_host: "https://65.20.70.146:31001"
-        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
-        insecure: "true"
-        namespace: "guest"
-
-      - name: modelavail
-        api_host: "https://65.20.70.146:31001"
-        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
-        insecure: "true"
-        namespace: "guest"
-
-      - name: modelsprice
-        api_host: "https://65.20.70.146:31001"
-        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
-        insecure: "true"
-        namespace: "guest"
-
-      - name: purchase
-        api_host: "https://65.20.70.146:31001"
-        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
-        insecure: "true"
-        namespace: "guest"

@@ -16,21 +16,18 @@ let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task
     Creates the initialization objects for the workflow initialization
 """
 
-def create_initialization_object(task_name, fields,action_props) -> str:
-    task = ""
-    for action in action_props['action']:
-        if task_name == convert_to_pascalcase(action['name']):
-            task = action['name']
-            if fields != "":
-                initializattion = f"""
-let {task_name.lower()} = {task_name}::new({fields}String::from("{task}"));
+def create_initialization_object(task_name, fields) -> str:
+    
+    if fields != "":
+        initializattion = f"""
+let {convert_to_pascalcase(task_name).lower()} = {convert_to_pascalcase(task_name)}::new({fields}String::from("{task_name}"));
 """
-                return initializattion
-            else:
-                initializattion = f"""
-let {task_name.lower()}= {task_name}::new(String::from("{task}"));
+        return initializattion
+    else:
+        initializattion = f"""
+let {convert_to_pascalcase(task_name).lower()}= {convert_to_pascalcase(task_name)}::new(String::from("{task_name}"));
 """
-                return initializattion
+        return initializattion
 
 
 """
