@@ -3,10 +3,10 @@ name = "openwhisk_macro"
 version = "0.1.6"
 edition = "2018"
 authors = ["HugoByte <hello@hugobyte.com>"]
-repository = "https://github.com/HugoByte/openwhisk_macro"
+repository = "https://github.com/HugoByte/aurras/workflow/openwhisk_macro"
 license = "Apache-2.0"
 description = "Derive Macro for OpenWhisk Rust Client"
-documentation = "https://github.com/HugoByte/openwhisk_macro"
+documentation = "https://docs.rs/openwhisk_macro/latest"
 readme = "readme.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
