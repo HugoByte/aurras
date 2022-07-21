@@ -7,5 +7,6 @@ members = [
     "actions/push-notification",
     "actions/event-receiver",
     "actions/substrate-event-processor",
-    "workflow/openwhisk_macro"
+    "workflow/openwhisk_macro",
+    "workflow/workflow_macro"
 ]
