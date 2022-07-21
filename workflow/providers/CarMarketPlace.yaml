@@ -98,7 +98,7 @@ flows:
     task_name: "purchase"
     depends_on:
       task:
-        - name: models_price
+        - name: modelsprice
           fields:
             - model_price_list
 
