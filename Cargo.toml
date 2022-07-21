@@ -8,5 +8,5 @@ members = [
     "actions/event-receiver",
     "actions/substrate-event-processor",
     "workflow/openwhisk_macro",
-    "output"
+    "workflow/workflow_macro"
 ]
