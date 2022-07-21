@@ -9,14 +9,15 @@ serde_json = "1.0.81"
 serde_derive = "1.0.81"
 derive-enum-from-into = "0.1.1"
 openwhisk-rust = "0.1.2"
-openwhisk_macro = "0.1.5"
+openwhisk_macro = "0.1.6"
 paste = "1.0.7"
 dyn-clone = "1.0.7"
+workflow_macro = "0.0.2"
 
 """
 common_rs_file = f"""
 use super::*;
-#[derive(Debug)]
+#[derive(Debug,Flow)]
 pub struct WorkflowGraph {{
     edges: Vec<(usize, usize)>,
     nodes: Vec<Box<dyn Execute>>,
@@ -205,6 +206,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use serde_json::{{Value,Error}};
 use derive_enum_from_into::{{EnumFrom,EnumTryInto}};
+use workflow_macro::Flow;
 
 use std::convert::TryInto;
 use paste::*;
