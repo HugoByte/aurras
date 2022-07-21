@@ -52,7 +52,7 @@ edition = "2018"
 """
 
 
-def struct_generator(task_list, action_props):
+def struct_generator(task_list):
     global map_task_name, impl_task_trait, impl_get_task_trait, task_struct_impl, impl_stucture, new_method, create_enum, dependencies
     enum = ""
     for task in task_list:
@@ -61,25 +61,26 @@ def struct_generator(task_list, action_props):
         kind = task['kind']
         input_args = task['input_args']
         output_args = task['output_args']
-        task_name = name
+        task_name = convert_to_pascalcase(name)
+        props = task['properties']
         impl_task_trait += f"{task_name},"
 
         if None not in input_args:
             create_sturct(task_name, input_args, "input")
         if None not in output_args:
             create_sturct(task_name, output_args, "output")
-        for property in action_props['action']:
-            if map_task_name == [] and convert_to_pascalcase(property['name']) == task_name:
+        
+        if map_task_name == []:
                 task_struct_impl += create_main_struct(
-                    task_name, property, "", kind)
+                    task_name, props, "", kind)
 
+        else:
+            if task_name in map_task_name :
+                    task_struct_impl += create_main_struct(
+                        task_name, props, "map", kind)
             else:
-                if task_name in map_task_name and convert_to_pascalcase(property['name']) == task_name:
                     task_struct_impl += create_main_struct(
-                        task_name, property, "map", kind)
-                elif convert_to_pascalcase(property['name']) == task_name:
-                    task_struct_impl += create_main_struct(
-                        task_name, property, "", kind)
+                        task_name, props, "", kind)
         if task_name in map_task_name:
             create_enum += f"""
 {task_name}(Mapout{task_name}),
@@ -168,20 +169,20 @@ pub struct {task_name}{type.title()} {{
 
 """
 
-def create_main_struct(task_name, property, type, kind) -> str:
+def create_main_struct(task_name, properties, type, kind) -> str:
     task_struct_impl = ""
     action_prop = ""
     action_prop += f"""
-#[AuthKey="{property['auth_token']}"]
-#[ApiHost="{property['api_host']}"]
-#[Insecure="{property['insecure'].lower()}"]
-#[Namespace="{property['namespace']}"]
+#[AuthKey="{properties['auth_token']}"]
+#[ApiHost="{properties['api_host']}"]
+#[Insecure="{properties['insecure'].lower()}"]
+#[Namespace="{properties['namespace']}"]
 """
     if type == "map":
         task_struct_impl += f"""
 #[derive(Default, Debug, Clone, Serialize, Deserialize,{kind})]
 {action_prop}
-pub struct {task_name}{{
+pub struct {convert_to_pascalcase(task_name)}{{
     action_name: String,
     pub input:{task_name}Input,
     pub output:{task_name}Output,
@@ -279,7 +280,7 @@ def implement_new_and_setter(task_list, dependency):
     dep_task = []
 
     for task in task_list:
-        task_name = task['task_name']
+        task_name = convert_to_pascalcase(task['task_name'])
         for key, values in dependency.items():
 
             if key == "init":
@@ -360,6 +361,7 @@ pub {args['name']}:{args['type']},"""
                 for item in values['no_op']:
                     input_fields = []
                     input_dict = dict()
+                    
                     if item['task_name'] == task_name:
                         method_param = ""
                         field_assign = ""
@@ -436,7 +438,7 @@ pub {args['name']}:{args['type']},"""
 """
 
 
-def create_main_function(tasks, action_props):
+def create_main_function(tasks):
     global main_input_dict
     global dependencies
     global task_store, task_store_copy, dependency_matrix, task_struct_impl, global_imports, main_file
@@ -446,40 +448,39 @@ def create_main_function(tasks, action_props):
     workflow = ""
     workflow_edges = ""
     result = ""
-
     for task in tasks:
-
+        task_name = convert_to_pascalcase(task['task_name'])
         for key, values in main_input_dict.items():
             if key == "init":
                 for value in values:
-                    if task['task_name'] == value['task_name']:
+                    if task_name == value['task_name']:
                         field = f"input.{value['field']},"
                         flow += f"""
 let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task_name'].lower()}));"""
-                        initilization += create_initialization_object(value['task_name'],field,action_props)
+                        initilization += create_initialization_object(task['task_name'],field)
             if key == "pipe" or key == "term" or key == "map" or key == "concat":
                 for value in values:
-                    if task['task_name'] == value['task_name']:
+                    if task_name == value['task_name']:
                         if value['field'] == []:
                             flow += create_flow_objects(value)
                             initilization += create_initialization_object(
-                                value['task_name'], "",action_props)
+                                task['task_name'], "")
                         else:
                             fields = ""
                             for filed_value in value['field']:
                                 fields += f"input.{filed_value},"
                             flow += create_flow_objects(value)
                             initilization += create_initialization_object(
-                                value['task_name'], fields,action_props)
+                                task['task_name'], fields)
 
         for key, values in dependencies.items():
             if key == "init":
                 for items in values['no_op']:
-                    if task['task_name'] == items['task_name']:
+                    if task_name == items['task_name']:
                         workflow += f""" workflow.init()?"""
             if key == "pipe":
                 for items in values['map']:
-                    if task['task_name'] == items['task_name']:
+                    if task_name == items['task_name']:
                         dependent_field = ""
                         for dep_task in items['dependent_task']:
                             dependent_field += convert_to_pascalcase(
@@ -488,7 +489,7 @@ let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task
                         workflow_edges += f"""
 ({dependent_field}_index,{items['task_name'].lower()}_index),"""
                 for items in values['concat']:
-                    if task['task_name'] == items['task_name']:
+                    if task_name == items['task_name']:
                         workflow += f""".pipe({items['task_name'].lower()}_index)?"""
                         dependent_field = ""
                         for dep_task in items['dependent_task']:
@@ -498,7 +499,7 @@ let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task
 ({dependent_field}_index,{items['task_name'].lower()}_index),"""
                             dependent_field = ""
                 for items in values['no_op']:
-                    if task['task_name'] == items['task_name']:
+                    if task_name == items['task_name']:
                         workflow += f""".pipe({items['task_name'].lower()}_index)?"""
                         dependent_field = ""
                         for dep_task in items['dependent_task']:
@@ -509,7 +510,7 @@ let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task
 
             if key == "term":
                 for items in values['no_op']:
-                    if task['task_name'] == items['task_name']:
+                    if task_name == items['task_name']:
                         workflow += f""".term(Some({items['task_name'].lower()}_index))?"""
                         dependent_field = ""
                         for dep_task in items['dependent_task']:
@@ -522,11 +523,11 @@ let result: {items['task_name']}Output = result.try_into().unwrap();
 let result = serde_json::to_value(result).unwrap();
 Ok(result)
 """
-
+    task_copy = tasks
     if "term" not in workflow:
         workflow += f".term(None)?"
         result += f"""
-let result: {tasks[-1]['task_name']}Output = result.try_into().unwrap();
+let result: {convert_to_pascalcase(task_copy[len(task_copy)-1]['task_name'])}Output = result.try_into().unwrap();
 let result = serde_json::to_value(result).unwrap();
 Ok(result)
 """
@@ -541,7 +542,7 @@ Ok(result)
     {global_imports}
     
     pub fn main(args:Value) -> Result<Value,String>{{
-    const LIMIT : usize = {len(task)} ;   
+    const LIMIT : usize = {len(tasks)} ;   
     let mut workflow = WorkflowGraph::new(LIMIT);
     let input: Input = serde_json::from_value(args).map_err(|e| e.to_string())?;
     {initilization}

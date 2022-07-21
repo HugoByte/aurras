@@ -1,7 +1,7 @@
 import os
 from pydantic import Field
 from tackle import BaseHook, tackle
-from typing import Any, List
+from typing import Any, List, Dict
 from .functions import convert_to_pascalcase
 
 task_list = []
@@ -16,13 +16,15 @@ class Task(BaseHook):
                              description="List containing dictonary of parameter and type and input")
     output_args: List = Field(..., title='output_args',
                               description="List contating dictonary of paramter and type for output")
+    properties: Dict = Field(...,title="property", description="Dictonary of property")
     def exec(self):
         
         task = {
-            "task_name": convert_to_pascalcase(self.name),
+            "task_name": self.name,
             "kind": self.kind,
             "input_args": self.input_args,
-            "output_args": self.output_args
+            "output_args": self.output_args,
+            "properties" : self.properties
         }
 
         task_list.append(task)
@@ -32,5 +34,4 @@ class Task(BaseHook):
 
 def getTasks() -> list:
     global task_list
-
     return task_list
