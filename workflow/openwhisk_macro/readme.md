@@ -9,8 +9,8 @@ The Openwhisk Rust Client library requires [Rust](https://www.rust-lang.org/tool
 
  Add following libraries.
  ``` 
- openwhisk-rust  = "0.1.1"
- openwhisk_macro = "0.1.2" 
+ openwhisk-rust  = "0.1.2"
+ openwhisk_macro = "0.1.6" 
  ``` 
  In your `Cargo.toml` file of your rust package. 
  

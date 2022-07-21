@@ -6,7 +6,6 @@ extern crate serde_yaml;
 use std::collections::HashMap;
 
 use quote::*;
-
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
@@ -50,13 +49,15 @@ fn impl_openwhisk_client(ast: DeriveInput) -> TokenStream {
     let namespace = property_map["Namespace"].clone();
 
     let impl_whisk_client = quote! {
+
+
         impl #name {
-            pub fn openwhisk_client(&self) -> OpenwhiskClient<NativeClient>{
+            pub fn openwhisk_client(&self) -> OpenwhiskClient<WasmClient>{
                 let wskprops  = WskProperties::new(#auth_token.to_string(), #api_host.to_string(), #insecure, #namespace.to_string());
-                OpenwhiskClient::<NativeClient>::new(Some(&wskprops))
+                OpenwhiskClient::<WasmClient>::new(Some(&wskprops))
             }
 
-            fn run(&mut self) -> Result<(),String>{
+            pub fn run(&mut self) -> Result<(),String>{
                 let payload = serde_json::to_value(self.input.clone()).map_err(|e|e.to_string())?;
                 
                 let result = self.openwhisk_client()
