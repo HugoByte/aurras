@@ -3,7 +3,7 @@ from dataclasses import field, fields
 from mimetypes import init
 import os
 from .constants import cargo_dependencies, common_rs_file, traits_file, global_imports
-
+from .common import *
 
 #global variables
 create_enum = f"""
@@ -22,13 +22,6 @@ main_file = ""
 map_task_name = []
 dependencies = dict()
 main_input_dict = dict()
-
-# to convert camel_case to PascalCase
-
-
-def convert_to_pascalcase(string: str) -> str:
-
-    return string.replace("_", " ").title().replace(" ", "")
 
 
 """
@@ -167,6 +160,13 @@ pub struct {task_name}{type.title()} {{
 
     return
 
+"""
+    Creates Main Input struct
+        # Arguments
+            `task_list` - A list of dictonary containing parsed yaml conifg from Task Hook
+            `flow_list` - A list of dictonary containing parsed yaml conifg from Flow Hook
+
+"""
 
 def create_main_struct(task_name, property, type, kind) -> str:
     task_struct_impl = ""
@@ -201,15 +201,14 @@ pub struct {task_name}{{
     return task_struct_impl
 
 
-"""
-    Creates Main Input struct
-        # Arguments
-            `task_list` - A list of dictonary containing parsed yaml conifg from Task Hook
-            `flow_list` - A list of dictonary containing parsed yaml conifg from Flow Hook
+
 
 """
 
-# Dependency matrix
+    Generates Dependency Matrix based on the flow
+        # Arguments 
+        `flow_lis` - A list of dictonary containing parsed yaml conifg from Task Hook
+"""
 
 
 def generate_dependency_matrix(flow_list):
@@ -431,110 +430,6 @@ pub {args['name']}:{args['type']},"""
     return
 
 
-def creat_genric_input(input_struct_field) -> str:
-
-    input_struct = f"""
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
-pub struct Input {{
-    {input_struct_field}
-    
-}}
-"""
-
-    return input_struct
-
-
-def out_put_method(type, task_name) -> str:
-    if type == "map":
-        return f"""
-fn output(&self) ->Mapout{task_name}{{
-    self.mapout.clone()
-}}
-"""
-    else:
-        return f"""
-fn output(&self) ->{task_name}Output{{
-    self.output.clone()
-}}
-"""
-
-
-def setter_no_op(depend_task, field) -> str:
-    setter = f"""
-fn setter(&mut self, value: Types) {{
-        let value: {depend_task}Output = value.try_into().unwrap();
-        self.input.{field} = value.{field};
-}}   
-"""
-    return setter
-
-
-def new_method_gen(method_param, field_assign, task_name) -> str:
-    if method_param != "" and field_assign != "":
-        new_method_str = f"""
-pub fn new({method_param}action_name:String) -> Self {{ Self{{  input:{task_name}Input{{{field_assign} ..Default::default()}},action_name: action_name, ..Default::default()}}}}
-"""
-        return new_method_str
-    else:
-        new_method_str = f"""
-pub fn new(action_name:String) -> Self {{ Self{{  input:{task_name}Input{{..Default::default()}},action_name: action_name, ..Default::default()}}}}
-"""
-        return new_method_str
-
-
-def setter_concat(task1, task2, field) -> str:
-    setter = f"""
-fn setter(&mut self, value: Types) {{
-        let value: Vec<Types> = value.try_into().unwrap();
-        let value: (Mapout{convert_to_pascalcase(task1)}, Mapout{convert_to_pascalcase(task2)}) = (
-            value[0].clone().try_into().unwrap(),
-            value[1].clone().try_into().unwrap(),
-        );
-        
-
-        
-        let res = join_hashmap(value.0.result, value.1.result);
-        
-        self.input.{field} = res;
-}} 
-"""
-    return setter
-
-
-def setter_map(dep_task, input_field, output_field) -> str:
-
-    setter = f"""
-fn setter(&mut self, value: Types) {{
-        let value: {dep_task}Output = value.try_into().unwrap();
-        let mut map: HashMap<_, _> = value
-            .ids
-            .iter()
-            .map(|x| {{
-                self.input.{input_field} = x.to_owned();
-                self.run();
-                (x.to_owned(), self.output.{output_field}.to_owned())
-            }})
-            .collect();
-        self.mapout.result = map;
-    }}
-
-"""
-    return setter
-
-
-def method_implementer(task_name, new_method, setter_method, output_method) -> str:
-    new_impl = ""
-    new_impl += f"""
-impl {task_name} {{
-
-{new_method}
-{setter_method}
-{output_method}
-
-}}
-"""
-    return new_impl
-
 
 """
     Creates main function to use and run workflow generated from yaml config
@@ -558,29 +453,24 @@ def create_main_function(tasks, action_props):
             if key == "init":
                 for value in values:
                     if task['task_name'] == value['task_name']:
+                        field = f"input.{value['field']},"
                         flow += f"""
 let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task_name'].lower()}));"""
-                        task_name = ""
-                        for action in action_props['action']:
-                            if task['task_name'] == convert_to_pascalcase(action['name']):
-                                task_name = action['name']
-                        initilization += f"""
-let {value['task_name'].lower()} = {value['task_name']}::new(input.{value['field']},String::from("{task_name}"));               
-"""
+                        initilization += create_initialization_object(value['task_name'],field,action_props)
             if key == "pipe" or key == "term" or key == "map" or key == "concat":
                 for value in values:
                     if task['task_name'] == value['task_name']:
                         if value['field'] == []:
                             flow += create_flow_objects(value)
                             initilization += create_initialization_object(
-                                value, "")
+                                value['task_name'], "",action_props)
                         else:
                             fields = ""
                             for filed_value in value['field']:
                                 fields += f"input.{filed_value},"
                             flow += create_flow_objects(value)
                             initilization += create_initialization_object(
-                                value, fields)
+                                value['task_name'], fields,action_props)
 
         for key, values in dependencies.items():
             if key == "init":
@@ -664,27 +554,6 @@ Ok(result)
     """
     main_file += main
     return
-
-
-def create_flow_objects(value) -> str:
-
-    flow_object = f"""
-let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task_name'].lower()}));"""
-
-    return flow_object
-
-
-def create_initialization_object(value, fields) -> str:
-    if fields != "":
-        initializattion = f"""
-let {value['task_name'].lower()} = {value['task_name']}::new({fields}String::from("{value['task_name'].lower()}"));
-"""
-        return initializattion
-    else:
-        initializattion = f"""
-let {value['task_name'].lower()} = {value['task_name']}::new(String::from("{value['task_name'].lower()}"));
-"""
-        return initializattion
 
 
 """
