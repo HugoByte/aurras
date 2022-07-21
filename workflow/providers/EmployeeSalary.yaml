@@ -102,7 +102,7 @@ flows:
             - result
 workflows:
   ->: workflow
-  name: "action-purchase-workflow"
+  name: "workflow"
   version: "0.0.1"
   action_properties:
     kind: "Openwhisk"
