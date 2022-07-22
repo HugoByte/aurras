@@ -9,5 +9,5 @@ members = [
     "actions/substrate-event-processor",
     "workflow/openwhisk_macro",
     "workflow/workflow_macro",
-    "runtime"
+    "runtime/openwhisk"
 ]
