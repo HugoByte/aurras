@@ -26,7 +26,7 @@ pub fn main(args: Value) -> Result<Value, Error> {
         .unwrap()
         .build();
     let mut store = Store::new(&engine, wasi);
-    let module = Module::from_file(&engine, "workflow.wasm").unwrap();
+    let module = Module::from_file(&engine, "/usr/src/actions/workflow.wasm").unwrap();
     let max_concurrent_requests = Some(42);
 
     let http = HttpCtx::new(input.allowed_hosts, max_concurrent_requests).unwrap();
