@@ -16,14 +16,11 @@ class Task(BaseHook):
                              description="List containing dictonary of parameter and type and input")
     output_args: List = Field(..., title='output_args',
                               description="List contating dictonary of paramter and type for output")
-    endpoint: str = Field(..., title='endpoint', description="Task Endpoint")
-
     def exec(self):
         
         task = {
             "task_name": convert_to_pascalcase(self.name),
             "kind": self.kind,
-            "endpoint_url": self.endpoint,
             "input_args": self.input_args,
             "output_args": self.output_args
         }

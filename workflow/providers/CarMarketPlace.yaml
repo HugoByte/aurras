@@ -13,8 +13,6 @@
 #                                                                                                         #
 # task hook for generating rust code for actions deployed on openwhisk                                    #
 # flow hook for organising order of task execution                                                        #
-# workflow hook will be used as main hook to append code generated use flow and task hook to rust package #
-# ------------------------------------------------------------------------------------------------------- #                                                                                                       #
 
 tasks:
   - ->: task
@@ -45,7 +43,7 @@ tasks:
 
   - ->: task
     kind: "OpenWhisk"
-    name: "models_price"
+    name: "modelsprice"
     input_args:
       - name: "models"
         type: "Vec<String>"
@@ -88,8 +86,9 @@ flows:
             - car_company_list
   - ->: flow
     type: "Pipe"
-    task_name: "models_price"
+    task_name: "modelsprice"
     depends_on:
+      operation: null
       task:
         - name: "modelavail"
           fields:
@@ -99,13 +98,13 @@ flows:
     task_name: "purchase"
     depends_on:
       task:
-        - name: models_price
+        - name: modelsprice
           fields:
             - model_price_list
 
 workflows:
   ->: workflow
-  name: "action-purchase-workflow"
+  name: "workflow"
   version: "0.0.1"
   action_properties:
     kind: "Openwhisk"
@@ -122,7 +121,7 @@ workflows:
         insecure: "true"
         namespace: "guest"
 
-      - name: models_price
+      - name: modelsprice
         api_host: "https://65.20.70.146:31001"
         auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
         insecure: "true"

@@ -1,0 +1,19 @@
+[package]
+name = "workflow_macro"
+version = "0.0.2"
+edition = "2018"
+authors = ["HugoByte <hello@hugobyte.com>"]
+repository = "https://github.com/HugoByte/aurras/workflow/workflow_macro"
+license = "Apache-2.0"
+description = "Derive Macro for Workflow-Aurras"
+documentation = "https://docs.rs/workflow_macro/latest/"
+readme = "readme.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = {version="1.0.95",features = ["extra-traits"]}
+quote = "1.0.18"
