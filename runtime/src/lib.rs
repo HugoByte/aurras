@@ -10,6 +10,7 @@ use wasi_http::HttpCtx;
 pub struct Input {
     allowed_hosts: Option<Vec<String>>,
     data: Value,
+    
 }
 
 pub fn main(args: Value) -> Result<Value, Error> {
@@ -98,7 +99,7 @@ fn test_works() {
         }
     });
 
-    let res = main(input);
+    let res = main(input).unwrap();
 
-    println!("{:?}", res);
+    assert_eq!(serde_json::json!({"message": "Thank you for purchasing the car"}), res);
 }
