@@ -57,10 +57,44 @@ func GenerateWasm(providerPath, configPath string) error {
 	cmd.Stderr = os.Stderr
 
 	err = cmd.Run()
+	fmt.Println(err)
+
+	err = os.Chdir("../../output")
+	outputDir, _ := os.Getwd()
+	fmt.Println(err)
+	cmd = exec.Command("rustup", "target", "add", "wasm32-wasi")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	fmt.Println(err)
+
+	cmd = exec.Command("cargo", "build", "--release", "--target", "wasm32-wasi")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	fmt.Println(err)
+
+	err = os.Chdir("../../../aurras/target")
+	fmt.Println(err)
+	cmd = exec.Command("cp", "wasm32-wasi/release/workflow.wasm", "../workflow/")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	fmt.Println(err)
+
+	cmd = exec.Command("cargo", "clean")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
 
 	fmt.Println(err)
 
 	os.RemoveAll(i)
+	os.RemoveAll(outputDir)
 
 	return nil
 }
