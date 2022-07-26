@@ -50,9 +50,9 @@ func GenerateWasm(providerPath, configPath string) error {
 	err = File(configPath, r)
 
 	fmt.Println(err)
-	//command := fmt.Sprintf("cd %s/  && tackle %s/config.yaml", i, i)
+	err = os.Chdir(i)
 	fmt.Println(err)
-	cmd := exec.Command("bash", "-c", "pipenv shell")
+	cmd := exec.Command("tackle", "config.yaml")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
