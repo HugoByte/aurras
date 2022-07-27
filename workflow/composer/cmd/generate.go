@@ -6,11 +6,9 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
 
 	"github.com/spf13/cobra"
 )
@@ -40,119 +38,151 @@ func init() {
 }
 
 func GenerateWasm(providerPath, configPath string) error {
-	dir, _ := os.Getwd()
-	i, err := ioutil.TempDir(dir, "tmp")
-	fmt.Println(i, err)
+	var err error
+	//get current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("error unable to get current working dir :%w", err)
+	}
+	tempDir, err := ioutil.TempDir(cwd, "tmp")
+	if err != nil {
+		return fmt.Errorf("error unable to create temp dir :%w", err)
+	}
 
-	err = Dir(providerPath, i)
-	fmt.Println(err)
-	r := fmt.Sprintf("%s/config.yaml", i)
-	err = File(configPath, r)
+	err = Dir(providerPath, tempDir)
+	if err != nil {
+		return err
+	}
 
-	fmt.Println(err)
-	err = os.Chdir(i)
-	fmt.Println(err)
+	dstConfig := fmt.Sprintf("%s/config.yaml", tempDir)
+	err = File(configPath, dstConfig)
+	if err != nil {
+		return err
+	}
+
+	// change current working directory
+	err = os.Chdir(tempDir)
+	if err != nil {
+		return fmt.Errorf("error in chaning dir :%w", err)
+	}
+
+	err = runTackle()
+	if err != nil {
+		return err
+	}
+
+	outputDir, err := addWasmTarget(tempDir)
+	if err != nil {
+		return err
+	}
+
+	err = cargoBuild(outputDir, tempDir)
+	if err != nil {
+		return err
+	}
+
+	err = copyTarget()
+	if err != nil {
+		return err
+	}
+
+	err = clean(outputDir, tempDir)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func runTackle() error {
+
 	cmd := exec.Command("tackle", "config.yaml")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	err = cmd.Run()
-	fmt.Println(err)
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to execute command tackle :%w", err)
+	}
+	return nil
+}
 
+func addWasmTarget(tempDir string) (string, error) {
+	var err error
 	err = os.Chdir("../../output")
-	outputDir, _ := os.Getwd()
-	fmt.Println(err)
-	cmd = exec.Command("rustup", "target", "add", "wasm32-wasi")
+	if err != nil {
+		return "", fmt.Errorf("error in chaning dir :%w", err)
+	}
+
+	outputDir, err := os.Getwd()
+
+	if err != nil {
+		clean(outputDir, tempDir)
+		return "", fmt.Errorf("error unable to get current working dir :%w", err)
+	}
+
+	cmd := exec.Command("rustup", "target", "add", "wasm32-wasi")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	err = cmd.Run()
-	fmt.Println(err)
+	if err != nil {
+		clean(outputDir, tempDir)
+		return "", fmt.Errorf("failed to add target  :%w", err)
+	}
 
-	cmd = exec.Command("cargo", "build", "--release", "--target", "wasm32-wasi")
+	return outputDir, nil
+}
+
+func cargoBuild(outputDir, tempDir string) error {
+	cmd := exec.Command("cargo", "build", "-q", "--release", "--target", "wasm32-wasi")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	err = cmd.Run()
-	fmt.Println(err)
+	err := cmd.Run()
+	if err != nil {
+		clean(outputDir, tempDir)
+		return fmt.Errorf("failed to cargo build :%w", err)
+	}
 
+	return nil
+}
+
+func copyTarget() error {
+	var err error
 	err = os.Chdir("../../../aurras/target")
-	fmt.Println(err)
-	cmd = exec.Command("cp", "wasm32-wasi/release/workflow.wasm", "../workflow/")
+	if err != nil {
+		return fmt.Errorf("error in chaning dir :%w", err)
+	}
+
+	cmd := exec.Command("cp", "wasm32-wasi/release/workflow.wasm", "../workflow/")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	err = cmd.Run()
-	fmt.Println(err)
+	if err != nil {
+		return fmt.Errorf("failed to copy :%w", err)
+	}
+	return nil
 
-	cmd = exec.Command("cargo", "clean")
+}
+
+func clean(outputDir, tempDir string) error {
+	cmd := exec.Command("cargo", "clean")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	err = cmd.Run()
-
-	fmt.Println(err)
-
-	os.RemoveAll(i)
-	os.RemoveAll(outputDir)
-
-	return nil
-}
-
-func Dir(src string, dst string) error {
-	var err error
-	var fds []os.FileInfo
-	var srcinfo os.FileInfo
-
-	if srcinfo, err = os.Stat(src); err != nil {
-		return err
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to clean :%w", err)
 	}
-
-	if err = os.MkdirAll(dst, srcinfo.Mode()); err != nil {
-		return err
+	err = removeFile(outputDir)
+	if err != nil {
+		return fmt.Errorf("failed to remove :%w", err)
 	}
-
-	if fds, err = ioutil.ReadDir(src); err != nil {
-		return err
-	}
-	for _, fd := range fds {
-		srcfp := path.Join(src, fd.Name())
-		dstfp := path.Join(dst, fd.Name())
-
-		if fd.IsDir() {
-			if err = Dir(srcfp, dstfp); err != nil {
-				fmt.Println(err)
-			}
-		} else {
-			if err = File(srcfp, dstfp); err != nil {
-				fmt.Println(err)
-			}
-		}
+	err = removeFile(tempDir)
+	if err != nil {
+		return fmt.Errorf("failed to remove :%w", err)
 	}
 	return nil
-}
-
-func File(src, dst string) error {
-	var err error
-	var srcfd *os.File
-	var dstfd *os.File
-	var srcinfo os.FileInfo
-
-	if srcfd, err = os.Open(src); err != nil {
-		return err
-	}
-	defer srcfd.Close()
-
-	if dstfd, err = os.Create(dst); err != nil {
-		return err
-	}
-	defer dstfd.Close()
-
-	if _, err = io.Copy(dstfd, srcfd); err != nil {
-		return err
-	}
-	if srcinfo, err = os.Stat(src); err != nil {
-		return err
-	}
-	return os.Chmod(dst, srcinfo.Mode())
 }
