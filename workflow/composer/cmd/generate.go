@@ -13,8 +13,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var providerPath string
 var config string
+
+const providerPath = "../providers"
 
 // generateCmd represents the generate command
 var generateCmd = &cobra.Command{
@@ -29,10 +30,7 @@ var generateCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(generateCmd)
 
-	generateCmd.Flags().StringVarP(&providerPath, "provider", "p", "", "Hook path which is required to parse Config file")
 	generateCmd.Flags().StringVarP(&config, "config", "c", "", "Config file to generate wasm binary")
-
-	generateCmd.MarkFlagRequired("provider")
 	generateCmd.MarkFlagRequired("config")
 
 }
@@ -96,6 +94,7 @@ func GenerateWasm(providerPath, configPath string) error {
 
 func runTackle() error {
 
+	fmt.Println("Generating Workflow Code ...")
 	cmd := exec.Command("tackle", "config.yaml")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -104,10 +103,12 @@ func runTackle() error {
 	if err != nil {
 		return fmt.Errorf("failed to execute command tackle :%w", err)
 	}
+	fmt.Println("Generated Workflow Code")
 	return nil
 }
 
 func addWasmTarget(tempDir string) (string, error) {
+	fmt.Println("Adding Wasm target...")
 	var err error
 	err = os.Chdir("../../output")
 	if err != nil {
@@ -130,11 +131,13 @@ func addWasmTarget(tempDir string) (string, error) {
 		clean(outputDir, tempDir)
 		return "", fmt.Errorf("failed to add target  :%w", err)
 	}
+	fmt.Println("Added Wasm target")
 
 	return outputDir, nil
 }
 
 func cargoBuild(outputDir, tempDir string) error {
+	fmt.Println("Building Wasm ...")
 	cmd := exec.Command("cargo", "build", "-q", "--release", "--target", "wasm32-wasi")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -145,10 +148,13 @@ func cargoBuild(outputDir, tempDir string) error {
 		return fmt.Errorf("failed to cargo build :%w", err)
 	}
 
+	fmt.Println("Build Complete ...")
+
 	return nil
 }
 
 func copyTarget() error {
+
 	var err error
 	err = os.Chdir("../../../aurras/target")
 	if err != nil {
@@ -184,5 +190,6 @@ func clean(outputDir, tempDir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to remove :%w", err)
 	}
+	fmt.Println("Wasm Generated.")
 	return nil
 }
