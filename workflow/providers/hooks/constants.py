@@ -55,6 +55,7 @@ macro_rules! impl_execute_trait {{
     }};
 }}
 
+#[allow(dead_code, unused)]
 pub fn join_hashmap<T: PartialEq + std::hash::Hash + Eq + Clone, U: Clone, V: Clone>(
     first: HashMap<T, U>,
     second: HashMap<T, V>,
@@ -93,7 +94,7 @@ use openwhisk_rust::*;
 use serde::{{Deserialize, Serialize}};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use serde_json::{{Value,Error}};
+use serde_json::{{Value}};
 use derive_enum_from_into::{{EnumFrom,EnumTryInto}};
 use workflow_macro::Flow;
 
@@ -102,4 +103,56 @@ use paste::*;
 use common::*;
 use traits::*;
 use types::*;
+extern crate alloc;
+use core::alloc::Layout;
+"""
+
+run_function = f"""
+#[no_mangle]
+pub fn _start(ptr: *mut u8, length: i32) -> i32 {{
+    let result: Value;
+    unsafe {{
+        let mut vect = Vec::new();
+        for i in 1..=length {{
+            if let Some(val_back) = ptr.as_ref() {{
+                vect.push(val_back.clone());
+            }}
+            *ptr = *ptr.add(i as usize);
+        }}
+         result  = serde_json::from_slice(&vect).unwrap();
+    }}
+    match main(result) {{
+        Ok(value) => {{
+            let mut data = serde_json::to_vec(&value).unwrap();
+
+            let len = data.len() as u64;
+            let len_slice = len.to_be_bytes().to_vec();
+            for i in 0..len_slice.len() {{
+                data.insert(i, len_slice[i])
+            }}
+
+            let datas: &[u8] = &data;
+
+            let ptr = datas.as_ptr();
+
+            ptr as i32
+        }}
+        Err(err) => {{
+            let mut data = serde_json::to_vec(&err.to_string()).unwrap();
+
+            let len = data.len() as u64;
+            let len_slice = len.to_be_bytes().to_vec();
+            for i in 0..len_slice.len() {{
+                data.insert(i, len_slice[i])
+            }}
+
+            let datas: &[u8] = &data;
+
+            let ptr = datas.as_ptr();
+
+            ptr as i32
+        }}
+    }}
+}}
+
 """

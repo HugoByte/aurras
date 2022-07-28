@@ -2,7 +2,7 @@ import copy
 from dataclasses import field, fields
 from mimetypes import init
 import os
-from .constants import cargo_dependencies, common_rs_file, traits_file, global_imports
+from .constants import cargo_dependencies, common_rs_file, traits_file, global_imports,run_function
 from .common import *
 
 #global variables
@@ -540,7 +540,10 @@ Ok(result)
 """
     main += f"""
     {global_imports}
+
+    {run_function}
     
+    #[allow(dead_code, unused)]
     pub fn main(args:Value) -> Result<Value,String>{{
     const LIMIT : usize = {len(tasks)} ;   
     let mut workflow = WorkflowGraph::new(LIMIT);
@@ -551,6 +554,18 @@ Ok(result)
     let result = {workflow};
     {result}
     
+}}
+
+#[no_mangle]
+pub unsafe extern "C" fn memory_alloc(size: u32, alignment: u32) -> *mut u8 {{
+    let layout = Layout::from_size_align_unchecked(size as usize, alignment as usize);
+    alloc::alloc::alloc(layout)
+}}
+
+#[no_mangle]
+pub unsafe extern "C" fn free_memory(ptr: *mut u8, size: u32, alignment: u32) {{
+    let layout = Layout::from_size_align_unchecked(size as usize, alignment as usize);
+    alloc::alloc::dealloc(ptr, layout);
 }}
     """
     main_file += main
