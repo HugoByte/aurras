@@ -10,4 +10,5 @@ members = [
     "workflow/openwhisk_macro",
     "workflow/workflow_macro",
     "runtime/openwhisk"
+    "workflow/polkadot_macro",
 ]
