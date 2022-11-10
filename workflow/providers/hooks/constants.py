@@ -109,7 +109,7 @@ use core::alloc::Layout;
 
 run_function = f"""
 #[no_mangle]
-pub fn _start(ptr: *mut u8, length: i32) -> i32 {{
+pub fn _start(ptr: *mut u8, length: i32){{
     let result: Value;
     unsafe {{
         let mut vect = Vec::new();
@@ -121,38 +121,51 @@ pub fn _start(ptr: *mut u8, length: i32) -> i32 {{
         }}
          result  = serde_json::from_slice(&vect).unwrap();
     }}
-    match main(result) {{
-        Ok(value) => {{
-            let mut data = serde_json::to_vec(&value).unwrap();
 
-            let len = data.len() as u64;
-            let len_slice = len.to_be_bytes().to_vec();
-            for i in 0..len_slice.len() {{
-                data.insert(i, len_slice[i])
-            }}
-
-            let datas: &[u8] = &data;
-
-            let ptr = datas.as_ptr();
-
-            ptr as i32
-        }}
-        Err(err) => {{
-            let mut data = serde_json::to_vec(&err.to_string()).unwrap();
-
-            let len = data.len() as u64;
-            let len_slice = len.to_be_bytes().to_vec();
-            for i in 0..len_slice.len() {{
-                data.insert(i, len_slice[i])
-            }}
-
-            let datas: &[u8] = &data;
-
-            let ptr = datas.as_ptr();
-
-            ptr as i32
-        }}
+    let res = main(data);
+    let output = Output {{
+        result: serde_json::to_value(res).unwrap(),
+    }};
+    let serialized = serde_json::to_vec(&output).unwrap();
+    let size = serialized.len() as i32;
+    let ptr = serialized.as_ptr();
+    std::mem::forget(ptr);
+    unsafe {{
+        set_output(ptr as i32, size);
     }}
+
 }}
 
 """
+
+# match main(result) {{
+#         Ok(value) => {{
+#             let mut data = serde_json::to_vec(&value).unwrap();
+
+#             let len = data.len() as u64;
+#             let len_slice = len.to_be_bytes().to_vec();
+#             for i in 0..len_slice.len() {{
+#                 data.insert(i, len_slice[i])
+#             }}
+
+#             let datas: &[u8] = &data;
+
+#             let ptr = datas.as_ptr();
+
+#             ptr as i32
+#         }}
+#         Err(err) => {{
+#             let mut data = serde_json::to_vec(&err.to_string()).unwrap();
+
+#             let len = data.len() as u64;
+#             let len_slice = len.to_be_bytes().to_vec();
+#             for i in 0..len_slice.len() {{
+#                 data.insert(i, len_slice[i])
+#             }}
+
+#             let datas: &[u8] = &data;
+
+#             let ptr = datas.as_ptr();
+#             ptr as i32
+#         }}
+#     }}
