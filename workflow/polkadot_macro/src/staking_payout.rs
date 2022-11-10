@@ -98,7 +98,7 @@ pub fn impl_batched_payout(struct_name: Ident) -> TokenStream2 {
                     Ok(address) => account = address,
                     Err(e) => panic!("Invalid Account id : {:?}", e),
                 }
-                let pair = sr25519::Pair::from_string(&self.owner_key, None).unwrap();
+                let pair = sr25519::Pair::from_string(&self.input.owner_key, None).unwrap();
                 let api = api.set_signer(pair.clone());
 
                 let grace_period: GracePeriod = GracePeriod {
