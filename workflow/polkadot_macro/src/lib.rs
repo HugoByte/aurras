@@ -28,7 +28,7 @@ fn impl_polkadot(ast: DeriveInput) -> TokenStream {
     let methods = quote! {
         impl #polka{
             pub fn api(&self) -> substrate_api_client::Api<sp_core::sr25519::Pair, WasmRpcClient, BaseExtrinsicParams<PlainTip>>{
-                let client = WasmRpcClient::new(self.url.clone());
+                let client = WasmRpcClient::new(self.input.url.clone());
 
                 Api::<sr25519::Pair, _, PlainTipExtrinsicParams>::new(client).unwrap()
             }
@@ -42,7 +42,7 @@ fn impl_polkadot(ast: DeriveInput) -> TokenStream {
             }
 
             pub fn set_signer_by_seed(&self) -> Api<sp_core::sr25519::Pair, WasmRpcClient, BaseExtrinsicParams<PlainTip>>{
-                let pair = sr25519::Pair::from_string(&self.owner_key, None).unwrap();
+                let pair = sr25519::Pair::from_string(&self.input.owner_key, None).unwrap();
                 self.api().set_signer(pair)
             }
 

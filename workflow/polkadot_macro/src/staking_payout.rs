@@ -49,12 +49,12 @@ pub fn impl_payout(struct_name: Ident) -> TokenStream2 {
                 let api = self.set_signer_by_seed();
 
                 let account: AccountId32;
-                let account = #struct_name::get_account_id(&self.op_values.address);
+                let account = #struct_name::get_account_id(&self.input.address);
                 let mut idx =0 ;
-                if self.op_values.era == 0{
+                if self.input.era == 0{
                     idx = self.active_era().index -1;
                 } else{
-                    idx = self.op_values.era
+                    idx = self.input.era
                 }
 
                 let mut exposure: Exposure<AccountId32, u128> = Exposure {
@@ -78,6 +78,11 @@ pub fn impl_payout(struct_name: Ident) -> TokenStream2 {
                 }
                 None
             }
+            pub fn run(&mut self) -> Result<(), String> {
+                let result = self.payout_call();
+                self.output.result = result;
+                Ok(()) 
+            }
         }
     };
     methods
@@ -89,7 +94,7 @@ pub fn impl_batched_payout(struct_name: Ident) -> TokenStream2 {
             pub fn batched_payout(&self) -> Vec<Value> {
                 let api = self.api();
                 let account: AccountId32;
-                match AccountId32::from_ss58check(&self.op_values.address) {
+                match AccountId32::from_ss58check(&self.input.address) {
                     Ok(address) => account = address,
                     Err(e) => panic!("Invalid Account id : {:?}", e),
                 }
@@ -104,7 +109,7 @@ pub fn impl_batched_payout(struct_name: Ident) -> TokenStream2 {
                 let mut results: Vec<Value> = Vec::new();
 
                 let active_era = self.active_era();
-                let mut last_reward = self.get_last_reward(&self.op_values.address);
+                let mut last_reward = self.get_last_reward(&self.input.address);
                 let max_batched_transactions = 9;
                 let current_active_era = active_era.index;
                 let mut num_of_unclaimed_payout = current_active_era - last_reward - 1;
@@ -204,6 +209,11 @@ pub fn impl_batched_payout(struct_name: Ident) -> TokenStream2 {
                     last_reward = res.claimed_rewards.pop().unwrap();
                 }
                 last_reward
+            }
+            pub fn run(&mut self) -> Result<(), String> {
+                let result = self.batched_payout();
+                self.output.result = result;
+                Ok(()) 
             }
         }
     };
