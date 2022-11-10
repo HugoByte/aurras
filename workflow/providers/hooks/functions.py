@@ -210,6 +210,7 @@ def create_main_struct(task_name, properties, type, kind) -> str:
             #[derive(Default, Debug, Clone, Serialize, Deserialize,{kind})]
             {action_prop}
             pub struct {convert_to_pascalcase(task_name)}{{
+                action_name: String,
                 pub input:{task_name}Input,
                 pub output:{task_name}Output,
                 pub mapout: Mapout{task_name},
@@ -217,9 +218,8 @@ def create_main_struct(task_name, properties, type, kind) -> str:
             """
         else:
             task_struct_impl += f"""
-            #[derive(Default, Debug, Clone, Serialize, Deserialize,{kind})]
-            {action_prop}
-            pub struct {task_name}{{
+            #[derive(Default, Debug, Clone, Serialize, Deserialize,{kind})]{action_prop}pub struct {task_name}{{
+                action_name: String,
                 pub input:{task_name}Input,
                 pub output:{task_name}Output,
             }}
@@ -622,6 +622,16 @@ pub unsafe extern "C" fn free_memory(ptr: *mut u8, size: u32, alignment: u32) {{
     let layout = Layout::from_size_align_unchecked(size as usize, alignment as usize);
     alloc::alloc::dealloc(ptr, layout);
 }}
+
+#[link(wasm_import_module = "host")]
+extern "C" {{
+    fn set_output(ptr: i32, size: i32);
+}}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Output {{
+    pub result: Value,
+}}
+
     """
     main_file += main
     return

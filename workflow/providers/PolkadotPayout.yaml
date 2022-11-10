@@ -32,8 +32,8 @@ tasks:
         type: "u32"
       #for output struct to store output from actions for deserilization
     output_args:
-      - name: "output"
-        type: "Option<H256"
+      - name: "result"
+        type: "Option<H256>"
     properties:
         Chain: "https://65.20.70.146:31001"
         Operation: "stakingpayout"

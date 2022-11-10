@@ -122,7 +122,7 @@ pub fn _start(ptr: *mut u8, length: i32){{
          result  = serde_json::from_slice(&vect).unwrap();
     }}
 
-    let res = main(data);
+    let res = main(result);
     let output = Output {{
         result: serde_json::to_value(res).unwrap(),
     }};
