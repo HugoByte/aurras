@@ -145,6 +145,7 @@ openwhisk-rust = {{ git = "https://github.com/shanithkk/openwhisk-client-rust.gi
 http = "0.2.8"
 bytes = "1"
 pallet-staking = {{ git = "https://github.com/paritytech/substrate.git", package = "pallet-staking" ,branch = "master" }}
+substrate_macro = {{git = "https://github.com/HugoByte/aurras.git", package = "substrate_macro", branch = "polkadot_macro" }}
 
 """
     return cargo_dependencies
@@ -197,38 +198,19 @@ use types::*;
 extern crate alloc;
 use core::alloc::Layout;
 use sp_core::H256;
-use macro_second_test::Polkadot;
+use codec::{{Encode, Decode}};
+use sp_runtime::AccountId32;
+use substrate_macro::Polkadot;
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug)]
+pub struct StakingLedger {{
+    pub stash: AccountId32,
+    #[codec(compact)]
+    pub total: u128,
+    #[codec(compact)]
+    pub active: u128,
+    pub unlocking: Vec<u32>,
+    pub claimed_rewards: Vec<u32>,
+}}
 """
     return global_imports
-
-# match main(result) {{
-#         Ok(value) => {{
-#             let mut data = serde_json::to_vec(&value).unwrap();
-
-#             let len = data.len() as u64;
-#             let len_slice = len.to_be_bytes().to_vec();
-#             for i in 0..len_slice.len() {{
-#                 data.insert(i, len_slice[i])
-#             }}
-
-#             let datas: &[u8] = &data;
-
-#             let ptr = datas.as_ptr();
-
-#             ptr as i32
-#         }}
-#         Err(err) => {{
-#             let mut data = serde_json::to_vec(&err.to_string()).unwrap();
-
-#             let len = data.len() as u64;
-#             let len_slice = len.to_be_bytes().to_vec();
-#             for i in 0..len_slice.len() {{
-#                 data.insert(i, len_slice[i])
-#             }}
-
-#             let datas: &[u8] = &data;
-
-#             let ptr = datas.as_ptr();
-#             ptr as i32
-#         }}
-#     }}
