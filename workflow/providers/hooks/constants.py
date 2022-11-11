@@ -1,20 +1,5 @@
 
-cargo_dependencies = f"""
-[lib]
-crate-type = ["cdylib"]
 
-[dependencies]
-serde = "1.0.137"
-serde_json = "1.0.81"
-serde_derive = "1.0.81"
-derive-enum-from-into = "0.1.1"
-openwhisk-rust = "0.1.2"
-openwhisk_macro = "0.1.6"
-paste = "1.0.7"
-dyn-clone = "1.0.7"
-workflow_macro = "0.0.2"
-
-"""
 common_rs_file = f"""
 use super::*;
 #[derive(Debug,Flow)]
@@ -84,29 +69,6 @@ pub trait Execute : Debug + DynClone  {{
 clone_trait_object!(Execute);
 """
 
-global_imports = f"""
-mod common;
-mod traits;
-mod types;
-use dyn_clone::{{clone_trait_object, DynClone}};
-use openwhisk_macro::OpenWhisk;
-use openwhisk_rust::*;
-use serde::{{Deserialize, Serialize}};
-use std::collections::HashMap;
-use std::fmt::Debug;
-use serde_json::{{Value}};
-use derive_enum_from_into::{{EnumFrom,EnumTryInto}};
-use workflow_macro::Flow;
-
-use std::convert::TryInto;
-use paste::*;
-use common::*;
-use traits::*;
-use types::*;
-extern crate alloc;
-use core::alloc::Layout;
-"""
-
 run_function = f"""
 #[no_mangle]
 pub fn _start(ptr: *mut u8, length: i32){{
@@ -137,6 +99,107 @@ pub fn _start(ptr: *mut u8, length: i32){{
 }}
 
 """
+
+def cargo_generator(task_list):
+    cargo_dependencies = ""
+    for task in task_list:
+        kind = task['kind']
+
+    if kind == "Openwhisk":
+        cargo_dependencies = f"""
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+serde = "1.0.137"
+serde_json = "1.0.81"
+serde_derive = "1.0.81"
+derive-enum-from-into = "0.1.1"
+openwhisk-rust = "0.1.2"
+openwhisk_macro = "0.1.6"
+paste = "1.0.7"
+dyn-clone = "1.0.7"
+workflow_macro = "0.0.2"
+
+"""
+    else:
+        cargo_dependencies = f"""
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+derive-enum-from-into = "0.1.1"
+paste = "1.0.7"
+dyn-clone = "1.0.7"
+workflow_macro = "0.0.2"
+substrate-api-client = {{ git = "https://github.com/shanithkk/substrate-api-client.git", branch = "testing_call", default-features = false, features = ["disable_target_static_assertions", "staking-xt"]}}
+codec = {{ package = "parity-scale-codec", features = ["derive"], version = "3.0.0" }}
+sp-core = {{ version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" , default-features = false}}
+sp-keyring = {{ version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }}
+sp-runtime = {{ default-features = false, git = "https://github.com/paritytech/substrate", branch = "master" }}
+node-template-runtime = {{ git = "https://github.com/paritytech/substrate.git", branch = "master" }}
+serde_json = {{ version = "1.0", features = ["raw_value"] }}
+serde = {{ version = "1.0", features = ["derive"] }}
+env_logger = "0.9.0"
+openwhisk-rust = {{ git = "https://github.com/shanithkk/openwhisk-client-rust.git", branch = "master" }}
+http = "0.2.8"
+bytes = "1"
+pallet-staking = {{ git = "https://github.com/paritytech/substrate.git", package = "pallet-staking" ,branch = "master" }}
+
+"""
+    return cargo_dependencies
+
+def global_import_generator(task_list):
+    global_imports = ""
+    for task in task_list:
+        kind = task['kind']
+    if kind == "Openwhisk":
+        global_imports = f"""
+mod common;
+mod traits;
+mod types;
+use dyn_clone::{{clone_trait_object, DynClone}};
+use openwhisk_macro::OpenWhisk;
+use openwhisk_rust::*;
+use serde::{{Deserialize, Serialize}};
+use std::collections::HashMap;
+use std::fmt::Debug;
+use serde_json::{{Value}};
+use derive_enum_from_into::{{EnumFrom,EnumTryInto}};
+use workflow_macro::Flow;
+
+use std::convert::TryInto;
+use paste::*;
+use common::*;
+use traits::*;
+use types::*;
+extern crate alloc;
+use core::alloc::Layout;
+"""
+    else:
+        global_imports = f"""
+mod common;
+mod traits;
+mod types;
+use dyn_clone::{{clone_trait_object, DynClone}};
+use serde::{{Deserialize, Serialize}};
+use std::collections::HashMap;
+use std::fmt::Debug;
+use serde_json::{{Value}};
+use derive_enum_from_into::{{EnumFrom,EnumTryInto}};
+use workflow_macro::Flow;
+
+use std::convert::TryInto;
+use paste::*;
+use common::*;
+use traits::*;
+use types::*;
+extern crate alloc;
+use core::alloc::Layout;
+use sp_core::H256;
+use macro_second_test::Polkadot;
+"""
+    return global_imports
 
 # match main(result) {{
 #         Ok(value) => {{

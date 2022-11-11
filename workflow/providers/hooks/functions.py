@@ -2,8 +2,9 @@ import copy
 from dataclasses import field, fields
 from mimetypes import init
 import os
-from .constants import cargo_dependencies, common_rs_file, traits_file, global_imports,run_function
+from .constants import common_rs_file, traits_file,run_function
 from .common import *
+from .constants import cargo_generator, global_import_generator
 
 #global variables
 create_enum = f"""
@@ -465,7 +466,7 @@ pub {args['name']}:{args['type']},"""
 def create_main_function(tasks):
     global main_input_dict
     global dependencies
-    global task_store, task_store_copy, dependency_matrix, task_struct_impl, global_imports, main_file
+    global task_store, task_store_copy, dependency_matrix, task_struct_impl, main_file
     main = ""
     flow = ""
     initilization = ""
@@ -593,6 +594,7 @@ Ok(result)
        {workflow_edges}
 ]);
 """
+    global_imports = global_import_generator(tasks)
     main += f"""
     {global_imports}
 
@@ -642,10 +644,11 @@ pub struct Output {{
 """
 
 
-def generate_output(workflow_config: str):
-    global cargo_dependencies, common_rs_file, traits_file, task_struct_impl, main_file
-
-    workflow_config += cargo_dependencies
+def generate_output(workflow_config: str, task_list):
+    global common_rs_file, traits_file, task_struct_impl, main_file
+    
+    cargo_dependency = cargo_generator(task_list)
+    workflow_config += cargo_dependency
 
     output_path = "../../"
     path = os.path.join(output_path, "output/src")
