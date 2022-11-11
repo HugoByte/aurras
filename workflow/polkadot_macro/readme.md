@@ -6,22 +6,22 @@ This is a Derive Macro for Workflow-Aurras. This macro implement functionalities
 
 ## Usage
 
-#### Creates necessary methods to for Workflow.
+#### Creates necessary methods to for Interaction between Substarte based chaoin.
  
  ``` 
 #[derive(Polkadot)]
 #[Chain = "Westend"]
 #[Operation = "transfer"]
 pub struct Data {
-    url: String,
-    #[serde(default)]
-    owner_key: String,
-    #[serde(default)]
-    op_values: Transactioninput,
+    input: TransactionInput,
+    output: TransactionOutput
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-struct Transactioninput {
+struct TransactionInput {
+    url: String,
+    #[serde(default)]
+    owner_key: String,
     address: String,
     #[serde(default)]
     amount: u32,
