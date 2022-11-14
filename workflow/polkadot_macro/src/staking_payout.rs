@@ -1,8 +1,11 @@
 use super::*;
 use syn::Ident;
+
+///Implement the payout methids for the struct
 pub fn impl_payout(struct_name: Ident) -> TokenStream2 {
     let methods = quote! {
         impl #struct_name{
+            /// Return the last reward of the given validator.
             pub fn get_last_reward(&self, validator_address: &str) -> u32{
                 let api = self.api();
 
@@ -44,7 +47,7 @@ pub fn impl_payout(struct_name: Ident) -> TokenStream2 {
                 }
                 last_reward
             }
-
+            ///This method will claim the reward for the given validator in given era or the ddeafult era(default era is the current era -1)
             pub fn payout_call(&self) -> Option<H256>{
                 let api = self.set_signer_by_seed();
 
@@ -88,9 +91,11 @@ pub fn impl_payout(struct_name: Ident) -> TokenStream2 {
     methods
 }
 
+/// Implement the methods for batched payout 
 pub fn impl_batched_payout(struct_name: Ident) -> TokenStream2 {
     let methods = quote! {
         impl #struct_name{
+            /// The batched payout method 
             pub fn batched_payout(&self) -> Vec<Value> {
                 let api = self.api();
                 let account: AccountId32;
