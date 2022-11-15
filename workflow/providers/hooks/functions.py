@@ -478,6 +478,7 @@ def create_main_function(tasks):
     final_destination =""
     for task in tasks:
         task_name = convert_to_pascalcase(task['task_name'])
+        print(main_input_dict)
         for key, values in main_input_dict.items():
             final_initilization = ""
             if key == "init":
@@ -492,7 +493,7 @@ let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task
                 final_initilization += initilization
                 initilization = ""
             
-            elif key == "pipe":
+            elif key == "pipe" or key == "map" or key == "concat":
                 for value in values:
                     if task_name == value['task_name']:
                         if value['field'] == []:
