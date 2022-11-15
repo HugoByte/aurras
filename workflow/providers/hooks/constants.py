@@ -104,8 +104,7 @@ def cargo_generator(task_list):
     cargo_dependencies = ""
     for task in task_list:
         kind = task['kind']
-
-    if kind == "Openwhisk":
+    if kind == "OpenWhisk":
         cargo_dependencies = f"""
 [lib]
 crate-type = ["cdylib"]
@@ -154,7 +153,7 @@ def global_import_generator(task_list):
     global_imports = ""
     for task in task_list:
         kind = task['kind']
-    if kind == "Openwhisk":
+    if kind == "OpenWhisk":
         global_imports = f"""
 mod common;
 mod traits;
