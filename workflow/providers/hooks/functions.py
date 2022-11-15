@@ -478,7 +478,6 @@ def create_main_function(tasks):
     final_destination =""
     for task in tasks:
         task_name = convert_to_pascalcase(task['task_name'])
-        print(main_input_dict)
         for key, values in main_input_dict.items():
             final_initilization = ""
             if key == "init":
