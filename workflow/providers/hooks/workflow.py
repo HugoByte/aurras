@@ -20,8 +20,7 @@ class WorkFlow(BaseHook):
         generate_dependency_matrix(flow_list)
         struct_generator(task_list)
 
-        
         create_main_function(task_list)
-        generate_output(workflow_config)
+        generate_output(workflow_config, task_list)
 
         return
