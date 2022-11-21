@@ -2,10 +2,21 @@
 
 ## Description
 
-This is a Derive Macro for Workflow-Aurras. This macro implement functionalities for interaction between substrate based chain
+This is a Derive Macro for Workflow-Aurras. This macro implement functionalities for interaction between substrate based chain. This macro implement the methods like transfer, reward payout and batch reward payout. 
 
 ## Usage
+Add following libraries.
+ ``` 
+ substrate_macro = "0.1.1"
+ ``` 
+ In your `Cargo.toml` file of your rust package. 
 
+
+ Access this Macro by importing.
+ 
+  ``` 
+use substrate_macro::Polkadot;
+  ```   
 #### Creates necessary methods to for Interaction between Substarte based chaoin.
  
  ``` 
