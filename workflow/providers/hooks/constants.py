@@ -131,20 +131,17 @@ derive-enum-from-into = "0.1.1"
 paste = "1.0.7"
 dyn-clone = "1.0.7"
 workflow_macro = "0.0.2"
-substrate-api-client = {{ git = "https://github.com/shanithkk/substrate-api-client.git", branch = "testing_call", default-features = false, features = ["disable_target_static_assertions", "staking-xt"]}}
-codec = {{ package = "parity-scale-codec", features = ["derive"], version = "3.0.0" }}
-sp-core = {{ version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" , default-features = false}}
-sp-keyring = {{ version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }}
-sp-runtime = {{ default-features = false, git = "https://github.com/paritytech/substrate", branch = "master" }}
-node-template-runtime = {{ git = "https://github.com/paritytech/substrate.git", branch = "master" }}
 serde_json = {{ version = "1.0", features = ["raw_value"] }}
 serde = {{ version = "1.0", features = ["derive"] }}
-env_logger = "0.9.0"
+codec = {{ package = "parity-scale-codec", features = [
+    "derive",
+], version = "3.1.5" }}
+substrate_macro = "0.1.2"
 openwhisk-rust = {{ git = "https://github.com/shanithkk/openwhisk-client-rust.git", branch = "master" }}
-http = "0.2.8"
-bytes = "1"
-pallet-staking = {{ git = "https://github.com/paritytech/substrate.git", package = "pallet-staking" ,branch = "master" }}
-substrate_macro = {{git = "https://github.com/HugoByte/aurras.git", package = "substrate_macro", branch = "polkadot_macro" }}
+sp-core = {{ version = "6.0.0", default-features = false, features = ["full_crypto"], git = "https://github.com/paritytech/substrate.git", rev = "eb1a2a8" }}
+sp-runtime = {{ version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "eb1a2a8" }}
+substrate-api-client = {{ git = "https://github.com/HugoByte/substrate-api-client.git", default-features = false, features = ["staking-xt"], branch ="wasm-support"}}
+pallet-staking = {{ git = "https://github.com/paritytech/substrate.git", package = "pallet-staking" ,rev = "eb1a2a8" }}
 
 """
     return cargo_dependencies
