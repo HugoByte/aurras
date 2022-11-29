@@ -159,7 +159,7 @@ pub fn impl_batched_payout(struct_name: Ident) -> TokenStream2 {
                     let mut current_tx_done = false;
                     let mut payout_calls_len = payout_calls.len();
                     if payout_calls_len > 0 {
-                        let batching = api.batch_payout_stakers(payout_calls);
+                        let batching = api.batch(payout_calls);
                         let results_hash = api.send_extrinsic(batching.hex_encode()).unwrap();
                         num_of_claimed_payouts += payout_calls_len;
 
