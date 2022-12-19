@@ -11,4 +11,12 @@ members = [
     "workflow/workflow_macro",
     "runtime/openwhisk",
     "workflow/polkadot_macro",
+    "workflow/composer-v2",
+    "primitives"
 ]
+
+[workspace.package]
+authors = ["The HugoByte Team <hello@hugobyte.com>"]
+edition = "2021"
+repository = "https://github.com/hugobyte/aurras.git"
+version = "0.0.1"
