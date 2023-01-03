@@ -21,7 +21,7 @@ serde = { version = "1.0.137", features = ["derive"]}
 serde_json = "1.0.81"
 serde_derive = "1.0.81"
 serde_yaml = "0.8.24"
-openwhisk-rust = "0.1.2"
+openwhisk-rust = "0.1.4"
 http = "0.2.8"
 wasi-experimental-http = "0.10.0"
 bytes = "1"

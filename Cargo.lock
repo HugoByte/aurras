@@ -2595,9 +2595,9 @@ dependencies = [
 
 [[package]]
 name = "openwhisk-rust"
-version = "0.1.2"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7524e5a39d032b805478381bcc1ad1f22ab02c0947f2f0401c786533cf37c750"
+checksum = "b164ce7492cdd66e2d6257a97b3e53757cbdbc708a2f1760cb7aa3ec31a00553"
 dependencies = [
  "base64 0.13.0",
  "bytes 1.0.1",

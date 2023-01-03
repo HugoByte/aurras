@@ -2,11 +2,12 @@ import copy
 from dataclasses import field, fields
 from mimetypes import init
 import os
-from .constants import common_rs_file, traits_file,run_function
+from .constants import common_rs_file, traits_file, run_function
 from .common import *
 from .constants import cargo_generator, global_import_generator
+from pathlib import Path
 
-#global variables
+# global variables
 create_enum = f"""
 """
 task_struct_impl = f"""use super::*;
@@ -70,18 +71,18 @@ def struct_generator(task_list):
             create_sturct(task_name, input_args, "input")
         if None not in output_args:
             create_sturct(task_name, output_args, "output")
-        
+
         if map_task_name == []:
-                task_struct_impl += create_main_struct(
-                    task_name, props, "", kind)
+            task_struct_impl += create_main_struct(
+                task_name, props, "", kind)
 
         else:
-            if task_name in map_task_name :
-                    task_struct_impl += create_main_struct(
-                        task_name, props, "map", kind)
+            if task_name in map_task_name:
+                task_struct_impl += create_main_struct(
+                    task_name, props, "map", kind)
             else:
-                    task_struct_impl += create_main_struct(
-                        task_name, props, "", kind)
+                task_struct_impl += create_main_struct(
+                    task_name, props, "", kind)
         if task_name in map_task_name:
             create_enum += f"""
 {task_name}(Mapout{task_name}),
@@ -162,6 +163,7 @@ pub struct {task_name}{type.title()} {{
 
     return
 
+
 """
     Creates Main Input struct
         # Arguments
@@ -169,6 +171,7 @@ pub struct {task_name}{type.title()} {{
             `flow_list` - A list of dictonary containing parsed yaml conifg from Flow Hook
 
 """
+
 
 def create_main_struct(task_name, properties, type, kind) -> str:
     task_struct_impl = ""
@@ -226,8 +229,6 @@ def create_main_struct(task_name, properties, type, kind) -> str:
             }}
             """
     return task_struct_impl
-
-
 
 
 """
@@ -386,7 +387,7 @@ pub {args['name']}:{args['type']},"""
                 for item in values['no_op']:
                     input_fields = []
                     input_dict = dict()
-                    
+
                     if item['task_name'] == task_name:
                         method_param = ""
                         field_assign = ""
@@ -457,7 +458,6 @@ pub {args['name']}:{args['type']},"""
     return
 
 
-
 """
     Creates main function to use and run workflow generated from yaml config
 """
@@ -473,25 +473,26 @@ def create_main_function(tasks):
     workflow = ""
     workflow_edges = ""
     result = ""
-    flow_final= ""
+    flow_final = ""
     final_initilization = ""
-    final_destination =""
+    final_destination = ""
     for task in tasks:
         task_name = convert_to_pascalcase(task['task_name'])
         for key, values in main_input_dict.items():
             final_initilization = ""
             if key == "init":
-                field  =""
+                field = ""
                 for value in values:
                     if task_name == value['task_name']:
                         field += f"input.{value['field']},"
-                if task_name == value['task_name']:       
-                    initilization += create_initialization_object(task['task_name'],field)
+                if task_name == value['task_name']:
+                    initilization += create_initialization_object(
+                        task['task_name'], field)
                     flow += f"""
 let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task_name'].lower()}));"""
                 final_initilization += initilization
                 initilization = ""
-            
+
             elif key == "pipe" or key == "map" or key == "concat":
                 for value in values:
                     if task_name == value['task_name']:
@@ -507,11 +508,11 @@ let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task
                             initilization += create_initialization_object(
                                 task['task_name'], fields)
                         final_initilization += initilization
-                        initilization =""
-                
+                        initilization = ""
+
             elif key == "term":
                 for value in values:
-                    fields =""
+                    fields = ""
                     if task_name == value['task_name']:
                         if value['field'] == []:
                             flow += create_flow_objects(value)
@@ -521,9 +522,9 @@ let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task
                                 fields += f"input.{filed_value},"
                             flow += create_flow_objects(value)
                         initilization += create_initialization_object(
-                                task['task_name'], fields)
+                            task['task_name'], fields)
                         final_initilization += initilization
-                        initilization =""
+                        initilization = ""
             if final_initilization != "":
                 final_destination += final_initilization
         flow_final += flow
@@ -646,11 +647,11 @@ pub struct Output {{
 
 def generate_output(workflow_config: str, task_list):
     global common_rs_file, traits_file, task_struct_impl, main_file
-    
+
     cargo_dependency = cargo_generator(task_list)
     workflow_config += cargo_dependency
 
-    output_path = "../../"
+    output_path = Path.home()
     path = os.path.join(output_path, "output/src")
     os.makedirs(path, mode=0o777)
     cargo = open(os.path.join(output_path, "output/Cargo.toml"), 'w')
