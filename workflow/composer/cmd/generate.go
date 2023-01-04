@@ -1,7 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
@@ -14,8 +10,9 @@ import (
 )
 
 var config string
+var wasmBinaryPath string
 
-const providerPath = "../providers"
+const ProviderPath = "../providers"
 
 // generateCmd represents the generate command
 var generateCmd = &cobra.Command{
@@ -23,7 +20,8 @@ var generateCmd = &cobra.Command{
 	Short: "Geneates which uses hooks and configuration file to generate wasm binary out of it.",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		GenerateWasm(providerPath, config)
+
+		GenerateWasm(ProviderPath, config)
 	},
 }
 
@@ -31,6 +29,7 @@ func init() {
 	rootCmd.AddCommand(generateCmd)
 
 	generateCmd.Flags().StringVarP(&config, "config", "c", "", "Config file to generate wasm binary")
+	generateCmd.Flags().StringVarP(&wasmBinaryPath, "out", "o", "", "Output path ")
 	generateCmd.MarkFlagRequired("config")
 
 }
@@ -79,7 +78,7 @@ func GenerateWasm(providerPath, configPath string) error {
 		return err
 	}
 
-	err = copyTarget()
+	err = copyTarget(cwd)
 	if err != nil {
 		return err
 	}
@@ -110,7 +109,13 @@ func runTackle() error {
 func addWasmTarget(tempDir string) (string, error) {
 	fmt.Println("Adding Wasm target...")
 	var err error
-	err = os.Chdir("../../output")
+	outPath, err := os.UserHomeDir()
+
+	if err != nil {
+		return "", fmt.Errorf("error in getting home dir :%w", err)
+	}
+
+	err = os.Chdir(fmt.Sprintf("%s/output", outPath))
 	if err != nil {
 		return "", fmt.Errorf("error in chaning dir :%w", err)
 	}
@@ -153,15 +158,16 @@ func cargoBuild(outputDir, tempDir string) error {
 	return nil
 }
 
-func copyTarget() error {
+func copyTarget(cwd string) error {
 
 	var err error
-	err = os.Chdir("../../../aurras/target")
+	err = os.Chdir("target/")
 	if err != nil {
+		fmt.Println(err)
 		return fmt.Errorf("error in chaning dir :%w", err)
 	}
 
-	cmd := exec.Command("cp", "wasm32-wasi/release/workflow.wasm", "../workflow/")
+	cmd := exec.Command("cp", "wasm32-wasi/release/workflow.wasm", cwd)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
