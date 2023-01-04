@@ -7,6 +7,7 @@ from .functions import convert_to_pascalcase
 
 flow_list = []
 
+
 class Flow(BaseHook):
     hook_type: str = 'flow'
     type: str = Field(..., description="Type of the flow")
@@ -14,7 +15,7 @@ class Flow(BaseHook):
     depends_on: Any = Field(..., description="Dependent Task")
 
     def exec(self):
-        
+
         flow = {
             "type": self.type,
             "task_name": convert_to_pascalcase(self.task_name),
@@ -23,9 +24,8 @@ class Flow(BaseHook):
 
         flow_list.append(flow)
 
-        
-
         return
+
 
 def getFlows() -> list:
     global flow_list
