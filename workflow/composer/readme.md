@@ -4,10 +4,10 @@
 
 Composer is a cli tool which has two sub commands generate and test , generate will use the config and create wasm binary and test command will run the unit test for the provider hooks .
 
-## Commands
-
 ![alt text](./composer.png)
 
+
+## Commands
 
 ### Generate
 
@@ -23,6 +23,7 @@ composer generate -c config_file -o outpath_path
 ``` 
 composer test 
 ```
+
 ### composer test will test all the hooks & run unit test cases & return the result. 
 
 
