@@ -19,7 +19,7 @@ fn impl_workflow(ast: DeriveInput) -> TokenStream {
 
 
         impl #workflow {
-
+            
             pub fn node_count(&self) -> usize {
                 self.nodes.len()
             }
