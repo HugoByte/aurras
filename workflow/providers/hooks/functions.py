@@ -69,8 +69,8 @@ def struct_generator(task_list):
 
         if None not in input_args:
             create_struct(task_name, input_args, "input")
-        if None not in output_args:
-            create_struct(task_name, output_args, "output")
+        # if None not in output_args:
+        #     create_struct(task_name, output_args, "output")
 
         if map_task_name == []:
             task_struct_impl += create_main_struct(
@@ -106,17 +106,17 @@ pub struct Mapout{task_name}{{
 {task_name}({task_name}Output),
 """
 
-    enum += f"""
-#[derive(EnumFrom, EnumTryInto, PartialEq, Debug, Clone,Serialize,Deserialize)]
-pub enum Types{"{"}
-    Empty(String),
-    Concat(Vec<Types>),
-    {create_enum}
-    """
+#     enum += f"""
+# #[derive(EnumFrom, EnumTryInto, PartialEq, Debug, Clone,Serialize,Deserialize)]
+# pub enum Types{"{"}
+#     Empty(String),
+#     Concat(Vec<Types>),
+#     {create_enum}
+#     """
     impl_task_trait = impl_task_trait[:-1]+");"
     task_struct_impl += impl_task_trait
-    enum = enum[:-1]+"}"
-    task_struct_impl += enum
+    # enum = enum[:-1]+"}"
+    # task_struct_impl += enum
     implement_new_and_setter(task_list, dependencies)
     return
 
@@ -190,8 +190,8 @@ def create_main_struct(task_name, properties, type, kind) -> str:
             pub struct {convert_to_pascalcase(task_name)}{{
                 action_name: String,
                 pub input:{task_name}Input,
-                pub output:{task_name}Output,
-                pub mapout: Mapout{task_name},
+                pub output:Value,
+                pub mapout: Value,
             }}
             """
         else:
@@ -201,7 +201,7 @@ def create_main_struct(task_name, properties, type, kind) -> str:
             pub struct {task_name}{{
                 action_name: String,
                 pub input:{task_name}Input,
-                pub output:{task_name}Output,
+                pub output:Value,
             }}
             """
     else:
@@ -216,8 +216,8 @@ def create_main_struct(task_name, properties, type, kind) -> str:
             pub struct {convert_to_pascalcase(task_name)}{{
                 action_name: String,
                 pub input:{task_name}Input,
-                pub output:{task_name}Output,
-                pub mapout: Mapout{task_name},
+                pub output:Value,
+                pub mapout: Value,
             }}
             """
         else:
@@ -225,7 +225,7 @@ def create_main_struct(task_name, properties, type, kind) -> str:
             #[derive(Default, Debug, Clone, Serialize, Deserialize,{kind})]{action_prop}pub struct {task_name}{{
                 action_name: String,
                 pub input:{task_name}Input,
-                pub output:{task_name}Output,
+                pub output:Value,
             }}
             """
     return task_struct_impl
@@ -312,7 +312,7 @@ def implement_new_and_setter(task_list, dependency):
             if key == "init":
                 input_fields = []
                 if values['no_op'][0]['task_name'] == task_name:
-                    setter_method = "fn setter(&mut self,_value:Types){}"
+                    setter_method = "fn setter(&mut self,_value:Value){}"
                     output_method = out_put_method("", task_name)
                     method_param = ""
                     field_assign = ""
@@ -341,15 +341,20 @@ pub {args['name']}:{args['type']},"""
                         input_field_name = ""
                         output_field_name = ""
                         dependent_task = ""
+                        input_field_type=""
+                        depend_task_field_name = ""
+
                         for args in task['input_args']:
                             input_field_name += args['name']
+                            input_field_type += args['type']
                         for args in task['output_args']:
                             output_field_name += args['name']
                         for items in item['dependent_task']:
                             dependent_task += convert_to_pascalcase(
                                 items['name'])
+                            depend_task_field_name += "".join(items['fields'])
                         setter_method = setter_map(
-                            dependent_task, input_field_name, output_field_name)
+                            dependent_task, input_field_name, output_field_name, depend_task_field_name,input_field_type)
                         method_param = ""
                         field_assign = ""
                         new_method = new_method_gen("", "", task_name)
@@ -375,7 +380,7 @@ pub {args['name']}:{args['type']},"""
                         task2 = item['dependent_task'][1]['name']
                         for args in task['input_args']:
                             field_name += args['name']
-                        setter_method = setter_concat(task1, task2, field_name)
+                        setter_method = setter_concat(field_name)
                         new_method = new_method_gen("", "", task_name)
                         output_method = out_put_method("", task_name)
                         task_struct_impl += method_implementer(
@@ -576,7 +581,6 @@ let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task
                         workflow_edges += f"""
 ({dependent_field}_index,{items['task_name'].lower()}_index),"""
                         result += f"""
-let result: {items['task_name']}Output = result.try_into().unwrap();
 let result = serde_json::to_value(result).unwrap();
 Ok(result)
 """
@@ -584,7 +588,6 @@ Ok(result)
     if "term" not in workflow:
         workflow += f".term(None)?"
         result += f"""
-let result: {convert_to_pascalcase(task_copy[len(task_copy)-1]['task_name'])}Output = result.try_into().unwrap();
 let result = serde_json::to_value(result).unwrap();
 Ok(result)
 """

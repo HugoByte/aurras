@@ -58,13 +58,13 @@ pub struct Input {{
 def out_put_method(type, task_name) -> str:
     if type == "map":
         return f"""
-fn output(&self) ->Mapout{task_name}{{
+fn output(&self) ->Value{{
     self.mapout.clone()
 }}
 """
     else:
         return f"""
-fn output(&self) ->{task_name}Output{{
+fn output(&self) ->Value{{
     self.output.clone()
 }}
 """
@@ -77,9 +77,9 @@ fn output(&self) ->{task_name}Output{{
 
 def setter_no_op(depend_task, field) -> str:
     setter = f"""
-fn setter(&mut self, value: Types) {{
-        let value: {depend_task}Output = value.try_into().unwrap();
-        self.input.{field} = value.{field};
+fn setter(&mut self, value: Value) {{
+        let value = value.get("{field}").unwrap();
+        self.input.{field} = serde_json::from_value(value.clone()).unwrap();
 }}   
 """
     return setter
@@ -103,19 +103,17 @@ pub fn new(action_name:String) -> Self {{ Self{{  input:{task_name}Input{{..Defa
 """
 
 
-def setter_concat(task1, task2, field) -> str:
+def setter_concat(field) -> str:
     setter = f"""
-fn setter(&mut self, value: Types) {{
-        let value: Vec<Types> = value.try_into().unwrap();
-        let value: (Mapout{convert_to_pascalcase(task1)}, Mapout{convert_to_pascalcase(task2)}) = (
-            value[0].clone().try_into().unwrap(),
-            value[1].clone().try_into().unwrap(),
-        );
-        
+fn setter(&mut self, value: Value) {{
 
-        
-        let res = join_hashmap(value.0.result, value.1.result);
-        
+        let value: Vec<Value> = serde_json::from_value(value).unwrap();
+
+        let res = join_hashmap(
+            serde_json::from_value(value[0].to_owned()).unwrap(),
+            serde_json::from_value(value[1].to_owned()).unwrap(),
+        );
+
         self.input.{field} = res;
 }} 
 """
@@ -127,21 +125,23 @@ fn setter(&mut self, value: Types) {{
 """
 
 
-def setter_map(dep_task, input_field, output_field) -> str:
+def setter_map(dep_task, input_field, output_field, dep_task_field_name, input_type) -> str:
 
     setter = f"""
-fn setter(&mut self, value: Types) {{
-        let value: {dep_task}Output = value.try_into().unwrap();
+fn setter(&mut self, value: Value) {{
+        let value = value.get("{dep_task_field_name}").unwrap();
+        let value = serde_json::from_value::<Vec<{input_type}>>(value.clone()).unwrap();
         let mut map: HashMap<_, _> = value
-            .ids
             .iter()
             .map(|x| {{
                 self.input.{input_field} = x.to_owned();
                 self.run();
-                (x.to_owned(), self.output.{output_field}.to_owned())
+                (x.to_owned(),
+                self.output.get("{output_field}").unwrap().to_owned(),)
+
             }})
             .collect();
-        self.mapout.result = map;
+         self.mapout = to_value(map).unwrap();
     }}
 
 """
