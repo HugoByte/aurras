@@ -2,7 +2,11 @@
 
 ## Description 
 
-Composer is a cli tool which has two sub commands generate and test , generate will use the config and create wasm binary and test command will run the unit test for the provider hooks .
+Composer is a cli tool which used to Generate WorkFlow Wasm and Test Provider Hooks.
+
+This CLI Compose of Two commands 
+- `Generate` -  Used to generate WASM Binary from YAML
+- `Test` -  Used to test the provider Hooks
 
 ![alt text](./composer.png)
 
