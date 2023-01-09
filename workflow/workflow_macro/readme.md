@@ -2,7 +2,7 @@
 
 ## Description
 
-This is a Derive Macro for Workflow-Aurras. This macro implements necessary methods for workflow, like add node, delete node, add edges, etc..
+This is a Derive Macro for Workflow-Aurras. This macro implements necessary methods for workflow, like add node, get task, add edges, etc..
 
 ## Setup
 
