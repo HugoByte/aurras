@@ -1,9 +1,9 @@
 
 
-
 """
     Creates the flow objects for the workflow execution
 """
+
 
 def create_flow_objects(value) -> str:
 
@@ -12,29 +12,32 @@ let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task
 
     return flow_object
 
+
 """
     Creates the initialization objects for the workflow initialization
 """
 
+
 def create_initialization_object(task_name, fields) -> str:
-    
+
     if fields != "":
-        initializattion = f"""
+        initialization = f"""
 let {convert_to_pascalcase(task_name).lower()} = {convert_to_pascalcase(task_name)}::new({fields}String::from("{task_name}"));
 """
-        return initializattion
+        return initialization
     else:
-        initializattion = f"""
+        initialization = f"""
 let {convert_to_pascalcase(task_name).lower()}= {convert_to_pascalcase(task_name)}::new(String::from("{task_name}"));
 """
-        return initializattion
+        return initialization
 
 
 """
     Generates Main Input Struct for the workflow exectution
 """
 
-def creat_genric_input(input_struct_field) -> str:
+
+def create_generic_input(input_struct_field) -> str:
 
     input_struct = f"""
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -46,33 +49,37 @@ pub struct Input {{
 
     return input_struct
 
+
 """
     Generate output method for the task struct
 """
 
+
 def out_put_method(type, task_name) -> str:
     if type == "map":
         return f"""
-fn output(&self) ->Mapout{task_name}{{
+fn output(&self) ->Value{{
     self.mapout.clone()
 }}
 """
     else:
         return f"""
-fn output(&self) ->{task_name}Output{{
+fn output(&self) ->Value{{
     self.output.clone()
 }}
 """
+
 
 """
     Generate setter method for the task struct which is not bounded by any operator
 """
 
+
 def setter_no_op(depend_task, field) -> str:
     setter = f"""
-fn setter(&mut self, value: Types) {{
-        let value: {depend_task}Output = value.try_into().unwrap();
-        self.input.{field} = value.{field};
+fn setter(&mut self, value: Value) {{
+        let value = value.get("{field}").unwrap();
+        self.input.{field} = serde_json::from_value(value.clone()).unwrap();
 }}   
 """
     return setter
@@ -90,51 +97,56 @@ pub fn new(action_name:String) -> Self {{ Self{{  input:{task_name}Input{{..Defa
 """
         return new_method_str
 
+
 """
     Generate setter method for the task struct which is bounded by concat operator
 """
 
-def setter_concat(task1, task2, field) -> str:
-    setter = f"""
-fn setter(&mut self, value: Types) {{
-        let value: Vec<Types> = value.try_into().unwrap();
-        let value: (Mapout{convert_to_pascalcase(task1)}, Mapout{convert_to_pascalcase(task2)}) = (
-            value[0].clone().try_into().unwrap(),
-            value[1].clone().try_into().unwrap(),
-        );
-        
 
-        
-        let res = join_hashmap(value.0.result, value.1.result);
-        
+def setter_concat(field) -> str:
+    setter = f"""
+fn setter(&mut self, value: Value) {{
+
+        let value: Vec<Value> = serde_json::from_value(value).unwrap();
+
+        let res = join_hashmap(
+            serde_json::from_value(value[0].to_owned()).unwrap(),
+            serde_json::from_value(value[1].to_owned()).unwrap(),
+        );
+
         self.input.{field} = res;
 }} 
 """
     return setter
 
+
 """
     Generate setter method for the task struct which is bounded by Map operator
 """
 
-def setter_map(dep_task, input_field, output_field) -> str:
+
+def setter_map(dep_task, input_field, output_field, dep_task_field_name, input_type) -> str:
 
     setter = f"""
-fn setter(&mut self, value: Types) {{
-        let value: {dep_task}Output = value.try_into().unwrap();
+fn setter(&mut self, value: Value) {{
+        let value = value.get("{dep_task_field_name}").unwrap();
+        let value = serde_json::from_value::<Vec<{input_type}>>(value.clone()).unwrap();
         let mut map: HashMap<_, _> = value
-            .ids
             .iter()
             .map(|x| {{
                 self.input.{input_field} = x.to_owned();
                 self.run();
-                (x.to_owned(), self.output.{output_field}.to_owned())
+                (x.to_owned(),
+                self.output.get("{output_field}").unwrap().to_owned(),)
+
             }})
             .collect();
-        self.mapout.result = map;
+         self.mapout = to_value(map).unwrap();
     }}
 
 """
     return setter
+
 
 """
     Implements methods for the task struct
@@ -144,6 +156,7 @@ fn setter(&mut self, value: Types) {{
         `setter_method`  -   setter method implementation string
         `output_method`  -   output method implementation string
 """
+
 
 def method_implementer(task_name, new_method, setter_method, output_method) -> str:
     new_impl = ""
@@ -164,4 +177,3 @@ impl {task_name} {{
 def convert_to_pascalcase(string: str) -> str:
 
     return string.replace("_", " ").title().replace(" ", "")
-

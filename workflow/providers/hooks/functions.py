@@ -2,22 +2,23 @@ import copy
 from dataclasses import field, fields
 from mimetypes import init
 import os
-from .constants import common_rs_file, traits_file,run_function
+from .constants import common_rs_file, traits_file, run_function
 from .common import *
 from .constants import cargo_generator, global_import_generator
+from pathlib import Path
 
-#global variables
+# global variables
 create_enum = f"""
 """
 task_struct_impl = f"""use super::*;
 """
 impl_task_trait = "impl_execute_trait!("
 
-impl_stucture = ""
+impl_structure = ""
 setter = ""
 new_method = ""
 action_properties = dict()
-generic_input_sturct_filed = ""
+generic_input_struct_field = ""
 dependency_matrix = dict()
 main_file = ""
 map_task_name = []
@@ -28,7 +29,7 @@ main_input_dict = dict()
 """
     Creates Cargo.toml file using workflow config
         # Arguments
-            `name`    - worklfow package name
+            `name`    - workflow package name
             `version` - workflow version
 """
 
@@ -47,14 +48,14 @@ edition = "2018"
 """
     Creates rust struct type based on the YAML config provided
         # Arguments
-            `task_list`    - A list of dictonary containing parsed yaml conifg from Task Hook
-            `action_props` - A list of dictonary containing parsed action properties from Workflow Hook
+            `task_list`    - A list of dictionary containing parsed yaml config from Task Hook
+            `action_props` - A list of dictionary containing parsed action properties from Workflow Hook
 
 """
 
 
 def struct_generator(task_list):
-    global map_task_name, impl_task_trait, impl_get_task_trait, task_struct_impl, impl_stucture, new_method, create_enum, dependencies
+    global map_task_name, impl_task_trait, impl_get_task_trait, task_struct_impl, impl_structure, new_method, create_enum, dependencies
     enum = ""
     for task in task_list:
         task_dictionary = dict()
@@ -67,21 +68,21 @@ def struct_generator(task_list):
         impl_task_trait += f"{task_name},"
 
         if None not in input_args:
-            create_sturct(task_name, input_args, "input")
-        if None not in output_args:
-            create_sturct(task_name, output_args, "output")
-        
+            create_struct(task_name, input_args, "input")
+        # if None not in output_args:
+        #     create_struct(task_name, output_args, "output")
+
         if map_task_name == []:
-                task_struct_impl += create_main_struct(
-                    task_name, props, "", kind)
+            task_struct_impl += create_main_struct(
+                task_name, props, "", kind)
 
         else:
-            if task_name in map_task_name :
-                    task_struct_impl += create_main_struct(
-                        task_name, props, "map", kind)
+            if task_name in map_task_name:
+                task_struct_impl += create_main_struct(
+                    task_name, props, "map", kind)
             else:
-                    task_struct_impl += create_main_struct(
-                        task_name, props, "", kind)
+                task_struct_impl += create_main_struct(
+                    task_name, props, "", kind)
         if task_name in map_task_name:
             create_enum += f"""
 {task_name}(Mapout{task_name}),
@@ -105,17 +106,17 @@ pub struct Mapout{task_name}{{
 {task_name}({task_name}Output),
 """
 
-    enum += f"""
-#[derive(EnumFrom, EnumTryInto, PartialEq, Debug, Clone,Serialize,Deserialize)]
-pub enum Types{"{"}
-    Empty(String),
-    Concat(Vec<Types>),
-    {create_enum}
-    """
+#     enum += f"""
+# #[derive(EnumFrom, EnumTryInto, PartialEq, Debug, Clone,Serialize,Deserialize)]
+# pub enum Types{"{"}
+#     Empty(String),
+#     Concat(Vec<Types>),
+#     {create_enum}
+#     """
     impl_task_trait = impl_task_trait[:-1]+");"
     task_struct_impl += impl_task_trait
-    enum = enum[:-1]+"}"
-    task_struct_impl += enum
+    # enum = enum[:-1]+"}"
+    # task_struct_impl += enum
     implement_new_and_setter(task_list, dependencies)
     return
 
@@ -132,7 +133,7 @@ pub enum Types{"{"}
 """
 
 
-def create_sturct(task_name: str, args: list, type: str):
+def create_struct(task_name: str, args: list, type: str):
     global task_struct_impl
     global impl_task_trait
     global create_enum
@@ -162,13 +163,15 @@ pub struct {task_name}{type.title()} {{
 
     return
 
+
 """
     Creates Main Input struct
         # Arguments
-            `task_list` - A list of dictonary containing parsed yaml conifg from Task Hook
-            `flow_list` - A list of dictonary containing parsed yaml conifg from Flow Hook
+            `task_list` - A list of dictionary containing parsed yaml config from Task Hook
+            `flow_list` - A list of dictionary containing parsed yaml config from Flow Hook
 
 """
+
 
 def create_main_struct(task_name, properties, type, kind) -> str:
     task_struct_impl = ""
@@ -187,8 +190,8 @@ def create_main_struct(task_name, properties, type, kind) -> str:
             pub struct {convert_to_pascalcase(task_name)}{{
                 action_name: String,
                 pub input:{task_name}Input,
-                pub output:{task_name}Output,
-                pub mapout: Mapout{task_name},
+                pub output:Value,
+                pub mapout: Value,
             }}
             """
         else:
@@ -198,7 +201,7 @@ def create_main_struct(task_name, properties, type, kind) -> str:
             pub struct {task_name}{{
                 action_name: String,
                 pub input:{task_name}Input,
-                pub output:{task_name}Output,
+                pub output:Value,
             }}
             """
     else:
@@ -213,8 +216,8 @@ def create_main_struct(task_name, properties, type, kind) -> str:
             pub struct {convert_to_pascalcase(task_name)}{{
                 action_name: String,
                 pub input:{task_name}Input,
-                pub output:{task_name}Output,
-                pub mapout: Mapout{task_name},
+                pub output:Value,
+                pub mapout: Value,
             }}
             """
         else:
@@ -222,24 +225,22 @@ def create_main_struct(task_name, properties, type, kind) -> str:
             #[derive(Default, Debug, Clone, Serialize, Deserialize,{kind})]{action_prop}pub struct {task_name}{{
                 action_name: String,
                 pub input:{task_name}Input,
-                pub output:{task_name}Output,
+                pub output:Value,
             }}
             """
     return task_struct_impl
-
-
 
 
 """
 
     Generates Dependency Matrix based on the flow
         # Arguments 
-        `flow_lis` - A list of dictonary containing parsed yaml conifg from Task Hook
+        `flow_list` - A list of dictionary containing parsed yaml config from Task Hook
 """
 
 
 def generate_dependency_matrix(flow_list):
-    global task_store, map_task_name, dependencies, task_struct_impl, new_method, generic_input_sturct_filed, dependency_matrix
+    global task_store, map_task_name, dependencies, task_struct_impl, new_method, generic_input_struct_field, dependency_matrix
 
     map_tasks = []
     task_pipe = []
@@ -311,7 +312,7 @@ def implement_new_and_setter(task_list, dependency):
             if key == "init":
                 input_fields = []
                 if values['no_op'][0]['task_name'] == task_name:
-                    setter_method = "fn setter(&mut self,_value:Types){}"
+                    setter_method = "fn setter(&mut self,_value:Value){}"
                     output_method = out_put_method("", task_name)
                     method_param = ""
                     field_assign = ""
@@ -340,15 +341,20 @@ pub {args['name']}:{args['type']},"""
                         input_field_name = ""
                         output_field_name = ""
                         dependent_task = ""
+                        input_field_type=""
+                        depend_task_field_name = ""
+
                         for args in task['input_args']:
                             input_field_name += args['name']
+                            input_field_type += args['type']
                         for args in task['output_args']:
                             output_field_name += args['name']
                         for items in item['dependent_task']:
                             dependent_task += convert_to_pascalcase(
                                 items['name'])
+                            depend_task_field_name += "".join(items['fields'])
                         setter_method = setter_map(
-                            dependent_task, input_field_name, output_field_name)
+                            dependent_task, input_field_name, output_field_name, depend_task_field_name,input_field_type)
                         method_param = ""
                         field_assign = ""
                         new_method = new_method_gen("", "", task_name)
@@ -374,7 +380,7 @@ pub {args['name']}:{args['type']},"""
                         task2 = item['dependent_task'][1]['name']
                         for args in task['input_args']:
                             field_name += args['name']
-                        setter_method = setter_concat(task1, task2, field_name)
+                        setter_method = setter_concat(field_name)
                         new_method = new_method_gen("", "", task_name)
                         output_method = out_put_method("", task_name)
                         task_struct_impl += method_implementer(
@@ -386,7 +392,7 @@ pub {args['name']}:{args['type']},"""
                 for item in values['no_op']:
                     input_fields = []
                     input_dict = dict()
-                    
+
                     if item['task_name'] == task_name:
                         method_param = ""
                         field_assign = ""
@@ -417,7 +423,7 @@ pub {args['name']}:{args['type']},"""
                         dep_task.append(input_dict)
                         main_input_dict['pipe'] = dep_task
             if key == "term":
-                dependen_task = []
+                dependent_task = []
                 for item in values['no_op']:
                     input_fields = []
                     input_dict = dict()
@@ -451,11 +457,10 @@ pub {args['name']}:{args['type']},"""
 
                         task_struct_impl += method_implementer(
                             task_name, new_method, setter_method, output_method)
-                        dependen_task.append(input_dict)
-                        main_input_dict['term'] = dependen_task
-    task_struct_impl += creat_genric_input(generic_input_struct)
+                        dependent_task.append(input_dict)
+                        main_input_dict['term'] = dependent_task
+    task_struct_impl += create_generic_input(generic_input_struct)
     return
-
 
 
 """
@@ -469,49 +474,50 @@ def create_main_function(tasks):
     global task_store, task_store_copy, dependency_matrix, task_struct_impl, main_file
     main = ""
     flow = ""
-    initilization = ""
+    initialization = ""
     workflow = ""
     workflow_edges = ""
     result = ""
-    flow_final= ""
-    final_initilization = ""
-    final_destination =""
+    flow_final = ""
+    final_initialization = ""
+    final_destination = ""
     for task in tasks:
         task_name = convert_to_pascalcase(task['task_name'])
         for key, values in main_input_dict.items():
-            final_initilization = ""
+            final_initialization = ""
             if key == "init":
-                field  =""
+                field = ""
                 for value in values:
                     if task_name == value['task_name']:
                         field += f"input.{value['field']},"
-                if task_name == value['task_name']:       
-                    initilization += create_initialization_object(task['task_name'],field)
+                if task_name == value['task_name']:
+                    initialization += create_initialization_object(
+                        task['task_name'], field)
                     flow += f"""
 let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task_name'].lower()}));"""
-                final_initilization += initilization
-                initilization = ""
-            
+                final_initialization += initialization
+                initialization = ""
+
             elif key == "pipe" or key == "map" or key == "concat":
                 for value in values:
                     if task_name == value['task_name']:
                         if value['field'] == []:
                             flow += create_flow_objects(value)
-                            initilization += create_initialization_object(
+                            initialization += create_initialization_object(
                                 task['task_name'], "")
                         else:
                             fields = ""
                             for filed_value in value['field']:
                                 fields += f"input.{filed_value},"
                             flow += create_flow_objects(value)
-                            initilization += create_initialization_object(
+                            initialization += create_initialization_object(
                                 task['task_name'], fields)
-                        final_initilization += initilization
-                        initilization =""
-                
+                        final_initialization += initialization
+                        initialization = ""
+
             elif key == "term":
                 for value in values:
-                    fields =""
+                    fields = ""
                     if task_name == value['task_name']:
                         if value['field'] == []:
                             flow += create_flow_objects(value)
@@ -520,12 +526,12 @@ let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task
                             for filed_value in value['field']:
                                 fields += f"input.{filed_value},"
                             flow += create_flow_objects(value)
-                        initilization += create_initialization_object(
-                                task['task_name'], fields)
-                        final_initilization += initilization
-                        initilization =""
-            if final_initilization != "":
-                final_destination += final_initilization
+                        initialization += create_initialization_object(
+                            task['task_name'], fields)
+                        final_initialization += initialization
+                        initialization = ""
+            if final_initialization != "":
+                final_destination += final_initialization
         flow_final += flow
         flow = ""
 
@@ -575,7 +581,6 @@ let {value['task_name'].lower()}_index = workflow.add_node(Box::new({value['task
                         workflow_edges += f"""
 ({dependent_field}_index,{items['task_name'].lower()}_index),"""
                         result += f"""
-let result: {items['task_name']}Output = result.try_into().unwrap();
 let result = serde_json::to_value(result).unwrap();
 Ok(result)
 """
@@ -583,7 +588,6 @@ Ok(result)
     if "term" not in workflow:
         workflow += f".term(None)?"
         result += f"""
-let result: {convert_to_pascalcase(task_copy[len(task_copy)-1]['task_name'])}Output = result.try_into().unwrap();
 let result = serde_json::to_value(result).unwrap();
 Ok(result)
 """
@@ -646,11 +650,11 @@ pub struct Output {{
 
 def generate_output(workflow_config: str, task_list):
     global common_rs_file, traits_file, task_struct_impl, main_file
-    
+
     cargo_dependency = cargo_generator(task_list)
     workflow_config += cargo_dependency
 
-    output_path = "../../"
+    output_path = Path.home()
     path = os.path.join(output_path, "output/src")
     os.makedirs(path, mode=0o777)
     cargo = open(os.path.join(output_path, "output/Cargo.toml"), 'w')

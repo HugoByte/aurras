@@ -1,3 +1,17 @@
+# Copyright 2023 HugoByte AI Labs Pvt Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # ------------------------------------------------------------------------------------------------------- #
 #                                                                                                         #
 # Config file to generate rust code for workflow execution                                                #
@@ -16,39 +30,35 @@
 
 tasks:
   - ->: task
-      #kind filed spcifies what type of task it is.
-      #(i.e for now we are focusing on openwhisk actions, future it can be any serverless functions and written in any langunage)
-    kind: "Polkadot"
-    name: "stakingpayout"
+    #kind filed spcifies what type of task it is.
+
+    kind: "KIND OF TASK"
+    name:
+      "TASK NAME"
       #for input struct to provide input for actions
     input_args:
-      - name: "url"
-        type: "String"
-      - name: "owner_key"
-        type: "String"
-      - name: "address"
-        type: "String"
-      - name: "era"
-        type: "u32"
+      - name: "FIELD_NAME"
+        type: "TYPE"
       #for output struct to store output from actions for deserilization
     output_args:
-      - name: "result"
-        type: "Option<H256>"
+      - name: "FIELD_NAME"
+        type: "TYPE"
     properties:
-        Chain: "https://65.20.70.146:31001"
-        Operation: "stakingpayout"
+      # KEY VALUE PAIR FOR TASK PROPERTIES
 
 flows:
   - ->: flow
-    #type in flow is used to mention what will be order of execution
-    type: "Init"
-    task_name:
-      "stakingpayout"
-      #to mention flow what task it is depends on
-    depends_on: null
-
+    type: "FLOW_TYPE"
+    task_name: "TASK_NAME"
+    depends_on:
+      #operation defines kind of operation/opeartor needs to be applied on the task being executed
+      operation: null
+      task:
+        - name: "TASK_NAME"
+          fields:
+            - TASK_FILEDS_WHCIH_ARE_DEPENDENT
 
 workflows:
   ->: workflow
-  name: "workflow"
-  version: "0.0.1"
+  name: "NAME_OF_WORKFLOW"
+  version: "VERSION_OF_WORKFLOW"

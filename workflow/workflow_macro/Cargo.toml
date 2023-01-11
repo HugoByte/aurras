@@ -1,6 +1,6 @@
 [package]
 name = "workflow_macro"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2018"
 authors = ["HugoByte <hello@hugobyte.com>"]
 repository = "https://github.com/HugoByte/aurras/workflow/workflow_macro"

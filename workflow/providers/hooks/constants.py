@@ -27,11 +27,11 @@ macro_rules! impl_execute_trait {{
         self.run()
     }}
 
-    fn get_task_output(&self) -> Types {{
+    fn get_task_output(&self) -> Value {{
         self.output().clone().into()
     }}
 
-    fn set_output_to_task(&mut self, input: Types) {{
+    fn set_output_to_task(&mut self, input: Value) {{
         self.setter(input)
     }}
                 }}
@@ -62,8 +62,8 @@ use super::*;
 
 pub trait Execute : Debug + DynClone  {{
     fn execute(&mut self)-> Result<(),String>;
-    fn get_task_output(&self)->Types;
-    fn set_output_to_task(&mut self, inp: Types);
+    fn get_task_output(&self)->Value;
+    fn set_output_to_task(&mut self, inp: Value);
 }}
 
 clone_trait_object!(Execute);
@@ -118,7 +118,7 @@ openwhisk-rust = "0.1.2"
 openwhisk_macro = "0.1.6"
 paste = "1.0.7"
 dyn-clone = "1.0.7"
-workflow_macro = "0.0.2"
+workflow_macro = "0.0.3"
 
 """
     else:
@@ -130,7 +130,7 @@ crate-type = ["cdylib"]
 derive-enum-from-into = "0.1.1"
 paste = "1.0.7"
 dyn-clone = "1.0.7"
-workflow_macro = "0.0.2"
+workflow_macro = "0.0.3"
 serde_json = {{ version = "1.0", features = ["raw_value"] }}
 serde = {{ version = "1.0", features = ["derive"] }}
 codec = {{ package = "parity-scale-codec", features = [
@@ -164,6 +164,7 @@ use std::fmt::Debug;
 use serde_json::{{Value}};
 use derive_enum_from_into::{{EnumFrom,EnumTryInto}};
 use workflow_macro::Flow;
+use serde_json::to_value;
 
 use std::convert::TryInto;
 use paste::*;
@@ -185,6 +186,7 @@ use std::fmt::Debug;
 use serde_json::{{Value}};
 use derive_enum_from_into::{{EnumFrom,EnumTryInto}};
 use workflow_macro::Flow;
+use serde_json::to_value;
 
 use std::convert::TryInto;
 use paste::*;

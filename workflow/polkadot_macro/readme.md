@@ -6,7 +6,7 @@ This is a Derive Macro for Workflow-Aurras. This macro implement functionalities
 
 ## Usage
 
-#### Creates necessary methods to for Interaction between Substarte based chaoin.
+#### Creates necessary methods for Interaction between Substrate based chain.
  
  ``` 
 #[derive(Polkadot)]
@@ -30,7 +30,6 @@ struct TransactionInput {
 }
 
 ```
-    
 
 ## References
 

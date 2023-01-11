@@ -3,7 +3,7 @@
 ## Description
 
 This project Openwhisk Rust Macro is a Rust derive macro which implements necessary methods to interact with [Openwhisk-rust](https://crates.io/crates/openwhisk-rust) library to invoke actions deployed in Openwhisk.
-The Openwhisk Rust Client library requires [Rust](https://www.rust-lang.org/tools/install) to be installed onto your local machine.
+The Openwhisk Rust Client library requires [Rust](https://www.rust-lang.org/tools/install) to be installed on your local machine.
 
 ## Setup
 

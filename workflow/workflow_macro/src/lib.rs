@@ -11,7 +11,6 @@ pub fn derive_workflow(input: TokenStream) -> TokenStream {
     impl_workflow(ast)
 }
 
-
 fn impl_workflow(ast: DeriveInput) -> TokenStream {
     let workflow = ast.ident.clone();
 
@@ -19,7 +18,7 @@ fn impl_workflow(ast: DeriveInput) -> TokenStream {
 
 
         impl #workflow {
-
+            
             pub fn node_count(&self) -> usize {
                 self.nodes.len()
             }
@@ -59,7 +58,7 @@ fn impl_workflow(ast: DeriveInput) -> TokenStream {
                 }
 
             }
-            pub fn term(&mut self, task_index: Option<usize>) -> Result<Types,String> {
+            pub fn term(&mut self, task_index: Option<usize>) -> Result<Value,String> {
 
                 match task_index {
                     Some(index) => {
@@ -90,7 +89,7 @@ fn impl_workflow(ast: DeriveInput) -> TokenStream {
                         list.push(source)
                     }
                 });
-                let mut res: Vec<Types> = Vec::new();
+                let mut res: Vec<Value> = Vec::new();
                 match list.len() {
                     0 => {
                         match self.get_task_as_mut(task_index).execute(){
@@ -119,7 +118,7 @@ fn impl_workflow(ast: DeriveInput) -> TokenStream {
                             })
                             .collect();
 
-                        let s: Types = res.into();
+                        let s: Value = res.into();
                         let current_task = self.get_task_as_mut(task_index);
                         current_task.set_output_to_task(s);
 
