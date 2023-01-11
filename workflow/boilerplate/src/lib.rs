@@ -17,8 +17,7 @@ mod traits;
 mod types;
 extern crate alloc;
 
-/
-* USER IMPORTS
+/* USER IMPORTS
 
 */
 
