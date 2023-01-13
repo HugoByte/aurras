@@ -206,8 +206,8 @@ def create_main_struct(task_name, properties, type, kind) -> str:
             """
     else:
         action_prop += f"""
-        #[Chain="{properties['Chain']}"]
-        #[Operation="{properties['Operation']}"]
+        #[Chain="{properties['chain']}"]
+        #[Operation="{properties['operation']}"]
         """
         if type == "map":
             task_struct_impl += f"""
@@ -341,7 +341,7 @@ pub {args['name']}:{args['type']},"""
                         input_field_name = ""
                         output_field_name = ""
                         dependent_task = ""
-                        input_field_type=""
+                        input_field_type = ""
                         depend_task_field_name = ""
 
                         for args in task['input_args']:
@@ -354,7 +354,7 @@ pub {args['name']}:{args['type']},"""
                                 items['name'])
                             depend_task_field_name += "".join(items['fields'])
                         setter_method = setter_map(
-                            dependent_task, input_field_name, output_field_name, depend_task_field_name,input_field_type)
+                            dependent_task, input_field_name, output_field_name, depend_task_field_name, input_field_type)
                         method_param = ""
                         field_assign = ""
                         new_method = new_method_gen("", "", task_name)

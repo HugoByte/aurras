@@ -62,7 +62,7 @@ class TestWorkFlow(unittest.TestCase):
 
         result = out_put_method("", task_name)
         actual_data = f"""
-fn output(&self) ->cartypeOutput{{
+fn output(&self) ->Value{{
     self.output.clone()
 }}
 """
