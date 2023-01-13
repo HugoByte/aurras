@@ -14,7 +14,7 @@ This is a Derive Macro for Workflow-Aurras. This macro implement functionalities
 #[Operation = "transfer"]
 pub struct Data {
     input: TransactionInput,
-    output: TransactionOutput
+    output: Value,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

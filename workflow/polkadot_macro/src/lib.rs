@@ -1,8 +1,8 @@
 extern crate proc_macro;
 
-use std::collections::HashMap;
 use proc_macro::TokenStream;
 use quote::*;
+use std::collections::HashMap;
 use syn::__private::TokenStream2;
 use syn::{parse_macro_input, DeriveInput};
 
@@ -98,5 +98,4 @@ fn impl_polkadot(ast: DeriveInput) -> TokenStream {
         #operation_methods
     };
     ast.into()
-    // methods.into()
 }
