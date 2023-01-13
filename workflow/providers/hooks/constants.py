@@ -136,7 +136,7 @@ serde = {{ version = "1.0", features = ["derive"] }}
 codec = {{ package = "parity-scale-codec", features = [
     "derive",
 ], version = "3.1.5" }}
-substrate_macro = "0.1.2"
+substrate_macro = "0.1.3"
 openwhisk-rust = {{ git = "https://github.com/shanithkk/openwhisk-client-rust.git", branch = "master" }}
 sp-core = {{ version = "6.0.0", default-features = false, features = ["full_crypto"], git = "https://github.com/paritytech/substrate.git", rev = "eb1a2a8" }}
 sp-runtime = {{ version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "eb1a2a8" }}

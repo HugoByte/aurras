@@ -16,23 +16,27 @@
 
 tasks:
   - ->: task
-    #kind filed spcifies what type of task it is.
-    #(i.e for now we are focusing on openwhisk actions, future it can be any serverless functions and written in any langunage)
+      #kind filed spcifies what type of task it is.
+      #(i.e for now we are focusing on openwhisk actions, future it can be any serverless functions and written in any langunage)
     kind: "Polkadot"
     name:
       "stakingpayout"
       #for input struct to provide input for actions
     input_args:
+      - name: "url"
+        type: "String"
+      - name: "owner_key"
+        type: "String"
       - name: "address"
         type: "String"
       - name: "era"
         type: "u32"
       #for output struct to store output from actions for deserilization
     output_args:
-      - name: "output"
-        type: "Option<H256"
+      - name: "result"
+        type: "Option<H256>"
     properties:
-      chain: "https://65.20.70.146:31001"
+      chain: "Westend"
       operation: "stakingpayout"
 
 flows:
