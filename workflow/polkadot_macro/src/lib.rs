@@ -36,7 +36,7 @@ fn impl_polkadot(ast: DeriveInput) -> TokenStream {
 
             pub fn active_era(&self) -> ActiveEraInfo{
                 match self.api().get_storage_value("Staking", "ActiveEra", None).unwrap() {
-                    Some(era) =>{// let active_era = era;
+                    Some(era) =>{
                     return era;}
                     None => panic!("Active Era Not Found"),
                 }
