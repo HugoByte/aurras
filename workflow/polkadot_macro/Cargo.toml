@@ -1,6 +1,6 @@
 [package]
 name = "substrate_macro"
-version = "0.1.0"
+version = "0.1.3"
 edition = "2021"
 authors = ["HugoByte <hello@hugobyte.com>"]
 repository = "https://github.com/HugoByte/aurras/workflow/polkadot_macro"

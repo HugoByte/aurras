@@ -83,19 +83,19 @@ pub fn impl_payout(struct_name: Ident) -> TokenStream2 {
             }
             pub fn run(&mut self) -> Result<(), String> {
                 let result = self.payout_call();
-                self.output.result = result;
-                Ok(()) 
+                self.output =  serde_json::json!({"result": result});
+                Ok(())
             }
         }
     };
     methods
 }
 
-/// Implement the methods for batched payout 
+/// Implement the methods for batched payout
 pub fn impl_batched_payout(struct_name: Ident) -> TokenStream2 {
     let methods = quote! {
         impl #struct_name{
-            /// The batched payout method 
+            /// The batched payout method
             pub fn batched_payout(&self) -> Vec<Value> {
                 let api = self.api();
                 let account: AccountId32;
@@ -217,8 +217,8 @@ pub fn impl_batched_payout(struct_name: Ident) -> TokenStream2 {
             }
             pub fn run(&mut self) -> Result<(), String> {
                 let result = self.batched_payout();
-                self.output.result = result;
-                Ok(()) 
+                self.output =  serde_json::json!({"result": result});
+                Ok(())
             }
         }
     };

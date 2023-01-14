@@ -1,8 +1,8 @@
 extern crate proc_macro;
 
-use std::collections::HashMap;
 use proc_macro::TokenStream;
 use quote::*;
+use std::collections::HashMap;
 use syn::__private::TokenStream2;
 use syn::{parse_macro_input, DeriveInput};
 
@@ -36,7 +36,7 @@ fn impl_polkadot(ast: DeriveInput) -> TokenStream {
 
             pub fn active_era(&self) -> ActiveEraInfo{
                 match self.api().get_storage_value("Staking", "ActiveEra", None).unwrap() {
-                    Some(era) =>{// let active_era = era;
+                    Some(era) =>{
                     return era;}
                     None => panic!("Active Era Not Found"),
                 }
@@ -98,5 +98,4 @@ fn impl_polkadot(ast: DeriveInput) -> TokenStream {
         #operation_methods
     };
     ast.into()
-    // methods.into()
 }

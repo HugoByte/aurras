@@ -2,8 +2,7 @@ use super::*;
 use syn::Ident;
 ///Implement the transfer method for the struct
 pub fn impl_transfer(struct_name: Ident) -> TokenStream2 {
-
-    let transfer_methods = quote!{
+    let transfer_methods = quote! {
         impl #struct_name{
             /// The transfer method will transfer the amount from owner to the given address.
             pub fn transfer(&self)-> Option<H256>{
@@ -16,8 +15,8 @@ pub fn impl_transfer(struct_name: Ident) -> TokenStream2 {
             }
             pub fn run(&mut self) -> Result<(), String> {
                 let result = self.transfer();
-                self.output.result = result;
-                Ok(()) 
+                self.output =  serde_json::json!({"result": result});
+                Ok(())
             }
         }
     };
