@@ -106,7 +106,14 @@ Boilerplate contains all traits, implementation of the flow structs, workflow st
 
 ### Prerequisites
   
-[Tackle-box version=0.3.0-beta.5](https://pypi.org/project/tackle-box/)
+- Install Tackle Box v0.3.0-beta5
+
+`python3 -m pip install tackle-box==0.3.0-beta.5`
+
+- Install `psutil` and `pydantic` libraries
+
+`python3 -m pip install psutil pydantic`
+
 
 ## Usage
 
