@@ -106,7 +106,7 @@ Boilerplate contains all traits, implementation of the flow structs, workflow st
 
 ### Prerequisites
   
-[Tackle-box](https://pypi.org/project/tackle-box/)
+[Tackle-box version=0.3.0-beta.5](https://pypi.org/project/tackle-box/)
 
 ## Usage
 
