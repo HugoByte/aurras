@@ -18,7 +18,7 @@ Workflow Config has **3** different Sections
 
 Tasks section of yaml contains the list of tasks which refers to actions that needs to be executed.
 
-A task should have **4** fields
+A task should have **5** fields
 
 -  `Kind` is the type of the action which the task refers to.
 
@@ -57,7 +57,7 @@ There are **3** types in flows
 
 Workflow section of Workflow Config is to define the workflow.
 
-Workflow should have 3 fields
+Workflow should have 2 fields
 
 -  `Workflow Name` : The name of the workflow.
 
@@ -74,7 +74,7 @@ A Workflow Config file should be configured in the following order
 
 ### Example
 
-An example for a **Workflow Config** file can be found [here](workflow/examples)
+An example for a **Workflow Config** file can be found [here](../examples/)
 
 ## Operators  
 
