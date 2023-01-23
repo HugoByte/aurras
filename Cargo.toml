@@ -9,10 +9,10 @@ members = [
     "actions/substrate-event-processor",
     "workflow/openwhisk_macro",
     "workflow/workflow_macro",
-    "runtime/openwhisk",
     "workflow/polkadot_macro",
     "workflow/composer-v2",
-    "primitives"
+    "primitives",
+    "workflow/workflow_apis"
 ]
 
 [workspace.package]
