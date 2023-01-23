@@ -2,9 +2,26 @@
 
 ## Description
 
-Composer is a cli tool which used to Generate WorkFlow Wasm and Test Provider Hooks.
+Composer is a cli tool which used to generate `workflow wasm` and test the `provider hooks` .
 
-This CLI Compose of Two commands
+
+## Prerequisite
+
+- [RUST](https://www.rust-lang.org/tools/install)
+- [GO](https://go.dev/doc/install)
+- Tackle-Box
+   
+  `python3 -m pip install tackle-box==0.3.0-beta.5`
+  
+- Install `psutil` and `pydantic` library 
+  
+  `python3 -m pip install psutil pydantic`
+
+
+
+## Usage
+
+The CLI consists of two commands:
 
 - `Generate` - Used to generate WASM Binary from YAML
 - `Test` - Used to test the provider Hooks
