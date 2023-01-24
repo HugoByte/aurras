@@ -3,6 +3,7 @@ use bytes::Bytes;
 use futures::executor::block_on;
 use http::{header::HeaderName, HeaderMap, HeaderValue};
 use reqwest::{Client, Method};
+use std::time::Duration;
 use std::{
     collections::HashMap,
     str::FromStr,
@@ -540,16 +541,17 @@ fn request(
             block_on(r.spawn_blocking(move || {
                 let mut client = Client::builder();
                 let headr = headers.get("Upgrade-Insecure-Requests").unwrap();
-                
-                if headr.to_str().unwrap() == "1"{
+
+                if headr.to_str().unwrap() == "1" {
                     client = client.danger_accept_invalid_certs(true);
-                }
-                else{
+                } else {
                     client = client.danger_accept_invalid_certs(false);
                 }
-                
+
                 let res = block_on(
-                    client.build().unwrap()
+                    client
+                        .build()
+                        .unwrap()
                         .request(method, url)
                         .headers(headers)
                         .body(body)
@@ -567,14 +569,15 @@ fn request(
             tracing::trace!("no tokio runtime available, using blocking request");
             let mut client = reqwest::blocking::Client::builder();
             let headr = headers.get("Upgrade-Insecure-Requests").unwrap();
-            if headr.to_str().unwrap() == "1"{
+            if headr.to_str().unwrap() == "1" {
                 client = client.danger_accept_invalid_certs(true);
-            }
-            else{
+            } else {
                 client = client.danger_accept_invalid_certs(false);
             }
 
-            let res = client.build().unwrap()
+            let res = client
+                .build()
+                .unwrap()
                 .request(method, url)
                 .headers(headers)
                 .body(body)
