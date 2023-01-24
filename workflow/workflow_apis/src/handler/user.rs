@@ -50,7 +50,7 @@ pub async fn create_user(
 
 // get method for getting user details
 #[instrument[skip(repository)]]
-pub async fn me(user: AuthenticatedUser, repository: UserRepository) -> AppResponse {
+pub async fn user_info(user: AuthenticatedUser, repository: UserRepository) -> AppResponse {
     let user = repository
         .find_by_id(user.0)
         .await?

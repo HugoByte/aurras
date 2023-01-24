@@ -44,7 +44,6 @@ impl UserRepository {
             .filter(userss::id.eq(id))
             .first::<User>(&conn)
             .optional()?;
-        // .get_result(&self.pool.get().unwrap());
         Ok(user)
     }
 
