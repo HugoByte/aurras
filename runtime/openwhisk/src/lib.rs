@@ -130,6 +130,6 @@ fn testing_main() {
         }
 
     });
-    let res = main(serde_json);
-    println!("{:?}", res);
+    let result = main(serde_json);
+    assert!(result.is_ok());
 }
