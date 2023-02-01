@@ -1,13 +1,13 @@
 # Workflow Builder
 
 ### Usage
-- Pull the docker file
+- Build the docker image
     ``` 
-    docker pull kkshanith/workflow
+    docker build -t <image_name> .
     ```
 - Create the Config YAML and run the command
     ```
-    docker run -it --rm -v $(pwd)/<Yaml_file_path>:/input.yaml -v $PWD:/host kkshanith/workflow
+    docker run -it --rm -v $(pwd)/<Yaml_file_path>:/input.yaml -v $PWD:/host <image_name> 
     ```
 - The workflow wasm will be generated in the current working directory(ie in the $(pwd)).
 
