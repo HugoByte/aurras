@@ -28,8 +28,6 @@ ADD providers providers/
 ADD build/workflow.sh workflow.sh
 ADD build/build-test build-test/
 RUN cd build-test && cargo build
-
-
 RUN chmod 777 workflow.sh
 
 RUN apt-get clean && \
