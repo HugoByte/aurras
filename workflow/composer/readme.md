@@ -4,20 +4,15 @@
 
 Composer is a cli tool which used to generate `workflow wasm` and test the `provider hooks` .
 
-
 ## Prerequisite
 
 - [RUST](https://www.rust-lang.org/tools/install)
 - [GO](https://go.dev/doc/install)
 - Tackle-Box
-   
   `python3 -m pip install tackle-box==0.3.0-beta.5`
-  
-- Install `psutil` and `pydantic` library 
-  
+- Install `psutil` and `pydantic` library
+
   `python3 -m pip install psutil pydantic`
-
-
 
 ## Usage
 
@@ -47,6 +42,30 @@ composer test
 ### composer test will test all the hooks & run unit test cases & return the result.
 
 ![alt text](./images/test.png)
+
+### Example:
+
+```
+composer test -c ../examples/CarMarketPlace.yaml
+```
+
+```
+  _________  __  ______  ____  ___________
+ / ___/ __ \/  |/  / _ \/ __ \/ __/ __/ _ \
+/ /__/ /_/ / /|_/ / ___/ /_/ /\ \/ _// , _/
+\___/\____/_/  /_/_/   \____/___/___/_/|_|
+
+                        HugoByte AI Labs
+
+Running Test ...
+..........
+----------------------------------------------------------------------
+Ran 10 tests in 2.064s
+
+OK
+Test Completed
+
+```
 
 ## References
 

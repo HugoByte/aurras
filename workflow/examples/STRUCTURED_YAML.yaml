@@ -44,6 +44,7 @@ tasks:
       - name: "FIELD_NAME"
         type: "TYPE"
     properties:
+      key: "value"
       # KEY VALUE PAIR FOR TASK PROPERTIES
 
 flows:
