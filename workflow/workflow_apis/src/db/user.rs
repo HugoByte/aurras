@@ -1,4 +1,5 @@
 use crate::diesel::RunQueryDsl;
+use crate::models::UpdateAction;
 use crate::schema::userss;
 use crate::{
     config::crypto::CryptoService,
@@ -33,6 +34,19 @@ impl UserRepository {
         user.password_hash = hashing.hash_password(user.password_hash).unwrap();
         let result = diesel::insert_into(userss::table)
             .values(user)
+            .get_result(&self.pool.get().unwrap());
+        Ok(result.unwrap())
+    }
+
+    #[instrument(skip(self, user_action))]
+    pub async fn update_user_action(
+        &self,
+        user_action: UpdateAction,
+        user_id: Uuid,
+    ) -> Result<User> {
+        let result = diesel::update(userss::table)
+            .filter(userss::id.eq(user_id))
+            .set(user_action)
             .get_result(&self.pool.get().unwrap());
         Ok(result.unwrap())
     }

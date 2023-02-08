@@ -1,5 +1,6 @@
 use super::*;
 use crate::errors::AppError;
+use crate::models::UpdateAction;
 use crate::{db::UserRepository, openwhisk_model::*};
 use actix_extract_multipart::Multipart;
 use actix_web::web::Json;
@@ -18,7 +19,15 @@ pub async fn action_create(
     match user {
         Some(u) => {
             info!("{}", serde_json::to_value(&u).unwrap());
+            let mut update = UpdateAction { actions: u.actions };
+            let action_name = data.name.clone();
             let res = action_create_query(data).await;
+            if res.status().is_success() {
+                if !update.actions.contains(&action_name) {
+                    update.actions.push(action_name);
+                }
+                repository.update_user_action(update, u.id).await?;
+            }
             Ok(res)
         }
         None => Err(AppError::INTERNAL_ERROR.default()),
@@ -299,9 +308,8 @@ pub async fn get_list_query(data: Json<List>) -> HttpResponse {
     HttpResponse::Ok().json(res.unwrap())
 }
 
-
 #[actix_web::test]
-async fn trigger_test(){
+async fn trigger_test() {
     let inp = r#"{
         "name": "test_trigger",
         "param_json": "[{\"key\":\"car_type\",\"value\":\"hatchback\"}]",
@@ -314,11 +322,11 @@ async fn trigger_test(){
     let data = serde_json::from_str::<TriggerInput>(&inp);
     let input = actix_web::web::Json(data.unwrap());
     let res = trigger_create_query(input).await;
-    assert_eq!(res.status(),StatusCode::OK);
+    assert_eq!(res.status(), StatusCode::OK);
 }
 
 #[actix_web::test]
-async fn delete_rule_test(){
+async fn delete_rule_test() {
     let inp = r#"{
         "name": "test_rule",
         "url": "http://localhost:3233",
@@ -329,11 +337,11 @@ async fn delete_rule_test(){
     let data = serde_json::from_str::<Delete>(&inp);
     let input = actix_web::web::Json(data.unwrap());
     let res = delete_query(input).await;
-    assert_eq!(res.status(),StatusCode::OK);
+    assert_eq!(res.status(), StatusCode::OK);
 }
 
 #[actix_web::test]
-async fn delete_trigger_test(){
+async fn delete_trigger_test() {
     let inp = r#"{
         "name": "test_trigger",
         "url": "http://localhost:3233",
@@ -344,11 +352,11 @@ async fn delete_trigger_test(){
     let data = serde_json::from_str::<Delete>(&inp);
     let input = actix_web::web::Json(data.unwrap());
     let res = delete_query(input).await;
-    assert_eq!(res.status(),StatusCode::OK);
+    assert_eq!(res.status(), StatusCode::OK);
 }
 
 #[actix_web::test]
-async fn delete_action_test(){
+async fn delete_action_test() {
     let inp = r#"{
         "name": "test_action",
         "url": "http://localhost:3233",
@@ -359,11 +367,11 @@ async fn delete_action_test(){
     let data = serde_json::from_str::<Delete>(&inp);
     let input = actix_web::web::Json(data.unwrap());
     let res = delete_query(input).await;
-    assert_eq!(res.status(),StatusCode::OK);
+    assert_eq!(res.status(), StatusCode::OK);
 }
 
 #[actix_web::test]
-async fn get_action_list_test(){
+async fn get_action_list_test() {
     let inp = r#"{
         "url": "http://localhost:3233",
         "namespace": "guest",
@@ -373,11 +381,11 @@ async fn get_action_list_test(){
     let data = serde_json::from_str::<List>(&inp);
     let input = actix_web::web::Json(data.unwrap());
     let res = get_list_query(input).await;
-    assert_eq!(res.status(),StatusCode::OK);
+    assert_eq!(res.status(), StatusCode::OK);
 }
 
 #[actix_web::test]
-async fn get_trigger_list_test(){
+async fn get_trigger_list_test() {
     let inp = r#"{
         "url": "http://localhost:3233",
         "namespace": "guest",
@@ -387,5 +395,5 @@ async fn get_trigger_list_test(){
     let data = serde_json::from_str::<List>(&inp);
     let input = actix_web::web::Json(data.unwrap());
     let res = get_list_query(input).await;
-    assert_eq!(res.status(),StatusCode::OK);
+    assert_eq!(res.status(), StatusCode::OK);
 }
