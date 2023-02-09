@@ -17,6 +17,8 @@ mod errors;
 mod schema;
 use actix_web::web::Data;
 
+mod test;
+
 #[actix_web::main]
 async fn main() -> Result<()> {
     let config = Config::from_env().expect("Server");
@@ -47,7 +49,7 @@ mod tests {
 
     #[actix_web::test]
     async fn test_index_get() {
-        let app = test::init_service(App::new().route("/", web::post().to(index))).await;
+        let app = test::init_service(App::new().route("/", web::get().to(index))).await;
         let req = test::TestRequest::default()
             .insert_header(ContentType::plaintext())
             .to_request();

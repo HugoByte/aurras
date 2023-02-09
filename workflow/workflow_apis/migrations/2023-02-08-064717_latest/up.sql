@@ -18,6 +18,9 @@ create table action_details(
     action varchar not null,
     trigger varchar unique not null,
     active_status BOOLEAN NOT NULL DEFAULT 'f',
+    url varchar not null,
+    auth varchar not null,
+    namespace varchar not null,
     user_id uuid  not null,
     foreign key (user_id) references userss(id)
 );

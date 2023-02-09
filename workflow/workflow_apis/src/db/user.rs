@@ -21,7 +21,7 @@ use crate::diesel::ExpressionMethods;
 use futures::future::{ready, Ready};
 
 pub struct UserRepository {
-    pool: Arc<Pool>,
+    pub pool: Arc<Pool>,
 }
 
 impl UserRepository {

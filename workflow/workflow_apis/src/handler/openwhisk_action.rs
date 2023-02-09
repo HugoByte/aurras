@@ -4,8 +4,8 @@ use crate::models::UpdateAction;
 use crate::{db::UserRepository, openwhisk_model::*};
 use actix_extract_multipart::Multipart;
 use actix_web::web::Json;
-use openwhisk_rust::{Action, Exec, KeyValue, Rule, Trigger};
-use reqwest::StatusCode;
+use openwhisk_rust::{Action, Exec, KeyValue};
+// use reqwest::StatusCode;
 use tracing::info;
 
 // Handle for creating an action
@@ -137,80 +137,6 @@ pub async fn delete_query(data: Json<Delete>) -> HttpResponse {
     HttpResponse::Ok().json(res)
 }
 
-// function for creating an trigger
-pub async fn trigger_create_query(data: Json<TriggerInput>) -> HttpResponse {
-    let client = reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .build()
-        .unwrap();
-    let param: Vec<KeyValue>;
-    if data.param_json.is_empty() {
-        param = Vec::new();
-    } else {
-        param = serde_json::from_str(&data.param_json).unwrap();
-    }
-    let trigger = Trigger {
-        namespace: data.namespace.clone(),
-        name: data.name.clone(),
-        version: "0.0.1".to_string(),
-        publish: Default::default(),
-        updated: Default::default(),
-        annotations: Default::default(),
-        parameters: param.clone(),
-        limits: Default::default(),
-    };
-
-    info!("{:?}", trigger);
-
-    let url = format!(
-        "{}/api/v1/namespaces/{}/triggers/{}?overwrite=true",
-        data.url, data.namespace, data.name
-    );
-    let auth = data.auth.split(":").collect::<Vec<&str>>();
-
-    let trigger_body = client
-        .put(url.clone())
-        .basic_auth(auth[0], Some(auth[1]))
-        .json(&trigger)
-        .send()
-        .await
-        .unwrap();
-
-    info!("{:?}", trigger_body);
-
-    let url = format!(
-        "{}/api/v1/namespaces/{}/rules/{}?overwrite=true",
-        data.url, data.namespace, data.rule
-    );
-    let trigger = format!("/{}/{}/", data.namespace.clone(), data.name.clone());
-
-    let action = format!("/{}/{}/", data.namespace.clone(), data.action.clone());
-
-    let rule_body = serde_json::to_value(Rule {
-        name: data.rule.clone(),
-        trigger,
-        action,
-    })
-    .unwrap();
-
-    let rule_body = client
-        .put(url.clone())
-        .basic_auth(auth[0], Some(auth[1]))
-        .json(&rule_body)
-        .send()
-        .await
-        .unwrap();
-
-    info!("{:?}", rule_body);
-
-    let res = format!(
-        "{}/api/v1/namespaces/{}/triggers/{}",
-        data.url, data.namespace, data.name
-    );
-
-    HttpResponse::Ok().json(format!("{}", res))
-}
-
 // Handle for delete
 pub async fn delete(
     data: Json<Delete>,
@@ -223,24 +149,6 @@ pub async fn delete(
         Some(u) => {
             info!("{:?} found", u.username);
             let res = delete_query(data).await;
-            Ok(res)
-        }
-        None => Err(AppError::INTERNAL_ERROR.default()),
-    }
-}
-
-// Handle for creating a trigger
-pub async fn create_trigger(
-    data: Json<TriggerInput>,
-    user: AuthenticatedUser,
-    repository: UserRepository,
-) -> AppResponse {
-    let user = repository.find_by_id(user.0).await?;
-
-    match user {
-        Some(u) => {
-            info!("{:?} found", u.username);
-            let res = trigger_create_query(data).await;
             Ok(res)
         }
         None => Err(AppError::INTERNAL_ERROR.default()),
@@ -306,94 +214,4 @@ pub async fn get_list_query(data: Json<List>) -> HttpResponse {
     };
 
     HttpResponse::Ok().json(res.unwrap())
-}
-
-#[actix_web::test]
-async fn trigger_test() {
-    let inp = r#"{
-        "name": "test_trigger",
-        "param_json": "[{\"key\":\"car_type\",\"value\":\"hatchback\"}]",
-        "url": "http://localhost:3233",
-        "namespace": "guest",
-        "auth": "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",
-        "rule":  "test_rule",
-        "action": "cartype"
-    }"#;
-    let data = serde_json::from_str::<TriggerInput>(&inp);
-    let input = actix_web::web::Json(data.unwrap());
-    let res = trigger_create_query(input).await;
-    assert_eq!(res.status(), StatusCode::OK);
-}
-
-#[actix_web::test]
-async fn delete_rule_test() {
-    let inp = r#"{
-        "name": "test_rule",
-        "url": "http://localhost:3233",
-        "namespace": "guest",
-        "auth": "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",
-        "deleting_type": "rule"
-    }"#;
-    let data = serde_json::from_str::<Delete>(&inp);
-    let input = actix_web::web::Json(data.unwrap());
-    let res = delete_query(input).await;
-    assert_eq!(res.status(), StatusCode::OK);
-}
-
-#[actix_web::test]
-async fn delete_trigger_test() {
-    let inp = r#"{
-        "name": "test_trigger",
-        "url": "http://localhost:3233",
-        "namespace": "guest",
-        "auth": "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",
-        "deleting_type": "trigger"
-    }"#;
-    let data = serde_json::from_str::<Delete>(&inp);
-    let input = actix_web::web::Json(data.unwrap());
-    let res = delete_query(input).await;
-    assert_eq!(res.status(), StatusCode::OK);
-}
-
-#[actix_web::test]
-async fn delete_action_test() {
-    let inp = r#"{
-        "name": "test_action",
-        "url": "http://localhost:3233",
-        "namespace": "guest",
-        "auth": "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",
-        "deleting_type": "action"
-    }"#;
-    let data = serde_json::from_str::<Delete>(&inp);
-    let input = actix_web::web::Json(data.unwrap());
-    let res = delete_query(input).await;
-    assert_eq!(res.status(), StatusCode::OK);
-}
-
-#[actix_web::test]
-async fn get_action_list_test() {
-    let inp = r#"{
-        "url": "http://localhost:3233",
-        "namespace": "guest",
-        "auth": "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",
-        "list_type": "actions"
-    }"#;
-    let data = serde_json::from_str::<List>(&inp);
-    let input = actix_web::web::Json(data.unwrap());
-    let res = get_list_query(input).await;
-    assert_eq!(res.status(), StatusCode::OK);
-}
-
-#[actix_web::test]
-async fn get_trigger_list_test() {
-    let inp = r#"{
-        "url": "http://localhost:3233",
-        "namespace": "guest",
-        "auth": "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",
-        "list_type": "triggers"
-    }"#;
-    let data = serde_json::from_str::<List>(&inp);
-    let input = actix_web::web::Json(data.unwrap());
-    let res = get_list_query(input).await;
-    assert_eq!(res.status(), StatusCode::OK);
 }

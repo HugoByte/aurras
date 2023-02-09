@@ -7,6 +7,9 @@ diesel::table! {
         action -> Varchar,
         trigger -> Varchar,
         active_status -> Bool,
+        url -> Varchar,
+        auth -> Varchar,
+        namespace -> Varchar,
         user_id -> Uuid,
     }
 }

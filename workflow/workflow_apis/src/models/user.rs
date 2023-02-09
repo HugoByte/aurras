@@ -45,20 +45,27 @@ pub struct NewUser {
 pub struct ActionTable {
     #[serde(skip_serializing)]
     pub id: i32,
-    pub rule: Option<String>,
-    pub action: Option<String>,
-    pub trigger: Option<String>,
+    pub rule: String,
+    pub action: String,
+    pub trigger: String,
     pub active_status: bool,
+    pub url: String,
+    #[serde(skip_serializing)]
+    pub auth: String,
+    pub namespace: String,
     pub user_id: Uuid,
 }
 
-#[derive(Serialize, Deserialize, AsChangeset, Insertable, Hash, Queryable)]
+#[derive(Serialize, Deserialize, AsChangeset, Insertable, Hash, Queryable, Clone)]
 #[table_name = "action_details"]
 pub struct NewActionDetails {
-    pub rule: Option<String>,
-    pub action: Option<String>,
-    pub trigger: Option<String>,
+    pub rule: String,
+    pub action: String,
+    pub trigger: String,
     pub active_status: bool,
+    pub url: String,
+    pub auth: String,
+    pub namespace: String,
     pub user_id: Uuid,
 }
 

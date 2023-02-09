@@ -1,11 +1,13 @@
 mod auth;
-mod openwhisk_action;
-mod user;
+pub mod openwhisk_action;
+pub mod user;
+pub mod openwhisk_rule_trigger;
 
 use crate::errors::AppError;
 use actix_web::{web, web::ServiceConfig, HttpResponse};
 use auth::*;
 use openwhisk_action::*;
+use openwhisk_rule_trigger::*;
 use std::{fs::File, io::Read};
 use user::*;
 
