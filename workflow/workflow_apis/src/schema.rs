@@ -22,6 +22,7 @@ diesel::table! {
         password_hash -> Varchar,
         full_name -> Varchar,
         actions -> Array<Text>,
+        trigger_and_rule -> Array<Text>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

@@ -26,6 +26,9 @@ pub fn app_config(config: &mut ServiceConfig) {
 
     let trigger_create = web::resource("/trigger")
         .route(web::post().to(create_trigger));
+    
+    let rule_create = web::resource("/rule")
+        .route(web::post().to(create_rule));
 
     let delete = web::resource("/delete")
         .route(web::post().to(delete));
@@ -43,6 +46,7 @@ pub fn app_config(config: &mut ServiceConfig) {
         .service(trigger_create)
         .service(delete)
         .service(get_list)
+        .service(rule_create)
         .service(update_rule);
 }
 

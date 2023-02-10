@@ -1,6 +1,6 @@
 use super::*;
 use crate::errors::AppError;
-use crate::models::NewActionDetails;
+use crate::models::UpdateTriggerAndRule;
 use crate::{db::UserRepository, openwhisk_model::*};
 use actix_web::web::Json;
 use openwhisk_rust::{KeyValue, Trigger};
@@ -17,27 +17,20 @@ pub async fn create_trigger(
     match user {
         Some(u) => {
             info!("{:?} found", u.username);
-            let rule = NewActionDetails {
-                rule: data.rule.clone(),
-                action: data.action.clone(),
-                trigger: data.name.clone(),
-                active_status: true,
-                url: data.url.clone(),
-                auth: data.auth.clone(),
-                namespace: data.namespace.clone(),
-                user_id: u.id,
+            let mut update = UpdateTriggerAndRule {
+                trigger_and_rule: u.actions,
             };
+            let action_name = data.name.clone();
 
             let res = trigger_create_query(data).await;
 
             if res.status().is_success() {
-                match repository.create_rule_table(rule).await {
-                    Ok(_) => Ok(res),
-                    Err(err) => Err(AppError::from(err)),
+                if !update.trigger_and_rule.contains(&action_name) {
+                    update.trigger_and_rule.push(action_name);
                 }
-            } else {
-                Ok(res)
+                repository.update_user_triiger_and_rule(update, u.id).await?;
             }
+            Ok(res)
         }
         None => Err(AppError::INTERNAL_ERROR.default()),
     }
@@ -84,28 +77,28 @@ pub async fn trigger_create_query(data: Json<TriggerInput>) -> HttpResponse {
 
     info!("{:?}", trigger_body);
 
-    let url = format!(
-        "{}/api/v1/namespaces/{}/rules/{}?overwrite=true",
-        data.url, data.namespace, data.rule
-    );
-    let trigger = format!("/{}/{}/", data.namespace.clone(), data.name.clone());
+    // let url = format!(
+    //     "{}/api/v1/namespaces/{}/rules/{}?overwrite=true",
+    //     data.url, data.namespace, data.rule
+    // );
+    // let trigger = format!("/{}/{}/", data.namespace.clone(), data.name.clone());
 
-    let action = format!("/{}/{}/", data.namespace.clone(), data.action.clone());
+    // let action = format!("/{}/{}/", data.namespace.clone(), data.action.clone());
 
-    let rule_body = serde_json::json!( {
-        "name": data.rule.clone(),
-        "status":"active",
-        "trigger":trigger,
-        "action":action,
-    });
+    // let rule_body = serde_json::json!( {
+    //     "name": data.rule.clone(),
+    //     "status":"active",
+    //     "trigger":trigger,
+    //     "action":action,
+    // });
 
-    let _rule_body = client
-        .put(url.clone())
-        .basic_auth(auth[0], Some(auth[1]))
-        .json(&rule_body)
-        .send()
-        .await
-        .unwrap();
+    // let _rule_body = client
+    //     .put(url.clone())
+    //     .basic_auth(auth[0], Some(auth[1]))
+    //     .json(&rule_body)
+    //     .send()
+    //     .await
+    //     .unwrap();
 
     let res = format!(
         "{}/api/v1/namespaces/{}/triggers/{}",
@@ -124,25 +117,18 @@ pub async fn update_rule(
     let user = repository.find_by_id(user.0).await?;
     match user {
         Some(u) => {
-            if let Some(update) = repository
-                .find_rule_by_user_id_and_rule(&u.id, data.rule.clone())
-                .await
-            {
-                info!("{:?} found", u.username);
-                let res = update_rule_query(
-                    update.url.clone(),
-                    update.namespace.clone(),
-                    data.rule.clone(),
-                    update.auth.clone(),
-                    data.active_status.clone(),
-                )
-                .await;
-                Ok(HttpResponse::Ok().json(format!("{:?}", res)))
-            } else {
-                Err(AppError::NOT_FOUND.into())
-            }
+            info!("{:?} found", u.username);
+            let res = update_rule_query(
+                data.url.clone(),
+                data.namespace.clone(),
+                data.rule.clone(),
+                data.auth.clone(),
+                data.active_status.clone(),
+            )
+            .await;
+            Ok(HttpResponse::Ok().json(format!("{:?}", res)))
         }
-        None => Err(AppError::INTERNAL_ERROR.default()),
+        None => Err(AppError::NOT_AUTHORIZED.into()),
     }
 }
 
@@ -181,41 +167,68 @@ pub async fn update_rule_query(
     rule_response
 }
 
-// pub async fn create_rule(
-//     url: String,
-//     namespace: String,
-//     rule: String,
-//     action: String,
-//     auth: Vec<&str>,
-//     trigger: String,
-// ) -> reqwest::Response {
-//     let client = reqwest::Client::builder()
-//         .danger_accept_invalid_certs(true)
-//         .build()
-//         .unwrap();
+pub async fn create_rule(
+    data: Json<RuleInput>,
+    user: AuthenticatedUser,
+    repository: UserRepository,
+) -> AppResponse {
+    let user = repository.find_by_id(user.0).await?;
 
-//     let url = format!(
-//         "{}/api/v1/namespaces/{}/rules/{}?overwrite=true",
-//         url, namespace, rule
-//     );
+    match user {
+        Some(u) => {
+            info!("{:?} found", u.username);
+            let mut update = UpdateTriggerAndRule {
+                trigger_and_rule: u.actions,
+            };
+            let action_name = data.rule.clone();
 
-//     let trigger = format!("/{}/{}/", namespace.clone(), trigger.clone());
+            let res = create_rule_request(data).await;
 
-//     let action = format!("/{}/{}/", namespace.clone(), action.clone());
+            if res.status().is_success() {
+                if !update.trigger_and_rule.contains(&action_name) {
+                    update.trigger_and_rule.push(action_name);
+                }
+                repository.update_user_triiger_and_rule(update, u.id).await?;
+                return Ok(HttpResponse::Ok().body(format!("{:?})", res)));
+            }else{
+                Err(AppError::INTERNAL_ERROR.message(format!("{:?}", res)))
+            }
+            
+        }
+        None => Err(AppError::INTERNAL_ERROR.default()),
+    }
+}
 
-//     let rule_body = serde_json::json!( {
-//         "name": rule.clone(),
-//         "status":"active",
-//         "trigger":trigger,
-//         "action":action,
-//     });
 
-//     let rule_response = client
-//         .put(url.clone())
-//         .basic_auth(auth[0], Some(auth[1]))
-//         .json(&rule_body)
-//         .send()
-//         .await
-//         .unwrap();
-//     rule_response
-// }
+pub async fn create_rule_request(
+    data: Json<RuleInput>,
+) -> reqwest::Response {
+    let client = reqwest::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .build()
+        .unwrap();
+
+    let url = format!(
+        "{}/api/v1/namespaces/{}/rules/{}?overwrite=true",
+        data.url, data.namespace, data.rule
+    );
+    let auth = data.auth.split(":").collect::<Vec<&str>>();
+    let trigger = format!("/{}/{}/", data.namespace.clone(), data.trigger.clone());
+    let action = format!("/{}/{}/", data.namespace.clone(), data.action.clone());
+
+    let rule_body = serde_json::json!( {
+        "name": data.rule.clone(),
+        "status":"active",
+        "trigger":trigger,
+        "action":action,
+    });
+
+    let rule_response = client
+        .put(url.clone())
+        .basic_auth(auth[0], Some(auth[1]))
+        .json(&rule_body)
+        .send()
+        .await
+        .unwrap();
+    rule_response
+}

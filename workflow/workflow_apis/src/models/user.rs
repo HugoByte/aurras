@@ -1,4 +1,4 @@
-use crate::schema::{action_details, userss};
+use crate::schema::userss;
 use chrono::NaiveDateTime;
 use diesel::{AsChangeset, Insertable, Queryable};
 use serde::{Deserialize, Serialize};
@@ -19,6 +19,8 @@ pub struct User {
     pub full_name: String,
     #[serde(default)]
     pub actions: Vec<String>,
+    #[serde(default)]
+    pub trigger_and_rule: Vec<String>,
     #[serde(skip_serializing)]
     pub created_at: NaiveDateTime,
     #[serde(skip_serializing)]
@@ -38,35 +40,8 @@ pub struct NewUser {
     pub full_name: String,
     #[serde(default)]
     pub actions: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize, AsChangeset, Insertable, Hash, Queryable)]
-#[table_name = "action_details"]
-pub struct ActionTable {
-    #[serde(skip_serializing)]
-    pub id: i32,
-    pub rule: String,
-    pub action: String,
-    pub trigger: String,
-    pub active_status: bool,
-    pub url: String,
-    #[serde(skip_serializing)]
-    pub auth: String,
-    pub namespace: String,
-    pub user_id: Uuid,
-}
-
-#[derive(Serialize, Deserialize, AsChangeset, Insertable, Hash, Queryable, Clone)]
-#[table_name = "action_details"]
-pub struct NewActionDetails {
-    pub rule: String,
-    pub action: String,
-    pub trigger: String,
-    pub active_status: bool,
-    pub url: String,
-    pub auth: String,
-    pub namespace: String,
-    pub user_id: Uuid,
+    #[serde(default)]
+    pub trigger_and_rule: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, AsChangeset, Insertable, Hash, Queryable, Validate)]
@@ -74,3 +49,39 @@ pub struct NewActionDetails {
 pub struct UpdateAction {
     pub actions: Vec<String>,
 }
+
+#[derive(Serialize, Deserialize, AsChangeset, Insertable, Hash, Queryable, Validate)]
+#[table_name = "userss"]
+pub struct UpdateTriggerAndRule{
+    pub trigger_and_rule: Vec<String>,
+}
+
+
+// #[derive(Serialize, Deserialize, AsChangeset, Insertable, Hash, Queryable)]
+// #[table_name = "action_details"]
+// pub struct ActionTable {
+//     #[serde(skip_serializing)]
+//     pub id: i32,
+//     pub rule: String,
+//     pub action: String,
+//     pub trigger: String,
+//     pub active_status: bool,
+//     pub url: String,
+//     #[serde(skip_serializing)]
+//     pub auth: String,
+//     pub namespace: String,
+//     pub user_id: Uuid,
+// }
+
+// #[derive(Serialize, Deserialize, AsChangeset, Insertable, Hash, Queryable, Clone)]
+// #[table_name = "action_details"]
+// pub struct NewActionDetails {
+//     pub rule: String,
+//     pub action: String,
+//     pub trigger: String,
+//     pub active_status: bool,
+//     pub url: String,
+//     pub auth: String,
+//     pub namespace: String,
+//     pub user_id: Uuid,
+// }

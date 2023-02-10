@@ -1,11 +1,10 @@
 use super::*;
 use crate::errors::AppError;
-use crate::models::UpdateAction;
+use crate::models::{UpdateAction, User};
 use crate::{db::UserRepository, openwhisk_model::*};
 use actix_extract_multipart::Multipart;
 use actix_web::web::Json;
 use openwhisk_rust::{Action, Exec, KeyValue};
-// use reqwest::StatusCode;
 use tracing::info;
 
 // Handle for creating an action
@@ -88,8 +87,26 @@ pub async fn action_create_query(data: Multipart<ActionInput>) -> HttpResponse {
     HttpResponse::Ok().json(res)
 }
 
+// Handle for delete
+pub async fn delete(
+    data: Json<Delete>,
+    user: AuthenticatedUser,
+    repository: UserRepository,
+) -> AppResponse {
+    let user = repository.find_by_id(user.0).await?;
+
+    match user {
+        Some(u) => {
+            info!("{:?} found", u.username);
+            let res = delete_query(data, u).await;
+            Ok(res)
+        }
+        None => Err(AppError::INTERNAL_ERROR.default()),
+    }
+}
+
 // query for deleting an action, trigger or a rule.
-pub async fn delete_query(data: Json<Delete>) -> HttpResponse {
+pub async fn delete_query(data: Json<Delete>, user: User) -> HttpResponse {
     let client = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
         .build()
@@ -97,20 +114,32 @@ pub async fn delete_query(data: Json<Delete>) -> HttpResponse {
 
     let url: String;
     if data.deleting_type == "action".to_string() {
-        url = format!(
-            "{}/api/v1/namespaces/{}/actions/{}",
-            data.url, data.namespace, data.name
-        );
+        if user.actions.contains(&data.name) {
+            url = format!(
+                "{}/api/v1/namespaces/{}/actions/{}",
+                data.url, data.namespace, data.name
+            );
+        } else {
+            return HttpResponse::Unauthorized().into();
+        }
     } else if data.deleting_type == "trigger".to_string() {
-        url = format!(
-            "{}/api/v1/namespaces/{}/triggers/{}",
-            data.url, data.namespace, data.name
-        );
+        if user.trigger_and_rule.contains(&data.name) {
+            url = format!(
+                "{}/api/v1/namespaces/{}/triggers/{}",
+                data.url, data.namespace, data.name
+            );
+        } else {
+            return HttpResponse::Unauthorized().into();
+        }
     } else {
-        url = format!(
-            "{}/api/v1/namespaces/{}/rules/{}",
-            data.url, data.namespace, data.name
-        );
+        if user.trigger_and_rule.contains(&data.name) {
+            url = format!(
+                "{}/api/v1/namespaces/{}/rules/{}",
+                data.url, data.namespace, data.name
+            );
+        } else {
+            return HttpResponse::Unauthorized().into();
+        }
     }
     let auth = data.auth.split(":").collect::<Vec<&str>>();
 
@@ -137,24 +166,6 @@ pub async fn delete_query(data: Json<Delete>) -> HttpResponse {
     HttpResponse::Ok().json(res)
 }
 
-// Handle for delete
-pub async fn delete(
-    data: Json<Delete>,
-    user: AuthenticatedUser,
-    repository: UserRepository,
-) -> AppResponse {
-    let user = repository.find_by_id(user.0).await?;
-
-    match user {
-        Some(u) => {
-            info!("{:?} found", u.username);
-            let res = delete_query(data).await;
-            Ok(res)
-        }
-        None => Err(AppError::INTERNAL_ERROR.default()),
-    }
-}
-
 // Handle for creating a trigger
 pub async fn get_list(
     data: Json<List>,
@@ -169,7 +180,7 @@ pub async fn get_list(
             let res = get_list_query(data).await;
             Ok(res)
         }
-        None => Err(AppError::INTERNAL_ERROR.default()),
+        None => Err(AppError::NOT_AUTHORIZED.into()),
     }
 }
 

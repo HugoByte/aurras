@@ -34,7 +34,14 @@ pub struct TriggerInput {
     pub url: String,
     pub namespace: String,
     pub auth: String,
+}
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RuleInput {
     pub rule: String,
+    pub url: String,
+    pub namespace: String,
+    pub auth: String,
+    pub trigger: String,
     pub action: String,
 }
 
@@ -59,5 +66,10 @@ fn default_resource() -> String {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateRule {
     pub rule: String,
+    // pub annotation: String,
+    #[serde(default)]
+    pub url: String,
+    pub namespace: String,
+    pub auth: String,
     pub active_status: String,
 }

@@ -8,6 +8,7 @@ create table userss(
     password_hash varchar not null unique,
     full_name varchar not null,
     actions text[] NOT NULL, 
+    trigger_and_rule text[] NOT NULL,
     created_at timestamp not null default current_timestamp,
     updated_at timestamp not null default current_timestamp
 );

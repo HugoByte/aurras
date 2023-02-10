@@ -1,5 +1,5 @@
 use crate::diesel::RunQueryDsl;
-use crate::models::UpdateAction;
+use crate::models::{UpdateAction, UpdateTriggerAndRule};
 use crate::schema::userss;
 use crate::{
     config::crypto::CryptoService,
@@ -42,6 +42,19 @@ impl UserRepository {
     pub async fn update_user_action(
         &self,
         user_action: UpdateAction,
+        user_id: Uuid,
+    ) -> Result<User> {
+        let result = diesel::update(userss::table)
+            .filter(userss::id.eq(user_id))
+            .set(user_action)
+            .get_result(&self.pool.get().unwrap());
+        Ok(result.unwrap())
+    }
+
+    #[instrument(skip(self, user_action))]
+    pub async fn update_user_triiger_and_rule(
+        &self,
+        user_action: UpdateTriggerAndRule,
         user_id: Uuid,
     ) -> Result<User> {
         let result = diesel::update(userss::table)
