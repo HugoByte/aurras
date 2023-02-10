@@ -52,7 +52,12 @@ pub struct ActionList {
     pub namespace: String,
 }
 
-
 fn default_resource() -> String {
     "openwhisk/action-rust-v1.34".to_string()
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateRule {
+    pub rule: String,
+    pub active_status: String,
 }

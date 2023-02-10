@@ -32,6 +32,8 @@ pub fn app_config(config: &mut ServiceConfig) {
 
     let get_list = web::resource("/get_list").route(web::post().to(get_list));
 
+    let update_rule = web::resource("/update_rule").route(web::post().to(update_rule));
+
     config
         .service(index)
         .service(signup)
@@ -40,7 +42,8 @@ pub fn app_config(config: &mut ServiceConfig) {
         .service(action_create)
         .service(trigger_create)
         .service(delete)
-        .service(get_list);
+        .service(get_list)
+        .service(update_rule);
 }
 
 // Index file handle

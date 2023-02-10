@@ -16,7 +16,7 @@ create table action_details(
     id  SERIAL primary key,
     rule varchar unique not null,
     action varchar not null,
-    trigger varchar unique not null,
+    trigger varchar not null,
     active_status BOOLEAN NOT NULL DEFAULT 'f',
     url varchar not null,
     auth varchar not null,

@@ -33,12 +33,27 @@ impl UserRepository {
     }
 
     #[instrument(skip(self))]
-    pub async fn find_rule_by_user_id(&self, user_id: &Uuid) -> Result<Option<ActionTable>> {
+    pub async fn find_rule_by_user_id(&self, user_id: &Uuid) -> Result<Vec<ActionTable>> {
+        let conn = self.pool.get().unwrap();
+        let items = action_details::table
+            .filter(action_details::user_id.eq(user_id.clone()))
+            .load::<ActionTable>(&conn)?;
+        Ok(items)
+    }
+
+    #[instrument(skip(self))]
+    pub async fn find_rule_by_user_id_and_rule(
+        &self,
+        user_id: &Uuid,
+        rule: String,
+    ) -> Option<ActionTable> {
         let conn = self.pool.get().unwrap();
         let mut items = action_details::table
             .filter(action_details::user_id.eq(user_id.clone()))
-            .load::<ActionTable>(&conn)?;
+            .filter(action_details::rule.eq(rule.clone()))
+            .load::<ActionTable>(&conn)
+            .unwrap();
         let res = items.pop();
-        Ok(res)
+        res
     }
 }
