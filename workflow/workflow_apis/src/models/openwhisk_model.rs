@@ -66,7 +66,6 @@ fn default_resource() -> String {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateRule {
     pub rule: String,
-    // pub annotation: String,
     #[serde(default)]
     pub url: String,
     pub namespace: String,
