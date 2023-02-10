@@ -1,3 +1,4 @@
+#[cfg(test)]
 use crate::models::User;
 #[cfg(test)]
 use crate::{
@@ -6,6 +7,7 @@ use crate::{
 };
 #[cfg(test)]
 use reqwest::StatusCode;
+#[cfg(test)]
 use uuid::Uuid;
 
 #[actix_web::test]
