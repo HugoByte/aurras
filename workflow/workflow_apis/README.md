@@ -12,7 +12,7 @@ This package provide API for creating action, trigger and rule also deleting the
 
 ## Configuration
 
-The server host address and port should be mentioned in .env file, also the database url , jwt token key and hashin secret key should be specified. set rust log also in .env file
+The server host address and port should be set as envorment variables, also the database url , jwt token key and hashin secret key should be specified. set rust log also in env variable
 
 Example for configuration.
 
@@ -28,8 +28,8 @@ RUST_LOG="debug,actix_web=debug,sqlx=info"
 ## Working
 - Clone this repository
 - Run the postgres database and create a datbase.
-- Add the database url username, password and database in the .env file
-- After that go too inside this project directory and run
+- Set the database url username, password and database as the environment variables.
+- After that go too inside this project directory and run.
     
     ``` 
     diesel migration run 
@@ -68,7 +68,7 @@ If you need to interact with the openwhisk through this APIs, before that you ne
     ```
     if you are using postman change the content-type to "application/json".
 
-- ` Create a Trigger and rule`
+- ` Create a Trigger`
 
     Endpoint : ``` {Host}:{Port}/trigger ```
 
@@ -79,11 +79,36 @@ If you need to interact with the openwhisk through this APIs, before that you ne
         url: "String",
         namespace: "String",
         auth: "String",
-        rule: "String",
-        action: "String",
     }
     ```
     param_json is for mentioning the parameter for the action need to run.
+- ` Create a Rule`
+
+    Endpoint : ``` {Host}:{Port}/rule ```
+
+    ```
+    {
+        rule: "String",
+        url: "String",
+        namespace: "String",
+        auth: "String",
+        trigger: "String",
+        action: "String",
+    }
+    ```
+- ` Update a Rule`
+
+    Endpoint : ``` {Host}:{Port}/update_rule ```
+
+    ```
+    {
+        rule: "String",
+        url: "String",
+        namespace: "String",
+        auth: "String",
+        active_status: "String",
+    }
+    ```
 
 - ` Delete `
 
