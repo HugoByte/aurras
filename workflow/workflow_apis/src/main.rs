@@ -17,6 +17,8 @@ mod errors;
 mod schema;
 use actix_web::web::Data;
 
+mod tests;
+
 #[actix_web::main]
 async fn main() -> Result<()> {
     let config = Config::from_env().expect("Server");
@@ -37,29 +39,4 @@ async fn main() -> Result<()> {
     .await?;
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use actix_web::{http::header::ContentType, test, web, App};
-
-    use super::*;
-
-    #[actix_web::test]
-    async fn test_index_get() {
-        let app = test::init_service(App::new().route("/", web::post().to(index))).await;
-        let req = test::TestRequest::default()
-            .insert_header(ContentType::plaintext())
-            .to_request();
-        let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
-    }
-
-    #[actix_web::test]
-    async fn test_index_post() {
-        let app = test::init_service(App::new().route("/", web::get().to(index))).await;
-        let req = test::TestRequest::post().uri("/").to_request();
-        let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_client_error());
-    }
 }

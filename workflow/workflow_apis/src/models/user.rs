@@ -17,6 +17,10 @@ pub struct User {
     #[serde(skip_serializing)]
     pub password_hash: String,
     pub full_name: String,
+    #[serde(default)]
+    pub actions: Vec<String>,
+    #[serde(default)]
+    pub trigger_and_rule: Vec<String>,
     #[serde(skip_serializing)]
     pub created_at: NaiveDateTime,
     #[serde(skip_serializing)]
@@ -34,4 +38,20 @@ pub struct NewUser {
     #[validate(length(min = 3))]
     pub password_hash: String,
     pub full_name: String,
+    #[serde(default)]
+    pub actions: Vec<String>,
+    #[serde(default)]
+    pub trigger_and_rule: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, AsChangeset, Insertable, Hash, Queryable, Validate)]
+#[table_name = "userss"]
+pub struct UpdateAction {
+    pub actions: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, AsChangeset, Insertable, Hash, Queryable, Validate)]
+#[table_name = "userss"]
+pub struct UpdateTriggerAndRule{
+    pub trigger_and_rule: Vec<String>,
 }

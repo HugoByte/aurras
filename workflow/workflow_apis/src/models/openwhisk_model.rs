@@ -34,7 +34,14 @@ pub struct TriggerInput {
     pub url: String,
     pub namespace: String,
     pub auth: String,
+}
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RuleInput {
     pub rule: String,
+    pub url: String,
+    pub namespace: String,
+    pub auth: String,
+    pub trigger: String,
     pub action: String,
 }
 
@@ -52,7 +59,16 @@ pub struct ActionList {
     pub namespace: String,
 }
 
-
 fn default_resource() -> String {
     "openwhisk/action-rust-v1.34".to_string()
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateRule {
+    pub rule: String,
+    #[serde(default)]
+    pub url: String,
+    pub namespace: String,
+    pub auth: String,
+    pub active_status: String,
 }

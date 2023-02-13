@@ -1,11 +1,13 @@
 mod auth;
-mod openwhisk_action;
-mod user;
+pub mod openwhisk_action;
+pub mod user;
+pub mod openwhisk_rule_trigger;
 
 use crate::errors::AppError;
 use actix_web::{web, web::ServiceConfig, HttpResponse};
 use auth::*;
 use openwhisk_action::*;
+use openwhisk_rule_trigger::*;
 use std::{fs::File, io::Read};
 use user::*;
 
@@ -24,11 +26,16 @@ pub fn app_config(config: &mut ServiceConfig) {
 
     let trigger_create = web::resource("/trigger")
         .route(web::post().to(create_trigger));
+    
+    let rule_create = web::resource("/rule")
+        .route(web::post().to(create_rule));
 
     let delete = web::resource("/delete")
         .route(web::post().to(delete));
 
     let get_list = web::resource("/get_list").route(web::post().to(get_list));
+
+    let update_rule = web::resource("/update_rule").route(web::post().to(update_rule));
 
     config
         .service(index)
@@ -38,7 +45,9 @@ pub fn app_config(config: &mut ServiceConfig) {
         .service(action_create)
         .service(trigger_create)
         .service(delete)
-        .service(get_list);
+        .service(get_list)
+        .service(rule_create)
+        .service(update_rule);
 }
 
 // Index file handle
