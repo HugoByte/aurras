@@ -77,29 +77,6 @@ pub async fn trigger_create_query(data: Json<TriggerInput>) -> HttpResponse {
 
     info!("{:?}", trigger_body);
 
-    // let url = format!(
-    //     "{}/api/v1/namespaces/{}/rules/{}?overwrite=true",
-    //     data.url, data.namespace, data.rule
-    // );
-    // let trigger = format!("/{}/{}/", data.namespace.clone(), data.name.clone());
-
-    // let action = format!("/{}/{}/", data.namespace.clone(), data.action.clone());
-
-    // let rule_body = serde_json::json!( {
-    //     "name": data.rule.clone(),
-    //     "status":"active",
-    //     "trigger":trigger,
-    //     "action":action,
-    // });
-
-    // let _rule_body = client
-    //     .put(url.clone())
-    //     .basic_auth(auth[0], Some(auth[1]))
-    //     .json(&rule_body)
-    //     .send()
-    //     .await
-    //     .unwrap();
-
     let res = format!(
         "{}/api/v1/namespaces/{}/triggers/{}",
         data.url, data.namespace, data.name
