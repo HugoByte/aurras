@@ -67,6 +67,16 @@ impl Action {
                     })),
                     _ => Ok(serde_json::json!({})),
                 }
+            },
+            "staking" => {
+                return match self.params.event.method.as_str() {
+                    "EraPaid" => Ok(serde_json::json!({
+                        "era" :  self.params.event.data[0].get("eraIndex").unwrap().parse::<u32>().unwrap(),
+                    }),),
+                    _ => Ok(serde_json::json!({
+                        "era" : 0,
+                    })),
+                }
             }
             _ => Ok(serde_json::json!({})),
         };
