@@ -24,7 +24,7 @@ pub fn polkadot_derive(input: TokenStream) -> TokenStream {
 ///Implement the general substrate methods for the struct.
 fn impl_polkadot(ast: DeriveInput) -> TokenStream {
     let polka = ast.ident.clone();
-    let attribute_args = ast.attrs.clone();
+    let attribute_args = ast.attrs;
 
     let methods = quote! {
         impl #polka{

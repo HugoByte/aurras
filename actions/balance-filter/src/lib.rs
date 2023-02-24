@@ -225,7 +225,7 @@ mod tests {
         sleep(Duration::from_millis(5000)).await;
         let url = format!("http://admin:password@localhost:{}", couchdb.port());
         let topic = "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string();
-        let messages = vec![
+        let _messages = vec![
             Message {
                 topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
                 value: serde_json::json!({

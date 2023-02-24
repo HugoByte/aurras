@@ -1,5 +1,4 @@
 use chesterfield::sync::Database;
-use reqwest;
 use reqwest::StatusCode;
 
 use super::Trigger;
@@ -66,7 +65,7 @@ impl Context {
                 None => "test:test".to_string(),
             }
         };
-        let auth: Vec<&str> = api_key.split(":").collect();
+        let auth: Vec<&str> = api_key.split(':').collect();
         let host = if env::var("__OW_API_HOST").is_ok() {
             env::var("__OW_API_HOST").unwrap()
         } else {
@@ -109,7 +108,7 @@ impl Context {
         );
         let response = invoke_client(
             client
-                .post(url.clone())
+                .post(url)
                 .basic_auth(self.user.clone(), Some(self.pass.clone()))
                 .json(value),
         )
@@ -135,7 +134,7 @@ impl Context {
         );
         let response = invoke_client(
             client
-                .post(url.clone())
+                .post(url)
                 .basic_auth(self.user.clone(), Some(self.pass.clone()))
                 .json(value),
         )
@@ -162,7 +161,7 @@ impl Context {
         );
         let response = invoke_client(
             client
-                .put(url.clone())
+                .put(url)
                 .basic_auth(self.user.clone(), Some(self.pass.clone()))
                 .json(&serde_json::json!({
                     "status": "",
@@ -211,12 +210,12 @@ impl Context {
 
     pub fn update_document(&self, id: &str, rev: &str, doc: &Value) -> Result<String, Error> {
         match self.db.update(doc, id, rev).send() {
-            Ok(r) => return Ok(r.id),
+            Ok(r) => Ok(r.id),
             Err(err) => {
-                return Err(format!("error updating document {}: {:?}", doc, err))
+                Err(format!("error updating document {}: {:?}", doc, err))
                     .map_err(serde::de::Error::custom)
             }
-        };
+        }
     }
 
     pub fn get_auth_key(&self) -> String {
@@ -225,19 +224,19 @@ impl Context {
 
     pub fn insert_document(&self, doc: &Value, id: Option<String>) -> Result<String, Error> {
         match self.db.insert(doc, id).send() {
-            Ok(r) => return Ok(r.id),
+            Ok(r) => Ok(r.id),
             Err(err) => {
-                return Err(format!("error creating document {}: {:?}", doc, err))
+                Err(format!("error creating document {}: {:?}", doc, err))
                     .map_err(serde::de::Error::custom)
             }
-        };
+        }
     }
 
     pub fn get_document(&self, id: &str) -> Result<Value, Error> {
         match self.db.get(id).send::<Value>() {
-            Ok(v) => return Ok(v.into_inner().unwrap()),
+            Ok(v) => Ok(v.into_inner().unwrap()),
             Err(err) => {
-                return Err(format!("error fetching document {}: {:?}", id, err))
+                Err(format!("error fetching document {}: {:?}", id, err))
                     .map_err(serde::de::Error::custom)
             }
         }
@@ -246,7 +245,7 @@ impl Context {
     pub fn get_list(&self, db_url: &str, db_name: &str) -> Result<Value, Error> {
         let client = client();
         let url = format!("{}/{}/_all_docs?include_docs=true", db_url, db_name);
-        if let Ok(response) = invoke_client(client.get(url.clone())) {
+        if let Ok(response) = invoke_client(client.get(url)) {
             return match response.status() {
                 StatusCode::OK => {
                     #[cfg(not(test))]
@@ -271,6 +270,7 @@ impl Context {
 }
 
 #[cfg(test)]
+#[cfg(feature = "mock_containers")]
 mod tests {
     use super::*;
     use crate::mock::mock_containers::CouchDB;

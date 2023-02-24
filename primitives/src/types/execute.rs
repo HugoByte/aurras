@@ -1,5 +1,4 @@
 use super::Exception;
-use std::any::Any;
 
 pub trait Execute<T> {
     type Input;

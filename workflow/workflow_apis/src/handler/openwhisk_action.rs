@@ -68,7 +68,7 @@ pub async fn action_create_query(data: Multipart<ActionInput>) -> HttpResponse {
         "{}/api/v1/namespaces/{}/actions/{}?overwrite=true",
         data.url, data.namespace, data.name
     );
-    let auth = data.auth.split(":").collect::<Vec<&str>>();
+    let auth = data.auth.split(':').collect::<Vec<&str>>();
 
     let body = client
         .put(url.clone())
@@ -113,7 +113,7 @@ pub async fn delete_query(data: Json<Delete>, user: User) -> HttpResponse {
         .unwrap();
 
     let url: String;
-    if data.deleting_type == "action".to_string() {
+    if data.deleting_type == "action" {
         if user.actions.contains(&data.name) {
             url = format!(
                 "{}/api/v1/namespaces/{}/actions/{}",
@@ -122,7 +122,7 @@ pub async fn delete_query(data: Json<Delete>, user: User) -> HttpResponse {
         } else {
             return HttpResponse::Unauthorized().into();
         }
-    } else if data.deleting_type == "trigger".to_string() {
+    } else if data.deleting_type == "trigger" {
         if user.trigger_and_rule.contains(&data.name) {
             url = format!(
                 "{}/api/v1/namespaces/{}/triggers/{}",
@@ -131,17 +131,16 @@ pub async fn delete_query(data: Json<Delete>, user: User) -> HttpResponse {
         } else {
             return HttpResponse::Unauthorized().into();
         }
+    } else if user.trigger_and_rule.contains(&data.name) {
+        url = format!(
+            "{}/api/v1/namespaces/{}/rules/{}",
+            data.url, data.namespace, data.name
+        );
     } else {
-        if user.trigger_and_rule.contains(&data.name) {
-            url = format!(
-                "{}/api/v1/namespaces/{}/rules/{}",
-                data.url, data.namespace, data.name
-            );
-        } else {
-            return HttpResponse::Unauthorized().into();
-        }
+        return HttpResponse::Unauthorized().into();
     }
-    let auth = data.auth.split(":").collect::<Vec<&str>>();
+
+    let auth = data.auth.split(':').collect::<Vec<&str>>();
 
     let body = client
         .delete(url.clone())
@@ -196,7 +195,7 @@ pub async fn get_list_query(data: Json<List>) -> HttpResponse {
         "{}/api/v1/namespaces/{}/{}/",
         data.url, data.namespace, data.list_type
     );
-    let auth = data.auth.split(":").collect::<Vec<&str>>();
+    let auth = data.auth.split(':').collect::<Vec<&str>>();
 
     let list = client
         .get(url)

@@ -78,7 +78,7 @@ impl UserRepository {
     pub async fn find_by_username(&self, username: &str) -> Result<Option<User>> {
         let conn = self.pool.get().unwrap();
         let mut items = userss::table
-            .filter(userss::username.eq(username.clone()))
+            .filter(userss::username.eq(username))
             .load::<User>(&conn)?;
         let res = items.pop();
         Ok(res)

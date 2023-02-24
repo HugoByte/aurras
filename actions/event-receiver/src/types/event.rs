@@ -7,6 +7,7 @@
 
 // }
 
+#[allow(dead_code)]
 pub struct Event {
     // source: String,
     payload: String, // TODO: encoded
