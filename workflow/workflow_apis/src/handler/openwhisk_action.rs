@@ -184,7 +184,7 @@ pub async fn get_list(
     }
 }
 
-use serde_json::Error;
+use serde_json::{Error, Value};
 // function for creating an trigger
 pub async fn get_list_query(data: Json<List>) -> HttpResponse {
     let client = reqwest::Client::builder()
@@ -198,31 +198,31 @@ pub async fn get_list_query(data: Json<List>) -> HttpResponse {
     );
     let auth = data.auth.split(":").collect::<Vec<&str>>();
 
-    let list = client
+    let list = match client
         .get(url)
         .basic_auth(auth[0], Some(auth[1]))
         .send()
-        .await
-        .unwrap();
+        .await{
+            Ok(res) => res,
+            Err(_) => return HttpResponse::NotFound().into(),
+        };
 
-    let actions: Result<Vec<Action>, Error> =
+    let actions: Result<Vec<Value>, Error> =
         serde_json::from_str(list.text().await.unwrap().as_str());
-    let res = match actions {
+    match actions {
         Ok(actions) => {
             let mut result = Vec::new();
             for action in actions.into_iter() {
                 let actionlist = ActionList {
-                    name: action.name,
-                    namespace: action.namespace,
+                    name: action.get("name").unwrap().to_string(),
+                    namespace: action.get("namespace").unwrap().to_string(),
                 };
 
                 result.push(actionlist)
             }
 
-            Ok(result)
+            HttpResponse::Ok().json(result)
         }
-        Err(error) => Err(format!("Failed to deserailize actions {}", error)),
-    };
-
-    HttpResponse::Ok().json(res.unwrap())
+        Err(error) => HttpResponse::from_error(error),
+    }
 }
