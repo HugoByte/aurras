@@ -174,6 +174,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "mock_containers")]
     async fn add_address_pass() {
         use std::collections::HashMap;
         let config = Config::new();
