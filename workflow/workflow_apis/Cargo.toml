@@ -10,7 +10,6 @@ actix-multipart = "0.4"
 actix-web = "4.2.1"
 uuid = { version = "0.8.2", features = ["v4", "serde"] }
 actix_extract_multipart = "1.2.0"
-# openwhisk-rust = "0.1.5"
 openwhisk-rust = { git = "https://github.com/HugoByte/openwhisk-client-rust.git", branch = "master" }
 base64 = "0.20.0"
 serde_json = "1.0"
