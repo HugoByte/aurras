@@ -57,6 +57,7 @@ pub fn main(args: Value) -> Result<Value, Error> {
 }
 
 #[cfg(test)]
+#[cfg(feature = "mock_containers")]
 mod tests {
     use super::*;
 

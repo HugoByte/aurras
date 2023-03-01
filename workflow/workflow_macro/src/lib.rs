@@ -12,7 +12,7 @@ pub fn derive_workflow(input: TokenStream) -> TokenStream {
 }
 
 fn impl_workflow(ast: DeriveInput) -> TokenStream {
-    let workflow = ast.ident.clone();
+    let workflow = ast.ident;
 
     let methods = quote! {
 

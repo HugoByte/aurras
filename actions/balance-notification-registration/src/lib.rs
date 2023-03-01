@@ -4,7 +4,6 @@ use chesterfield::sync::{Client, Database};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{Error, Value};
 mod types;
-use std::collections::HashMap;
 use types::{Address, Response, Topic};
 
 #[cfg(test)]
@@ -65,6 +64,7 @@ impl Action {
         db
     }
 
+    #[allow(dead_code)]
     pub fn get_context(&mut self) -> &Context {
         self.context.as_mut().expect("Action not Initialized!")
     }
@@ -86,7 +86,8 @@ impl Action {
         }))
     }
 
-    pub fn get_address(&mut self, id: &String) -> Result<Value, Error> {
+    #[allow(dead_code)]
+    pub fn get_address(&mut self, id: &str) -> Result<Value, Error> {
         self.get_context().get_document(id)
     }
 
@@ -109,7 +110,7 @@ impl Action {
                 token: token.to_string(),
             },
         );
-        context.update_document(&topic, &doc.rev, &serde_json::to_value(doc.clone())?)
+        context.update_document(topic, &doc.rev, &serde_json::to_value(doc.clone())?)
     }
 }
 
@@ -123,12 +124,12 @@ pub fn main(args: Value) -> Result<Value, Error> {
 
     match action.method().as_ref() {
         "post" => {
-            let id = action.add_address(
+            let _id = action.add_address(
                 &action.params.token,
                 &action.params.topic,
                 &action.params.address,
             )?;
-            return Ok(serde_json::json!({
+            Ok(serde_json::json!({
                 "statusCode": 200,
                 "headers": { "Content-Type": "application/json" },
                 "body": {
@@ -136,9 +137,9 @@ pub fn main(args: Value) -> Result<Value, Error> {
                 }
             }))
         }
-        "get" => return action.get_event_sources(),
+        "get" => action.get_event_sources(),
         method => {
-            return Err(format!("method not supported document {}", method))
+            Err(format!("method not supported document {}", method))
                 .map_err(serde::de::Error::custom)
         }
     }
@@ -155,6 +156,7 @@ mod tests {
         name: String,
         trigger: String,
     }
+    #[allow(dead_code)]
     impl Source {
         pub fn new(name: String, trigger: String) -> Self {
             Source { name, trigger }
@@ -172,7 +174,9 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "mock_containers")]
     async fn add_address_pass() {
+        use std::collections::HashMap;
         let config = Config::new();
         let couchdb = CouchDB::new("admin".to_string(), "password".to_string())
             .await
@@ -227,9 +231,9 @@ mod tests {
             .unwrap();
         sleep(Duration::from_millis(5000)).await;
         let url = format!("http://admin:password@localhost:{}", couchdb.port());
-        let topic = "1234".to_string();
-        let address = "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string();
-        let token = "1".to_string();
+        let _topic = "1234".to_string();
+        let _address = "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string();
+        let _token = "1".to_string();
         let mut action = Action::new(Input {
             db_url: url.clone(),
             db_name: "test".to_string(),

@@ -4,6 +4,7 @@ use serde_json::{from_str, Error};
 
 pub type Payload = Vec<(Deposit, Topic)>;
 
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Message {
     pub topic: String,
@@ -11,6 +12,7 @@ pub struct Message {
 }
 
 //TODO: Change
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Deposit {
     #[serde(rename = "to")]
