@@ -35,22 +35,23 @@ impl Action {
             context: None,
         }
     }
+    #[allow(dead_code)]
     #[cfg(test)]
     pub fn init(&mut self, config: &Config) {
-        let db = self.connect_db(&"http://localhost:5984".to_string(), &"test".to_string());
+        let db = self.connect_db("http://localhost:5984", "test");
         self.context = Some(Context::new(db, Some(config)));
     }
 
     #[cfg(not(test))]
     pub fn init(&mut self) {
-        let db = self.connect_db(&"http://localhost:5984".to_string(), &"test".to_string());
+        let db = self.connect_db("http://localhost:5984", "test");
         self.context = Some(Context::new(db, None));
     }
 
+    #[allow(dead_code)]
     fn connect_db(&self, db_url: &str, db_name: &str) -> Database {
         let client = Client::new(db_url).unwrap();
-        let db = client.database(db_name).unwrap();
-        db
+        client.database(db_name).unwrap()
     }
 
     pub fn get_context(&mut self) -> &Context {

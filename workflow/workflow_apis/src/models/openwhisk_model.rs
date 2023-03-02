@@ -53,6 +53,7 @@ pub struct List {
     pub list_type: String,
 }
 
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Default, Serialize, Clone, PartialEq)]
 pub struct ActionList {
     pub name: String,

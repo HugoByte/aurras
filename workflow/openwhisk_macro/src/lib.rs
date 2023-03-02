@@ -18,7 +18,7 @@ pub fn client(input: TokenStream) -> TokenStream {
 
 fn impl_openwhisk_client(ast: DeriveInput) -> TokenStream {
     let name = ast.ident.clone();
-    let attribute_args = ast.attrs.clone();
+    let attribute_args = ast.attrs;
 
     let mut property_map: HashMap<String, String> = HashMap::new();
 

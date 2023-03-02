@@ -31,7 +31,7 @@ impl CryptoService {
     // Verify the password
     #[instrument(skip(self, password, password_hash))]
     pub async fn verify_password(&self, password: &str, password_hash: &str) -> Result<bool> {
-        verify(password, &password_hash).map_err(|err| eyre!("Verifying error: {}", err))
+        verify(password, password_hash).map_err(|err| eyre!("Verifying error: {}", err))
     }
 
     // Generate auth token

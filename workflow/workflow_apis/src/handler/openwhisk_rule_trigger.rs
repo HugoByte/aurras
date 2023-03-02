@@ -28,7 +28,9 @@ pub async fn create_trigger(
                 if !update.trigger_and_rule.contains(&action_name) {
                     update.trigger_and_rule.push(action_name);
                 }
-                repository.update_user_triiger_and_rule(update, u.id).await?;
+                repository
+                    .update_user_triiger_and_rule(update, u.id)
+                    .await?;
             }
             Ok(res)
         }
@@ -42,12 +44,11 @@ pub async fn trigger_create_query(data: Json<TriggerInput>) -> HttpResponse {
         .danger_accept_invalid_certs(true)
         .build()
         .unwrap();
-    let param: Vec<KeyValue>;
-    if data.param_json.is_empty() {
-        param = Vec::new();
+    let param: Vec<KeyValue> = if data.param_json.is_empty() {
+        Vec::new()
     } else {
-        param = serde_json::from_str(&data.param_json).unwrap();
-    }
+        serde_json::from_str(&data.param_json).unwrap()
+    };
     let trigger = Trigger {
         namespace: data.namespace.clone(),
         name: data.name.clone(),
@@ -65,7 +66,7 @@ pub async fn trigger_create_query(data: Json<TriggerInput>) -> HttpResponse {
         "{}/api/v1/namespaces/{}/triggers/{}?overwrite=true",
         data.url, data.namespace, data.name
     );
-    let auth = data.auth.split(":").collect::<Vec<&str>>();
+    let auth = data.auth.split(':').collect::<Vec<&str>>();
 
     let trigger_body = client
         .put(url.clone())
@@ -82,7 +83,7 @@ pub async fn trigger_create_query(data: Json<TriggerInput>) -> HttpResponse {
         data.url, data.namespace, data.name
     );
 
-    HttpResponse::Ok().json(format!("{}", res))
+    HttpResponse::Ok().json(res)
 }
 
 // handler for updateing the query in to active and inactive states.
@@ -121,7 +122,7 @@ pub async fn update_rule_query(
         .danger_accept_invalid_certs(true)
         .build()
         .unwrap();
-    let auth = auth.split(":").collect::<Vec<&str>>();
+    let auth = auth.split(':').collect::<Vec<&str>>();
     let url = format!(
         "{}/api/v1/namespaces/{}/rules/{}?overwrite=true",
         url, namespace, rule
@@ -134,14 +135,13 @@ pub async fn update_rule_query(
         "action":null,
     });
 
-    let rule_response = client
+    client
         .post(url.clone())
         .basic_auth(auth[0], Some(auth[1]))
         .json(&rule_body)
         .send()
         .await
-        .unwrap();
-    rule_response
+        .unwrap()
 }
 
 pub async fn create_rule(
@@ -165,21 +165,19 @@ pub async fn create_rule(
                 if !update.trigger_and_rule.contains(&action_name) {
                     update.trigger_and_rule.push(action_name);
                 }
-                repository.update_user_triiger_and_rule(update, u.id).await?;
-                return Ok(HttpResponse::Ok().body(format!("{:?})", res)));
-            }else{
+                repository
+                    .update_user_triiger_and_rule(update, u.id)
+                    .await?;
+                Ok(HttpResponse::Ok().body(format!("{:?})", res)))
+            } else {
                 Err(AppError::INTERNAL_ERROR.message(format!("{:?}", res)))
             }
-            
         }
         None => Err(AppError::INTERNAL_ERROR.default()),
     }
 }
 
-
-pub async fn create_rule_request(
-    data: Json<RuleInput>,
-) -> reqwest::Response {
+pub async fn create_rule_request(data: Json<RuleInput>) -> reqwest::Response {
     let client = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
         .build()
@@ -189,7 +187,7 @@ pub async fn create_rule_request(
         "{}/api/v1/namespaces/{}/rules/{}?overwrite=true",
         data.url, data.namespace, data.rule
     );
-    let auth = data.auth.split(":").collect::<Vec<&str>>();
+    let auth = data.auth.split(':').collect::<Vec<&str>>();
     let trigger = format!("/{}/{}/", data.namespace.clone(), data.trigger.clone());
     let action = format!("/{}/{}/", data.namespace.clone(), data.action.clone());
 
@@ -200,12 +198,11 @@ pub async fn create_rule_request(
         "action":action,
     });
 
-    let rule_response = client
+    client
         .put(url.clone())
         .basic_auth(auth[0], Some(auth[1]))
         .json(&rule_body)
         .send()
         .await
-        .unwrap();
-    rule_response
+        .unwrap()
 }
