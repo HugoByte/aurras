@@ -139,4 +139,32 @@ mod tests {
             serde_json::json!({"to": "1N55WJHup5j1LHpbzQX6zvYu7QeLcUBd1tBp8CvA7xHGixY", "value": "73.1000"})
         );
     }
+
+    #[test]
+    fn parse_staking_event_data_pass() {
+        let input = serde_json::from_value::<Input>(serde_json::json!({
+            "topic": "topic",
+            "brokers": ["172.17.0.1:9092"],
+            "event_producer_trigger": "produce_staking_event",
+            "event": {
+                "section": "staking",
+                "method": "EraPaid",
+                "meta": "[ The era payout has been set. \\[EraIndex, validatorPayout, remainder\\]]",
+                "data": [
+                    { "eraIndex": "6320" },
+                    { "Balance": "1287899239212" },
+                    { "Balance": "731000000000" }
+                ]
+            },
+        }))
+        .unwrap();
+        let action = Action::new(input);
+
+        let response = action.parse_event_data().unwrap();
+
+        assert_eq!(
+            response,
+            serde_json::json!({"era": 6320})
+        );
+    }
 }
