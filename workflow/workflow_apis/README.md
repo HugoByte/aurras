@@ -43,7 +43,7 @@ RUST_LOG="debug,actix_web=debug,sqlx=info"
 
 ### Web APIs 
 
-This project will expose APIs for openwhisk interaction for creating and deleting actio, trigger and rules. all APIs are post methods.
+This project will expose APIs for openwhisk interaction for creating and deleting action, trigger and rules. all APIs are post methods.
 
 If you need to interact with the openwhisk through this APIs, before that you need to register. after register , with your credentials you can login and get the authentication token, using authentication token you can access these APIs.
 

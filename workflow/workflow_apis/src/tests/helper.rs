@@ -1,4 +1,4 @@
-use openwhisk_rust::{Action, Exec, KeyValue, RuleResponse, Trigger, Limits};
+use openwhisk_client_rust::{Action, Exec, KeyValue, RuleResponse, Trigger, Limits};
 use serde_json::json;
 use wiremock::{
     matchers::{method, path, query_param},

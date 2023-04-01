@@ -3,7 +3,7 @@ use crate::errors::AppError;
 use crate::models::UpdateTriggerAndRule;
 use crate::{db::UserRepository, openwhisk_model::*};
 use actix_web::web::Json;
-use openwhisk_rust::{KeyValue, Trigger};
+use openwhisk_client_rust::{KeyValue, Trigger};
 use tracing::info;
 
 // Handle for creating a trigger

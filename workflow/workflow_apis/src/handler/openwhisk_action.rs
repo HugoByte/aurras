@@ -4,7 +4,7 @@ use crate::models::{UpdateAction, User};
 use crate::{db::UserRepository, openwhisk_model::*};
 use actix_extract_multipart::Multipart;
 use actix_web::web::Json;
-use openwhisk_rust::{Action, Exec, KeyValue};
+use openwhisk_client_rust::{Action, Exec, KeyValue};
 use tracing::info;
 
 // Handle for creating an action
