@@ -34,4 +34,3 @@ RUN apt-get clean && \
 rm -rf /var/lib/apt/lists/*whic
 
 ENTRYPOINT ["/usr/src/workflow.sh"]
-CMD ["sh", "-c", "cp /usr/src/workflow/workflow.wasm /host/workflow.wasm"]

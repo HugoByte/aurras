@@ -30,6 +30,5 @@ const banner = `
 `
 
 func main() {
-	fmt.Println(Blue(banner))
 	cmd.Execute()
 }
