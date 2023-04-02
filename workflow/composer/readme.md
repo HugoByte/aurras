@@ -66,7 +66,18 @@ OK
 Test Completed
 
 ```
+## Docker
 
+### Building the docker image
+```bash
+cd ..
+docker build -t hugobyte/workflow-composer .
+```
+
+### Running using the docker image
+```bash
+cat ../examples/PolkadotPayout.yaml | docker run -i --rm hugobyte/workflow-composer > output.wasm
+```
 ## References
 
 [cobra](https://github.com/spf13/cobra)
