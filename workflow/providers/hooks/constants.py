@@ -1,6 +1,8 @@
 
 
 common_rs_file = f"""
+#![allow(unused_imports)]
+
 use super::*;
 #[derive(Debug,Flow)]
 pub struct WorkflowGraph {{
@@ -152,6 +154,8 @@ def global_import_generator(task_list):
         kind = task['kind']
     if kind == "OpenWhisk":
         global_imports = f"""
+#![allow(unused_imports)]
+
 mod common;
 mod traits;
 mod types;
@@ -176,6 +180,8 @@ use core::alloc::Layout;
 """
     else:
         global_imports = f"""
+#![allow(unused_imports)]
+        
 mod common;
 mod traits;
 mod types;
