@@ -1,11 +1,11 @@
-#[cfg(test)]
-use openwhisk_client_rust::WskProperties;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
     fs,
     sync::{Arc, Mutex},
 };
+#[cfg(test)]
+use std::collections::HashMap;
 use wasi_common::WasiCtx;
 use wasmtime::*;
 use wasmtime_wasi::sync::WasiCtxBuilder;
@@ -128,7 +128,7 @@ struct Resultss {
 }
 
 #[async_std::test]
-async fn test_list_actions_native_client() {
+async fn test_car_market_place() {
     let path = std::env::var("WORKFLOW_WASM")
         .unwrap_or("../examples/CarMarketPlace_mock.wasm".to_string());
     let server = post().await;
@@ -149,4 +149,48 @@ async fn test_list_actions_native_client() {
         .result
         .to_string()
         .contains("Thank you for the purchase"))
+}
+
+#[async_std::test]
+async fn test_map_operator() {
+    let path = std::env::var("WORKFLOW_WASM").unwrap_or("../examples/map_op_mock.wasm".to_string());
+    let server = post().await;
+    let input = serde_json::json!({
+        "allowed_hosts": [
+            server.uri()
+        ],
+        "data": {
+            "role":"Software Developer",
+            }
+    });
+    let result = run_workflow(input, path);
+    let res = serde_json::from_value::<HashMap<i32, i32>>(result.result.get("Ok").unwrap().clone());
+    let expected = HashMap::from([
+        (1, 10000000),
+        (2, 10000000),
+        (3, 10000000),
+        (4, 10000000),
+        (5, 10000000),
+    ]);
+    assert_eq!(res.unwrap(), expected)
+}
+
+#[async_std::test]
+async fn test_employee_salray_with_concat_operator() {
+    let path =
+        std::env::var("WORKFLOW_WASM").unwrap_or("../examples/employe_salry_mock.wasm".to_string());
+    let server = post().await;
+    let input = serde_json::json!({
+        "allowed_hosts": [
+            server.uri()
+        ],
+        "data": {
+            "role":"Software Developer",
+            }
+    });
+    let result = run_workflow(input, path);
+    assert!(result
+        .result
+        .to_string()
+        .contains("Salary creditted for emp id 1 from Hugobyte"))
 }
