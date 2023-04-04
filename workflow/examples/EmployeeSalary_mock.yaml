@@ -1,0 +1,127 @@
+# ------------------------------------------------------------------------------------------------------- #
+#                                                                                                         #
+# Config file to generate rust code for workflow execution                                                #
+#                                                                                                         #
+# Config file have three different section                                                                #
+#  1. Tasks                                                                                               #
+#  2. Flows                                                                                               #
+#  3. WorkFlow                                                                                            #
+#                                                                                                         #
+# Tasks section of config contains list of tasks which refers to actions which needs to be executed       #
+# Flows section of config contains list of flows which represents order of execution of task              #
+# Workflow section of config is to define about workflow                                                  #
+#                                                                                                         #
+# task hook for generating rust code for actions deployed on openwhisk                                    #
+# flow hook for organising order of task execution                                                        #
+# workflow hook will be used as main hook to append code generated use flow and task hook to rust package #
+# ------------------------------------------------------------------------------------------------------- #                                                                                                       #
+
+tasks:
+  - ->: task
+      #kind filed spcifies what type of task it is.
+      #(i.e for now we are focusing on openwhisk actions, future it can be any serverless functions and written in any langunage)
+    kind: "OpenWhisk"
+    name: "employee_ids"
+      #for input struct to provide input for actions
+    input_args:
+      - name: "role"
+        type: "String"
+      #for output struct to store output from actions for deserilization
+    output_args:
+      - name: "ids"
+        type: "Vec<i32>"
+    properties:
+        api_host: "http://127.0.0.1:1234"
+        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+        insecure: "true"
+        namespace: "guest"
+
+  - ->: task
+    kind: "OpenWhisk"
+    name: "getsalaries"
+    input_args:
+      - name: "id"
+        type: "i32"
+    output_args:
+      - name: "salary"
+        type: "i32"
+    properties:
+        api_host: "http://127.0.0.1:1234"
+        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+        insecure: "true"
+        namespace: "guest"
+
+  - ->: task
+    kind: "OpenWhisk"
+    name: "getaddress"
+    input_args:
+      - name: "id"
+        type: "i32"
+    output_args:
+      - name: "address"
+        type: "String"
+    properties:
+        api_host: "http://127.0.0.1:1234"
+        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+        insecure: "true"
+        namespace: "guest"
+  
+  - ->: task
+    kind: "OpenWhisk"
+    name: "salary"
+    input_args:
+      - name: "details"
+        type: "HashMap<i32,(i32,String)>"
+    output_args:
+      - name: "result"
+        type: "Vec<String>"
+    properties:
+        api_host: "http://127.0.0.1:1234"
+        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+        insecure: "true"
+        namespace: "guest"
+
+flows:
+  - ->: flow
+    #type in flow is used to mention what will be order of execution
+    type: "Init"
+    task_name:
+      "employee_ids"
+      #to mention flow what task it is depends on
+    depends_on: null
+
+  - ->: flow
+    type: "Pipe"
+    task_name: "getsalaries"
+    depends_on:
+    #operation defines kind of operation/opeartor needs to be applied on the task being executed
+      operation: "map"
+      task:
+        - name: "employee_ids"
+          fields:
+            - ids
+  - ->: flow
+    type: "Pipe"
+    task_name: "getaddress"
+    depends_on:
+      operation: "map"
+      task:
+        - name: employee_ids
+          fields:
+            - ids
+  - ->: flow
+    type: "Pipe"
+    task_name: "salary"
+    depends_on:
+      operation: "concat"
+      task:
+        - name: "getsalaries"
+          fields:
+            - result
+        - name: "getaddress"
+          fields:
+            - result
+workflows:
+  ->: workflow
+  name: "workflow"
+  version: "0.0.1"
