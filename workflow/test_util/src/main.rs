@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+#[cfg(test)]
+use std::collections::HashMap;
 use std::{
     fs,
     sync::{Arc, Mutex},
 };
-#[cfg(test)]
-use std::collections::HashMap;
 use wasi_common::WasiCtx;
 use wasmtime::*;
 use wasmtime_wasi::sync::WasiCtxBuilder;
@@ -131,7 +131,7 @@ struct Resultss {
 async fn test_car_market_place() {
     let path = std::env::var("WORKFLOW_WASM")
         .unwrap_or("../examples/CarMarketPlace_mock.wasm".to_string());
-    let server = post().await;
+    let server = post("127.0.0.1:8080").await;
     let input = serde_json::json!({
         "allowed_hosts": [
             server.uri()
@@ -154,7 +154,7 @@ async fn test_car_market_place() {
 #[async_std::test]
 async fn test_map_operator() {
     let path = std::env::var("WORKFLOW_WASM").unwrap_or("../examples/map_op_mock.wasm".to_string());
-    let server = map().await;
+    let server = post("127.0.0.1:7890").await;
     let input = serde_json::json!({
         "allowed_hosts": [
             server.uri()
@@ -179,7 +179,7 @@ async fn test_map_operator() {
 async fn test_employee_salray_with_concat_operator() {
     let path =
         std::env::var("WORKFLOW_WASM").unwrap_or("../examples/employe_salry_mock.wasm".to_string());
-    let server = concat().await;
+    let server = post("127.0.0.1:1234").await;
     let input = serde_json::json!({
         "allowed_hosts": [
             server.uri()

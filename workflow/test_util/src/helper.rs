@@ -5,26 +5,14 @@ use wiremock::{
     Mock, MockServer, ResponseTemplate,
 };
 
-async fn create_server() -> MockServer {
-    let listener = std::net::TcpListener::bind("127.0.0.1:8080").unwrap();
+async fn create_server(add: &str) -> MockServer {
+    let listener = std::net::TcpListener::bind(add).unwrap();
     let mock_server = MockServer::builder().listener(listener).start().await;
     mock_server
 }
 
-async fn create_server_for_map() -> MockServer {
-    let listener = std::net::TcpListener::bind("127.0.0.1:7890").unwrap();
-    let mock_server = MockServer::builder().listener(listener).start().await;
-    mock_server
-}
-
-async fn create_server_for_concat() -> MockServer {
-    let listener = std::net::TcpListener::bind("127.0.0.1:1234").unwrap();
-    let mock_server = MockServer::builder().listener(listener).start().await;
-    mock_server
-}
-
-pub async fn post() -> MockServer {
-    let server = create_server().await;
+pub async fn post(address:&str) -> MockServer {
+    let server = create_server(address).await;
 
     let mut r = HashMap::new();
     r.insert(
@@ -89,39 +77,6 @@ pub async fn post() -> MockServer {
         .mount(&server)
         .await;
 
-    server
-}
-
-pub async fn map() -> MockServer {
-    let server = create_server_for_map().await;
-    let res = EmplyeeIds {
-        ids: vec![1, 2, 3, 4, 5],
-    };
-    Mock::given(method("POST"))
-        .and(path("/api/v1/namespaces/guest/actions/employee_ids"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .insert_header("Content-Type", "application/json")
-                .set_body_json(res),
-        )
-        .mount(&server)
-        .await;
-    let res = GetSalary { salary: 10000000 };
-    Mock::given(method("POST"))
-        .and(path("/api/v1/namespaces/guest/actions/getsalaries"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .insert_header("Content-Type", "application/json")
-                .set_body_json(res),
-        )
-        .mount(&server)
-        .await;
-
-    server
-}
-
-pub async fn concat() -> MockServer {
-    let server = create_server_for_concat().await;
     let res = EmplyeeIds {
         ids: vec![1, 2, 3, 4, 5],
     };
