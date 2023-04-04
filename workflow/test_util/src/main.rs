@@ -154,7 +154,7 @@ async fn test_car_market_place() {
 #[async_std::test]
 async fn test_map_operator() {
     let path = std::env::var("WORKFLOW_WASM").unwrap_or("../examples/map_op_mock.wasm".to_string());
-    let server = post().await;
+    let server = map().await;
     let input = serde_json::json!({
         "allowed_hosts": [
             server.uri()
@@ -179,7 +179,7 @@ async fn test_map_operator() {
 async fn test_employee_salray_with_concat_operator() {
     let path =
         std::env::var("WORKFLOW_WASM").unwrap_or("../examples/employe_salry_mock.wasm".to_string());
-    let server = post().await;
+    let server = concat().await;
     let input = serde_json::json!({
         "allowed_hosts": [
             server.uri()
