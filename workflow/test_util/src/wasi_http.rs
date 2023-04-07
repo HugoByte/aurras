@@ -634,8 +634,7 @@ fn is_allowed(url: &str, allowed_hosts: Option<&[String]>) -> Result<bool, HttpE
         Some(domains) => {
             let allowed: Result<Vec<_>, _> = domains.iter().map(|d| Url::parse(d)).collect();
             let allowed = allowed.map_err(|_| HttpError::InvalidUrl)?;
-            let a: Vec<&str> = allowed.iter().map(|u| u.host_str().unwrap()).collect();
-            Ok(a.contains(&url_host.as_str()))
+            Ok(allowed.iter().map(|u| u.host_str().unwrap()).any(|x| x == url_host.as_str()))
         }
         None => Ok(false),
     }
