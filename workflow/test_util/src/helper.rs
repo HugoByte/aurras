@@ -7,8 +7,7 @@ use wiremock::{
 
 async fn create_server(add: &str) -> MockServer {
     let listener = std::net::TcpListener::bind(add).unwrap();
-    let mock_server = MockServer::builder().listener(listener).start().await;
-    mock_server
+    MockServer::builder().listener(listener).start().await
 }
 
 pub async fn post(address:&str) -> MockServer {

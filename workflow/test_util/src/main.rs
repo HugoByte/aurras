@@ -16,7 +16,7 @@ pub mod helper;
 pub use helper::*;
 use wasmtime::Linker;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MainInput {
     allowed_hosts: Option<Vec<String>>,
     data: Value,
@@ -130,7 +130,7 @@ struct Resultss {
 #[async_std::test]
 async fn test_car_market_place() {
     let path = std::env::var("WORKFLOW_WASM")
-        .unwrap_or("../examples/CarMarketPlace_mock.wasm".to_string());
+        .unwrap_or("../examples/car_market_place_mock.wasm".to_string());
     let server = post("127.0.0.1:8080").await;
     let input = serde_json::json!({
         "allowed_hosts": [
