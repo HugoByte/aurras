@@ -78,6 +78,12 @@ docker build -t hugobyte/workflow-composer .
 ```bash
 cat ../examples/PolkadotPayout.yaml | docker run -i --rm hugobyte/workflow-composer > output.wasm
 ```
+
+### Testing the hooks for provided yaml file
+```bash
+cat ./examples/CarMarketPlace.yaml | docker run -i --rm hugobyte/workflow-composer test
+```
+
 ## References
 
 [cobra](https://github.com/spf13/cobra)

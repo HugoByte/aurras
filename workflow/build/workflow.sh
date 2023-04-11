@@ -4,6 +4,16 @@ workflow=$(mktemp).yaml
 cat > "$workflow"
 
 cd /usr/src/composer
-go run main.go generate -c $workflow
 
-cat /usr/src/composer/workflow.wasm
+case $@ in
+    generate)
+    go run main.go generate -c $workflow
+    cat /usr/src/composer/workflow.wasm
+    ;;
+
+    test)
+    go run main.go test -c $workflow
+    ;;
+esac
+
+
