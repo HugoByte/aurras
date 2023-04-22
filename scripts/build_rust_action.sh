@@ -1,4 +1,4 @@
-DOCKER_IMAGE="hugobyte/openwhisk-runtime-rust:v0.2"
+DOCKER_IMAGE="hugobyte/openwhisk-runtime-rust:v0.3"
 
 if [ "$build" = true ]; then
     if [ -e $TEMP_DIR ]; then
