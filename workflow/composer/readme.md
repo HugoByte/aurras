@@ -81,7 +81,7 @@ cat ../examples/PolkadotPayout.yaml | docker run -i --rm hugobyte/workflow-compo
 
 ### Testing the hooks for provided yaml file
 ```bash
-cat ./examples/CarMarketPlace.yaml | docker run -i --rm hugobyte/workflow-composer test
+cat ../examples/CarMarketPlace.yaml | docker run -i --rm hugobyte/workflow-composer test
 ```
 
 ## References
