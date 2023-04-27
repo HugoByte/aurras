@@ -123,9 +123,9 @@ mod tests {
                 "method": "Transfer",
                 "meta": "[ Transfer succeeded. \\[from, to, value\\]]",
                 "data": [
-                    { "AccountId": "13sc83poXh93CXtzNjaCwo2Q88cS9oNyJ6Ru7DyxchqKVbbc" },
-                    { "AccountId": "1N55WJHup5j1LHpbzQX6zvYu7QeLcUBd1tBp8CvA7xHGixY" },
-                    { "Balance": "731000000000" }
+                    { "AccountId32": "13sc83poXh93CXtzNjaCwo2Q88cS9oNyJ6Ru7DyxchqKVbbc" },
+                    { "AccountId32": "1N55WJHup5j1LHpbzQX6zvYu7QeLcUBd1tBp8CvA7xHGixY" },
+                    { "u128": "731000000000" }
                 ]
             },
         }))
