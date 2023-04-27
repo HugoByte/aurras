@@ -1,5 +1,6 @@
 import configCommon from './common.json';
 import firebase from './firebase';
+
 // Using `require` as `import` does not support dynamic loading (yet).
 const configEnv = require(`./${process.env.NODE_ENV}.json`);
 const types = require('./types.json');

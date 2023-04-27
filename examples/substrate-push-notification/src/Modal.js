@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import Modal from 'react-modal';
 import config from "./config";
-import firebase from "firebase";
+import { getMessaging } from "firebase/messaging/sw";
+import { getToken } from "firebase/messaging";
 
 const customStyles = {
     content: {
@@ -19,7 +20,7 @@ Modal.setAppElement('#root');
 
 function ModalApp(props) {
 
-    const messaging = firebase.messaging();
+    const messaging = getMessaging(config.firebase);
     const [modalIsOpen, setIsOpen] = React.useState(false);
     const [topics, setTopics] = useState([]);
     const [selected, setSelected] = useState("");
@@ -31,7 +32,7 @@ function ModalApp(props) {
         variant: ""
     });
     const [busy, setBusy] = useState(false);
-    messaging.getToken().then(token => setToken(token))
+    getToken(messaging).then(token => setToken(token))
     .catch((err) => {
         console.log(err);
     });
@@ -164,7 +165,7 @@ function ModalApp(props) {
 
             </Modal>
         </div>
-    );
+    )
 }
 
 export default ModalApp
