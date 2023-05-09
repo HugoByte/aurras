@@ -66,7 +66,7 @@ impl Action {
                         "to": self.params.event.data[1].get("AccountId32").unwrap(),
                         "value": format!("{:#.4}", self.params.event.data[2].get("u128").unwrap().parse::<f64>().unwrap() / u64::pow(10,10) as f64),
                     })),
-                    _ => Ok(serde_json::json!({})),
+                    _ => Err(serde::de::Error::custom("Method Not Defined")),
                 }
             },
             "staking" => {
@@ -79,7 +79,7 @@ impl Action {
                     })),
                 }
             }
-            _ => Ok(serde_json::json!({})),
+            _ => Err(serde::de::Error::custom("Method Not Defined")),
         };
     }
 
