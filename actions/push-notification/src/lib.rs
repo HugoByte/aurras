@@ -67,7 +67,7 @@ mod tests {
             // Generate Push Notification Token from client
             token: env::var("TEST_DEVICE_TOKEN").unwrap(),
             message: Message {
-                title: "Amount Recieved!".to_string(),
+                title: "Amount Received!".to_string(),
                 body: "100 DOT".to_string(),
             },
             // Generate server token from https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging
