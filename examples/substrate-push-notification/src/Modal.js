@@ -25,6 +25,7 @@ function ModalApp(props) {
     const [topics, setTopics] = useState([]);
     const [selected, setSelected] = useState("");
     const [token, setToken] = useState("");
+    const [address, setAdress] = useState(props.address);
     const [notification, setNotification] = React.useState({
         visible: false,
         title: "",
@@ -143,8 +144,8 @@ function ModalApp(props) {
                     <div className="label">
                         Address
                     </div>
-                    <div className="ui fluid disabled input pt pb">
-                        <input value={props.address} readOnly />
+                    <div className="ui fluid input">
+                        <input type="text" value={address} onChange={(event) => setAdress(event.target.value)}/>
                     </div>
                 </div>
                 <div>
@@ -157,7 +158,7 @@ function ModalApp(props) {
                 </div>
                 <div className="ui grid">
                     <div className="four column centered row">
-                        <button onClick={() => register({ address: props.address, topic: selected, token })} className={"ui primary button ".concat(busy ? "disabled loading" : "")}>register</button>
+                        <button onClick={() => register({ address: address, topic: selected, token })} className={"ui primary button ".concat(busy ? "disabled loading" : "")}>register</button>
                         <button onClick={closeModal} className="ui button">close</button>
                     </div>
                 </div>
