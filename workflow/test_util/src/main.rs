@@ -177,8 +177,8 @@ async fn test_map_operator() {
 
 #[async_std::test]
 async fn test_employee_salary_with_concat_operator() {
-    let path =
-        std::env::var("WORKFLOW_WASM").unwrap_or("../examples/employee_salary_mock.wasm".to_string());
+    let path = std::env::var("WORKFLOW_WASM")
+        .unwrap_or("../examples/employee_salary_mock.wasm".to_string());
     let server = post("127.0.0.1:1234").await;
     let input = serde_json::json!({
         "allowed_hosts": [
@@ -193,4 +193,68 @@ async fn test_employee_salary_with_concat_operator() {
         .result
         .to_string()
         .contains("Salary creditted for emp id 1 from Hugobyte"))
+}
+
+#[cfg(test)]
+mod flow_macro_tests {
+    use dyn_clone::{clone_trait_object, DynClone};
+    use serde_json::Value;
+    use std::fmt::Debug;
+    use workflow_macro::Flow;
+
+    pub trait Execute: Debug + DynClone {
+        fn execute(&mut self) -> Result<(), String>;
+        fn get_task_output(&self) -> Value;
+        fn set_output_to_task(&mut self, inp: Value);
+    }
+
+    clone_trait_object!(Execute);
+    #[derive(Debug, Flow)]
+    #[allow(dead_code)]
+    pub struct WorkflowGraph {
+        edges: Vec<(usize, usize)>,
+        nodes: Vec<Box<dyn Execute>>,
+    }
+
+    impl WorkflowGraph {
+        pub fn new(size: usize) -> Self {
+            WorkflowGraph {
+                nodes: Vec::with_capacity(size),
+                edges: Vec::new(),
+            }
+        }
+    }
+
+    #[test]
+    fn test_macro() {
+        let workflow = WorkflowGraph::new(5);
+        assert_eq!(0, workflow.node_count())
+    }
+
+    #[test]
+    fn test_flow_macro_add_node() {
+        #[derive(Debug, Clone, Default)]
+        #[allow(dead_code)]
+        pub struct Action {
+            action_name: String,
+            input: String,
+            output: Value,
+        }
+        #[allow(unused_variables)]
+        impl Execute for Action {
+            fn execute(&mut self) -> Result<(), String> {
+                todo!()
+            }
+            fn get_task_output(&self) -> Value {
+                todo!()
+            }
+            fn set_output_to_task(&mut self, inp: Value) {
+                todo!()
+            }
+        }
+        let node = Action::default();
+        let mut workflow = WorkflowGraph::new(5);
+        let _s = workflow.add_node(Box::new(node));
+        println!("{}", workflow.node_count())
+    }
 }
