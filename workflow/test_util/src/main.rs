@@ -255,6 +255,6 @@ mod flow_macro_tests {
         let node = Action::default();
         let mut workflow = WorkflowGraph::new(5);
         let _s = workflow.add_node(Box::new(node));
-        println!("{}", workflow.node_count())
+        assert_eq!(1, workflow.node_count())
     }
 }
