@@ -64,10 +64,9 @@ impl Action {
 
     pub fn register_user(&mut self) -> Result<Value, Error> {
         let hash = hash(self.params.password.clone(), DEFAULT_COST).unwrap();
-        let source = User::new(self.params.name.clone(), self.params.email.clone(), hash);
+        let user = User::new(self.params.name.clone(), self.params.email.clone(), hash);
         let user_id = self.generate_event_id();
-        println!("{}", user_id);
-        let doc = serde_json::to_value(source).unwrap();
+        let doc = serde_json::to_value(user).unwrap();
         if let Ok(id) = self.get_context().insert_document(&doc, Some(user_id)) {
             return Ok(serde_json::json!({ "id": id }));
         }
@@ -87,10 +86,10 @@ pub fn main(args: Value) -> Result<Value, Error> {
 mod tests {
     use super::*;
     use actions_common::mock_containers::CouchDB;
+    use bcrypt::verify;
     use serde_json::json;
     use tokio;
     use tokio::time::{sleep, Duration};
-    use bcrypt::verify;
 
     #[tokio::test]
     async fn register_user_pass() {
@@ -101,12 +100,11 @@ mod tests {
         sleep(Duration::from_millis(5000)).await;
         let url = format!("http://admin:password@localhost:{}", couchdb.port());
         let input = serde_json::from_value::<Input>(json!({
-            "email": "test@example.com",
-            "name": "test",
             "db_name": "test",
             "db_url": url,
+            "name": "test",
+            "email": "test@example.com",
             "password": "testpassword",
-
         }))
         .unwrap();
         let mut action = Action::new(input);
