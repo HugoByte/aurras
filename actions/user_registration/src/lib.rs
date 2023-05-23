@@ -19,7 +19,6 @@ struct Input {
     name: String,
     email: String,
     password: String,
-    subscription: Option<String>,
 }
 
 struct Action {
