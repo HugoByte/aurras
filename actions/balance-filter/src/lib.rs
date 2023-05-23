@@ -94,7 +94,7 @@ impl Action {
                     &serde_json::json!({
                         "token": message.1.filters.get(&message.0.address).unwrap().token,
                         "message": {
-                            "title": "Amount Recieved!",
+                            "title": "Amount Received!",
                             "body": message.0.amount
                         }
                     }),

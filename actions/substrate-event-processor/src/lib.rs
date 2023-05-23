@@ -63,10 +63,10 @@ impl Action {
             "balances" => {
                 return match self.params.event.method.as_str() {
                     "Transfer" => Ok(serde_json::json!({
-                        "to": self.params.event.data[1].get("AccountId").unwrap(),
-                        "value": format!("{:#.4}", self.params.event.data[2].get("Balance").unwrap().parse::<f64>().unwrap() / u64::pow(10,10) as f64),
+                        "to": self.params.event.data[1].get("AccountId32").unwrap(),
+                        "value": format!("{:#.4}", self.params.event.data[2].get("u128").unwrap().parse::<f64>().unwrap() / u64::pow(10,10) as f64),
                     })),
-                    _ => Ok(serde_json::json!({})),
+                    _ => Err(serde::de::Error::custom("Method Not Defined")),
                 }
             },
             "staking" => {
@@ -79,7 +79,7 @@ impl Action {
                     })),
                 }
             }
-            _ => Ok(serde_json::json!({})),
+            _ => Err(serde::de::Error::custom("Method Not Defined")),
         };
     }
 
@@ -123,9 +123,9 @@ mod tests {
                 "method": "Transfer",
                 "meta": "[ Transfer succeeded. \\[from, to, value\\]]",
                 "data": [
-                    { "AccountId": "13sc83poXh93CXtzNjaCwo2Q88cS9oNyJ6Ru7DyxchqKVbbc" },
-                    { "AccountId": "1N55WJHup5j1LHpbzQX6zvYu7QeLcUBd1tBp8CvA7xHGixY" },
-                    { "Balance": "731000000000" }
+                    { "AccountId32": "13sc83poXh93CXtzNjaCwo2Q88cS9oNyJ6Ru7DyxchqKVbbc" },
+                    { "AccountId32": "1N55WJHup5j1LHpbzQX6zvYu7QeLcUBd1tBp8CvA7xHGixY" },
+                    { "u128": "731000000000" }
                 ]
             },
         }))

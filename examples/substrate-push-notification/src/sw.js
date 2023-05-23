@@ -1,52 +1,24 @@
-importScripts('https://www.gstatic.com/firebasejs/8.9.1/firebase-app.js');
-importScripts('https://www.gstatic.com/firebasejs/8.9.1/firebase-messaging.js');
+/* eslint-disable */
+
+import { initializeApp } from "firebase/app";
+import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
 
 const ignored = self.__WB_MANIFEST;
 
-firebase.initializeApp({
-  apiKey: "xxxxxx",
-  authDomain: "xxxxxx",
-  projectId: "xxxxxx",
-  storageBucket: "xxxxxx",
-  messagingSenderId: "xxxxxx",
-  appId: "xxxxxx",
-  measurementId: "xxxxxx"
+const app = initializeApp({
+  apiKey: "AIzaSyBFKOWwoGtoPXye_S_tWQHVtOzA_mf874o",
+  authDomain: "aurras.firebaseapp.com",
+  projectId: "aurras",
+  storageBucket: "aurras.appspot.com",
+  messagingSenderId: "513296427653",
+  appId: "1:513296427653:web:b753ed51e3f52588e7d7ec",
+  measurementId: "G-555C15PTHS"
 });
 
-class CustomPushEvent extends Event {
-  constructor(data) {
-    super('push');
 
-    Object.assign(this, data);
-    this.custom = true;
-  }
-}
+const messaging = getMessaging(app);
 
-self.addEventListener('push', (e) => {
-  if (e.custom) return;
-  const oldData = e.data;
-  const newEvent = new CustomPushEvent({
-    data: {
-      ehheh: oldData.json(),
-      json() {
-        const newData = oldData.json();
-        newData.data = {
-          ...newData.data,
-          ...newData.notification,
-        };
-        delete newData.notification;
-        return newData;
-      },
-    },
-    waitUntil: e.waitUntil.bind(e),
-  });
-  e.stopImmediatePropagation();
-  dispatchEvent(newEvent);
-});
-
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
+onBackgroundMessage(messaging, (payload) => {
   const { title, body, icon, ...restPayload } = payload.data;
 
   const notificationOptions = {
