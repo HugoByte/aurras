@@ -24,6 +24,7 @@ struct Action {
     context: Option<Context>,
 }
 
+#[allow(dead_code)]
 impl Action {
     pub fn new(params: Input) -> Self {
         Action {

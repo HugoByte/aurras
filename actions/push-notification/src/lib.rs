@@ -7,6 +7,7 @@ use reqwest::StatusCode;
 use types::Message;
 
 #[cfg(test)]
+#[allow(unused_imports)]
 use std::env;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

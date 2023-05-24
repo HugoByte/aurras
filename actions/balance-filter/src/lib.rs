@@ -12,6 +12,7 @@ use chesterfield::sync::{Client, Database};
 use types::{Message, Payload};
 
 #[cfg(test)]
+#[allow(unused_imports)]
 use types::{Address, Deposit, Topic};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -27,6 +28,7 @@ struct Action {
     context: Option<Context>,
 }
 
+#[allow(dead_code)]
 impl Action {
     pub fn new(params: Input) -> Self {
         Action {

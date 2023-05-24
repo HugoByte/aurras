@@ -116,6 +116,7 @@ impl Action {
 
 pub fn main(args: Value) -> Result<Value, Error> {
     let input = serde_json::from_value::<Input>(args)?;
+    #[allow(unused_mut)]
     let mut action = Action::new(input);
 
     // TODO: Fix
