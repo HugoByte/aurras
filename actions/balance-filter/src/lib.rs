@@ -366,4 +366,28 @@ mod tests {
         );
         couchdb.delete().await.expect("Stopping Container Failed");
     }
+
+    #[should_panic]
+    #[tokio::test]
+    async fn invoke_trigger_fail() {
+        let _config = Config::new();
+        let couchdb = CouchDB::new("admin".to_string(), "password".to_string())
+            .await
+            .unwrap();
+        sleep(Duration::from_millis(5000)).await;
+        let url = format!("http://admin:password@localhost:{}", couchdb.port());
+        let _topic = "1234".to_string();
+        let input = serde_json::json!({
+            "push_notification_trigger": "test",
+            "db_name": "test",
+            "db_url": url,
+            "messages": [{
+                "topic":"418a8b8c-02b8-11ec-9a03-0242ac130003",
+                "value": "{\"from\":\"12o3hWM94g5EoNkEiPibo7WMToM6gKvL8osJCGht9W79iEpf\",\"to\":\"15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw\",\"value\":1000}"
+            }]
+        });
+        
+        main(input).unwrap();
+        couchdb.delete().await.expect("Stopping Container Failed");
+    }
 }

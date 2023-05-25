@@ -9,8 +9,10 @@ use std::{
 use wasi_common::WasiCtx;
 use wasmtime::*;
 use wasmtime_wasi::sync::WasiCtxBuilder;
+#[cfg(test)]
 mod wasi_http;
 use std::convert::TryInto;
+#[cfg(test)]
 use wasi_http::HttpCtx;
 pub mod helper;
 pub use helper::*;
