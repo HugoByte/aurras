@@ -128,7 +128,6 @@ pub fn main(args: Value) -> Result<Value, Error> {
 }
 
 #[cfg(test)]
-#[cfg(feature = "mock_containers")]
 mod tests {
     use super::*;
     use actions_common::mock_containers::CouchDB;
@@ -307,7 +306,6 @@ mod tests {
     }
 
     // TODO: This panic because of reqwest blocking in tokio runtime context. Should Add sync or async context.
-    #[ignore]
     #[should_panic]
     #[tokio::test(flavor = "multi_thread")]
     async fn invoke_trigger_pass() {

@@ -57,7 +57,6 @@ pub fn main(args: Value) -> Result<Value, Error> {
 }
 
 #[cfg(test)]
-#[cfg(feature = "mock_containers")]
 mod tests {
     use super::*;
 
@@ -65,7 +64,7 @@ mod tests {
     fn send_notification_pass() {
         let action = Action::new(Input {
             // Generate Push Notification Token from client
-            token: env::var("TEST_DEVICE_TOKEN").unwrap(),
+            token: env::var("TEST_DEVICE_TOKEN").unwrap_or("".to_string()),
             message: Message {
                 title: "Amount Received!".to_string(),
                 body: "100 DOT".to_string(),

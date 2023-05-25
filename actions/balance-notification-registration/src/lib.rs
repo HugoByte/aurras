@@ -116,6 +116,7 @@ impl Action {
 
 pub fn main(args: Value) -> Result<Value, Error> {
     let input = serde_json::from_value::<Input>(args)?;
+    #[allow(unused_mut)]
     let mut action = Action::new(input);
 
     // TODO: Fix
@@ -174,7 +175,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[cfg(feature = "mock_containers")]
     async fn add_address_pass() {
         use std::collections::HashMap;
         let config = Config::new();
@@ -221,7 +221,6 @@ mod tests {
     }
 
     // TODO: This panic because of reqwest blocking in tokio runtime context. Should Add sync or async context.
-    #[ignore]
     #[should_panic]
     #[tokio::test]
     async fn get_event_sources_pass() {
