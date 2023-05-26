@@ -68,12 +68,12 @@ impl Action {
                     })),
                     _ => Err(serde::de::Error::custom("Method Not Defined")),
                 }
-            },
+            }
             "staking" => {
                 return match self.params.event.method.as_str() {
                     "EraPaid" => Ok(serde_json::json!({
                         "era" :  self.params.event.data[0].get("eraIndex").unwrap().parse::<u32>().unwrap(),
-                    }),),
+                    })),
                     _ => Ok(serde_json::json!({
                         "era" : 0,
                     })),
@@ -162,9 +162,6 @@ mod tests {
 
         let response = action.parse_event_data().unwrap();
 
-        assert_eq!(
-            response,
-            serde_json::json!({"era": 6320})
-        );
+        assert_eq!(response, serde_json::json!({"era": 6320}));
     }
 }

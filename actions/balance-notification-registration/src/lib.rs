@@ -139,10 +139,8 @@ pub fn main(args: Value) -> Result<Value, Error> {
             }))
         }
         "get" => action.get_event_sources(),
-        method => {
-            Err(format!("method not supported document {}", method))
-                .map_err(serde::de::Error::custom)
-        }
+        method => Err(format!("method not supported document {}", method))
+            .map_err(serde::de::Error::custom),
     }
 }
 
@@ -279,7 +277,6 @@ mod tests {
         couchdb.delete().await.expect("Stopping Container Failed");
     }
 
-  
     #[tokio::test]
     async fn get_event_sources_fail() {
         let _config = Config::new();
@@ -303,11 +300,13 @@ mod tests {
             "topic": "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
         });
         let main = main(input).unwrap();
-        assert_eq!(main.to_string(),r#"{"body":{"success":true},"headers":{"Content-Type":"application/json"},"statusCode":200}"# );
-        
+        assert_eq!(
+            main.to_string(),
+            r#"{"body":{"success":true},"headers":{"Content-Type":"application/json"},"statusCode":200}"#
+        );
+
         couchdb.delete().await.expect("Stopping Container Failed");
     }
-
 
     #[tokio::test]
     #[should_panic]
@@ -333,7 +332,34 @@ mod tests {
             topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
         });
         action.get_address("hello").unwrap();
-        
+
+        couchdb.delete().await.expect("Stopping Container Failed");
+    }
+
+    #[tokio::test]
+    #[should_panic(expected = "method not supported document")]
+    async fn get_event_sources_invalid_method() {
+        let _config = Config::new();
+        let couchdb = CouchDB::new("admin".to_string(), "password".to_string())
+            .await
+            .unwrap();
+        sleep(Duration::from_millis(5000)).await;
+        let url = format!("http://admin:password@localhost:{}", couchdb.port());
+        let _topic = "1234".to_string();
+        let _address = "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string();
+        let _token = "1".to_string();
+
+        let input = json!({
+            "db_url": url.clone(),
+            "db_name": "test".to_string(),
+            "__ow_method": "put".to_string(),
+            "address": "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string(),
+            "balance_filter_db": "balance_filter_db".to_string(),
+            "event_registration_db": "event_registration_db".to_string(),
+            "token": "1".to_string(),
+            "topic": "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
+        });
+        main(input).unwrap();
         couchdb.delete().await.expect("Stopping Container Failed");
     }
 }
