@@ -58,6 +58,8 @@ pub fn main(args: Value) -> Result<Value, Error> {
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
 
     #[test]
@@ -85,5 +87,22 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[test]
+    fn send_notification_pass_main() {
+        let action = json!( {
+            // Generate Push Notification Token from client
+            "token": env::var("TEST_DEVICE_TOKEN").unwrap_or("".to_string()),
+            "message": Message {
+                title: "Amount Received!".to_string(),
+                body: "100 DOT".to_string(),
+            },
+            // Generate server token from https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging
+            "api_key": env::var("FIREBASE_API_KEY").unwrap(),
+        });
+        let response = main(action).unwrap();
+
+        assert_eq!(response.to_string(), r#"{"action":"success"}"#);
     }
 }

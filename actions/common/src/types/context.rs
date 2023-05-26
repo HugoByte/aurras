@@ -211,10 +211,8 @@ impl Context {
     pub fn update_document(&self, id: &str, rev: &str, doc: &Value) -> Result<String, Error> {
         match self.db.update(doc, id, rev).send() {
             Ok(r) => Ok(r.id),
-            Err(err) => {
-                Err(format!("error updating document {}: {:?}", doc, err))
-                    .map_err(serde::de::Error::custom)
-            }
+            Err(err) => Err(format!("error updating document {}: {:?}", doc, err))
+                .map_err(serde::de::Error::custom),
         }
     }
 
@@ -225,20 +223,16 @@ impl Context {
     pub fn insert_document(&self, doc: &Value, id: Option<String>) -> Result<String, Error> {
         match self.db.insert(doc, id).send() {
             Ok(r) => Ok(r.id),
-            Err(err) => {
-                Err(format!("error creating document {}: {:?}", doc, err))
-                    .map_err(serde::de::Error::custom)
-            }
+            Err(err) => Err(format!("error creating document {}: {:?}", doc, err))
+                .map_err(serde::de::Error::custom),
         }
     }
 
     pub fn get_document(&self, id: &str) -> Result<Value, Error> {
         match self.db.get(id).send::<Value>() {
             Ok(v) => Ok(v.into_inner().unwrap()),
-            Err(err) => {
-                Err(format!("error fetching document {}: {:?}", id, err))
-                    .map_err(serde::de::Error::custom)
-            }
+            Err(err) => Err(format!("error fetching document {}: {:?}", id, err))
+                .map_err(serde::de::Error::custom),
         }
     }
 
@@ -486,6 +480,33 @@ mod tests {
         let context = Context::new(connect_db(&url, &"test".to_string()), Some(&config));
         context
             .invoke_trigger("trigger", &serde_json::json!({}))
+            .unwrap();
+        let received_requests = mock_server.received_requests().await;
+        assert!(received_requests.is_some());
+        couchdb.delete().await.expect("Stopping Container Failed");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn invoke_action_pass() {
+        let mut config = Config::new();
+        let couchdb = CouchDB::new("admin".to_string(), "password".to_string())
+            .await
+            .unwrap();
+        let mock_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path(format!(
+                "/api/v1/namespaces/{}/actions/{}",
+                config.namespace, "action"
+            )))
+            .respond_with(ResponseTemplate::new(200))
+            .mount(&mock_server)
+            .await;
+        config.host = mock_server.uri();
+        sleep(Duration::from_millis(5000)).await;
+        let url = format!("http://admin:password@localhost:{}", couchdb.port());
+        let context = Context::new(connect_db(&url, &"test".to_string()), Some(&config));
+        context
+            .invoke_action("action", &serde_json::json!({}))
             .unwrap();
         let received_requests = mock_server.received_requests().await;
         assert!(received_requests.is_some());

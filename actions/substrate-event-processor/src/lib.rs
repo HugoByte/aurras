@@ -164,4 +164,26 @@ mod tests {
 
         assert_eq!(response, serde_json::json!({"era": 6320}));
     }
+
+    #[test]
+    #[should_panic]
+    fn parse_event_data_fail() {
+        let input = serde_json::json!({
+            "topic": "topic",
+            "brokers": ["172.17.0.1:9092"],
+            "event_producer_trigger": "produce_event",
+            "event": {
+                "section": "balances",
+                "method": "Transfer",
+                "meta": "[ Transfer succeeded. \\[from, to, value\\]]",
+                "data": [
+                    { "AccountId32": "13sc83poXh93CXtzNjaCwo2Q88cS9oNyJ6Ru7DyxchqKVbbc" },
+                    { "AccountId32": "1N55WJHup5j1LHpbzQX6zvYu7QeLcUBd1tBp8CvA7xHGixY" },
+                    { "u128": "731000000000" }
+                ]
+            },
+        });
+
+        main(input).unwrap();
+    }
 }
