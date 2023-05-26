@@ -43,5 +43,5 @@ openssl = { version = "0.10", features = ["vendored"] }
 openwhisk-client-rust = { git = "https://github.com/HugoByte/openwhisk-client-rust.git", branch = "master" }
 wiremock = "0.5.17"
 async-std = { version = "1.12.0", features = ["attributes"] }
-workflow_macro = "0.0.3"
+workflow_macro = {path = "../workflow_macro"}
 dyn-clone = "1.0.7"

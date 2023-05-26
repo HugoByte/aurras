@@ -9,6 +9,7 @@ use quote::*;
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
+#[cfg(not(tarpaulin_include))]
 #[proc_macro_derive(OpenWhisk, attributes(AuthKey, ApiHost, Insecure, Namespace))]
 pub fn client(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
@@ -16,6 +17,7 @@ pub fn client(input: TokenStream) -> TokenStream {
     impl_openwhisk_client(ast)
 }
 
+#[cfg(not(tarpaulin_include))]
 fn impl_openwhisk_client(ast: DeriveInput) -> TokenStream {
     let name = ast.ident.clone();
     let attribute_args = ast.attrs;

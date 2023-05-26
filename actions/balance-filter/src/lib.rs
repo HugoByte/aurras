@@ -387,7 +387,8 @@ mod tests {
             }]
         });
         
-        main(input).unwrap();
+        let main = main(input);
         couchdb.delete().await.expect("Stopping Container Failed");
+        main.unwrap();
     }
 }

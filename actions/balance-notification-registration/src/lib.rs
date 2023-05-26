@@ -331,9 +331,10 @@ mod tests {
             token: "1".to_string(),
             topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
         });
-        action.get_address("hello").unwrap();
+        let result = action.get_address("hello");
 
         couchdb.delete().await.expect("Stopping Container Failed");
+        result.unwrap();
     }
 
     #[tokio::test]
@@ -359,7 +360,8 @@ mod tests {
             "token": "1".to_string(),
             "topic": "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
         });
-        main(input).unwrap();
+        let main = main(input);
         couchdb.delete().await.expect("Stopping Container Failed");
+        main.unwrap();
     }
 }
