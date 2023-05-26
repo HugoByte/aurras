@@ -105,4 +105,20 @@ mod tests {
 
         assert_eq!(response.to_string(), r#"{"action":"success"}"#);
     }
+
+    #[test]
+    #[should_panic(expected = "failed to push notification 401")]
+    fn send_notification_fail_main() {
+        let action = json!( {
+            // Generate Push Notification Token from client
+            "token": env::var("TEST_DEVICE_TOKEN").unwrap_or("".to_string()),
+            "message": Message {
+                title: "Amount Received!".to_string(),
+                body: "100 DOT".to_string(),
+            },
+            // Generate server token from https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging
+            "api_key": "".to_string(),
+        });
+        main(action).unwrap();
+    }
 }
