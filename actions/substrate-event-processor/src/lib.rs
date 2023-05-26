@@ -74,9 +74,7 @@ impl Action {
                     "EraPaid" => Ok(serde_json::json!({
                         "era" :  self.params.event.data[0].get("eraIndex").unwrap().parse::<u32>().unwrap(),
                     })),
-                    _ => Ok(serde_json::json!({
-                        "era" : 0,
-                    })),
+                    _ => Err(serde::de::Error::custom("Method Not Defined")),
                 }
             }
             _ => Err(serde::de::Error::custom("Method Not Defined")),
@@ -185,5 +183,48 @@ mod tests {
         });
 
         main(input).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Method Not Defined")]
+    fn parse_staking_event_data_method_exception() {
+        let input = serde_json::from_value::<Input>(serde_json::json!({
+            "topic": "topic",
+            "brokers": ["172.17.0.1:9092"],
+            "event_producer_trigger": "produce_staking_event",
+            "event": {
+                "section": "staking",
+                "method": "Era",
+                "meta": "[ The era payout has been set. \\[EraIndex, validatorPayout, remainder\\]]",
+                "data": [
+                    { "Balance": "1287899239212" },
+                    { "Balance": "731000000000" }
+                ]
+            },
+        }))
+        .unwrap();
+        let action = Action::new(input);
+
+        action.parse_event_data().unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Method Not Defined")]
+    fn parse_staking_event_data_fail_invalid_category() {
+        let input = serde_json::from_value::<Input>(serde_json::json!({
+            "topic": "topic",
+            "brokers": ["172.17.0.1:9092"],
+            "event_producer_trigger": "produce_staking_event",
+            "event": {
+                "section": "system",
+                "method": "Era",
+                "data": [
+                ]
+            },
+        }))
+        .unwrap();
+        let action = Action::new(input);
+
+        action.parse_event_data().unwrap();
     }
 }
