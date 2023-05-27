@@ -33,8 +33,8 @@ impl Action {
             context: None,
         }
     }
-    pub fn generate_event_id(&self) -> String {
-        Uuid::new_v4().to_string()
+    pub fn generate_event_id(&self) -> UserId {
+        UserId::new(Uuid::new_v4().to_string())
     }
 
     #[cfg(test)]
@@ -64,10 +64,18 @@ impl Action {
 
     pub fn register_user(&mut self) -> Result<Value, Error> {
         let hash = hash(self.params.password.clone(), DEFAULT_COST).unwrap();
-        let user = User::new(self.params.name.clone(), self.params.email.clone(), hash);
+        let user_mail_id = self.params.email.clone();
+        let user = User::new(self.params.name.clone(), user_mail_id.clone(), hash);
         let user_id = self.generate_event_id();
-        let doc = serde_json::to_value(user).unwrap();
-        if let Ok(id) = self.get_context().insert_document(&doc, Some(user_id)) {
+        let doc = serde_json::to_value(user.clone()).unwrap();
+        let uder_id_doc = serde_json::to_value(user_id.clone()).unwrap();
+
+        self.get_context()
+            .insert_document(&uder_id_doc, Some(user_mail_id.clone()))?;
+        if let Ok(id) = self
+            .get_context()
+            .insert_document(&doc, Some(user_id.user_id))
+        {
             return Ok(serde_json::json!({ "id": id }));
         }
         Err("Failed to register".to_string()).map_err(serde::de::Error::custom)

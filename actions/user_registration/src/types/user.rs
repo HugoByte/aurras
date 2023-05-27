@@ -24,3 +24,15 @@ impl User {
         &self.name
     }
 }
+
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UserId {
+    pub user_id: String,
+}
+
+impl UserId {
+    pub fn new(user_id: String) -> Self {
+        Self { user_id }
+    }
+}

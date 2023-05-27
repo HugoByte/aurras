@@ -18,7 +18,7 @@ use serde_json::{Error, Value};
 struct Input {
     db_name: String,
     db_url: String,
-    id: String,
+    email: String,
     password: String,
 }
 
@@ -61,8 +61,10 @@ impl Action {
     }
 
     pub fn login_user(&mut self) -> Result<Value, Error> {
-        let id = self.params.id.clone();
-        let res = self.get_context().get_document(&id)?;
+        let id = self.params.email.clone();
+        let user_id_res = self.get_context().get_document(&id)?;
+        let user_id: UserId = serde_json::from_value(user_id_res).unwrap();
+        let res = self.get_context().get_document(&user_id.user_id)?;
         let user: User = serde_json::from_value(res).unwrap();
         if verify(self.params.password.clone(), &user.get_password()).unwrap() {
             let headers = Header::default();
@@ -70,7 +72,7 @@ impl Action {
                 EncodingKey::from_secret("user_registration_token_secret_key".as_bytes());
             let now = Utc::now() + Duration::days(1); // Expires in 1 day
             let claims = Claims {
-                sub: id,
+                sub: user_id.user_id,
                 exp: now.timestamp(),
             };
             let user_token = encode(&headers, &claims, &encoding_key).unwrap();
@@ -94,10 +96,10 @@ mod tests {
     use super::*;
     use actions_common::mock_containers::CouchDB;
     use bcrypt::{hash, DEFAULT_COST};
+    use jsonwebtoken::{decode, DecodingKey, Validation};
     use serde_json::json;
     use tokio;
     use tokio::time::{sleep, Duration};
-    use jsonwebtoken::{decode, DecodingKey, Validation};
 
     #[tokio::test]
     async fn user_login_pass() {
@@ -110,7 +112,7 @@ mod tests {
         let input = serde_json::from_value::<Input>(json!({
             "db_name": "test",
             "db_url": url,
-            "id":"131",
+            "email":"test@example.com",
             "password": "testpassword",
 
         }))
@@ -124,11 +126,15 @@ mod tests {
             "password": hash,
         });
         let id = uuid::Uuid::new_v4().to_string();
+        let doc_id = serde_json::to_value(UserId::new(id.clone())).unwrap();
+        let _id_store= action
+            .get_context()
+            .insert_document(&doc_id, Some("test@example.com".to_string()))
+            .unwrap();
         let user_id = action
             .get_context()
             .insert_document(&user, Some(id.clone()));
         assert_eq!(user_id.unwrap(), id);
-        action.params.id = id.clone();
         let user_token = action.login_user().unwrap();
         let token: String =
             serde_json::from_value::<String>(user_token.get("user_token").unwrap().clone())
@@ -144,7 +150,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[should_panic(expected = "Enter Valid password")]
+    #[should_panic(expected = "error fetching document")]
     async fn user_login_fail() {
         let config = Config::new();
         let couchdb = CouchDB::new("admin".to_string(), "password".to_string())
@@ -155,7 +161,7 @@ mod tests {
         let input = serde_json::from_value::<Input>(json!({
             "db_name": "test",
             "db_url": url,
-            "id":"131",
+            "email":"131",
             "password": "password",
 
         }))
@@ -173,7 +179,6 @@ mod tests {
             .get_context()
             .insert_document(&user, Some(id.clone()));
         assert_eq!(user_id.unwrap(), id);
-        action.params.id = id.clone();
         action.login_user().unwrap();
 
         couchdb.delete().await.expect("Stopping Container Failed");
