@@ -117,7 +117,6 @@ pub fn main(args: Value) -> Result<Value, Error> {
 }
 
 #[cfg(test)]
-#[cfg(feature = "mock_containers")]
 mod tests {
     use super::*;
     use actions_common::mock_containers::CouchDB;

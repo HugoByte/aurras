@@ -68,3 +68,11 @@ pub fn join_hashmap<T: PartialEq + std::hash::Hash + Eq + Clone, U: Clone, V: Cl
     }
     data
 }
+
+#[test]
+fn test_insert(){
+    let data = HashMap::from([(1, "test")]);
+    let data1 = HashMap::from([(1, "test1")]);
+    let res = join_hashmap(data, data1);
+    assert_eq!(HashMap::from([(1, ("test", "test1"))]), res);
+}

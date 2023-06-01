@@ -116,6 +116,7 @@ impl Action {
 
 pub fn main(args: Value) -> Result<Value, Error> {
     let input = serde_json::from_value::<Input>(args)?;
+    #[allow(unused_mut)]
     let mut action = Action::new(input);
 
     // TODO: Fix
@@ -138,10 +139,8 @@ pub fn main(args: Value) -> Result<Value, Error> {
             }))
         }
         "get" => action.get_event_sources(),
-        method => {
-            Err(format!("method not supported document {}", method))
-                .map_err(serde::de::Error::custom)
-        }
+        method => Err(format!("method not supported document {}", method))
+            .map_err(serde::de::Error::custom),
     }
 }
 
@@ -149,6 +148,7 @@ pub fn main(args: Value) -> Result<Value, Error> {
 mod tests {
     use super::*;
     use actions_common::mock_containers::CouchDB;
+    use serde_json::json;
     use tokio;
     use tokio::time::{sleep, Duration};
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -174,7 +174,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[cfg(feature = "mock_containers")]
     async fn add_address_pass() {
         use std::collections::HashMap;
         let config = Config::new();
@@ -221,7 +220,6 @@ mod tests {
     }
 
     // TODO: This panic because of reqwest blocking in tokio runtime context. Should Add sync or async context.
-    #[ignore]
     #[should_panic]
     #[tokio::test]
     async fn get_event_sources_pass() {
@@ -277,5 +275,93 @@ mod tests {
         };
         assert_eq!(sources.rows, vec![expected]);
         couchdb.delete().await.expect("Stopping Container Failed");
+    }
+
+    #[tokio::test]
+    async fn get_event_sources_fail() {
+        let _config = Config::new();
+        let couchdb = CouchDB::new("admin".to_string(), "password".to_string())
+            .await
+            .unwrap();
+        sleep(Duration::from_millis(5000)).await;
+        let url = format!("http://admin:password@localhost:{}", couchdb.port());
+        let _topic = "1234".to_string();
+        let _address = "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string();
+        let _token = "1".to_string();
+
+        let input = json!({
+            "db_url": url.clone(),
+            "db_name": "test".to_string(),
+            "__ow_method": "post".to_string(),
+            "address": "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string(),
+            "balance_filter_db": "balance_filter_db".to_string(),
+            "event_registration_db": "event_registration_db".to_string(),
+            "token": "1".to_string(),
+            "topic": "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
+        });
+        let main = main(input).unwrap();
+        assert_eq!(
+            main.to_string(),
+            r#"{"body":{"success":true},"headers":{"Content-Type":"application/json"},"statusCode":200}"#
+        );
+
+        couchdb.delete().await.expect("Stopping Container Failed");
+    }
+
+    #[tokio::test]
+    #[should_panic]
+    async fn get_event_sources_fail_getaddress() {
+        let couchdb = CouchDB::new("admin".to_string(), "password".to_string())
+            .await
+            .unwrap();
+        sleep(Duration::from_millis(5000)).await;
+        let url = format!("http://admin:password@localhost:{}", couchdb.port());
+        let _topic = "1234".to_string();
+        let _address = "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string();
+        let _token = "1".to_string();
+
+        let mut action = Action::new(Input {
+            db_url: url.clone(),
+            db_name: "test".to_string(),
+            __ow_method: "post".to_string(),
+            __ow_query: "".to_string(),
+            address: "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string(),
+            balance_filter_db: "balance_filter_db".to_string(),
+            event_registration_db: "event_registration_db".to_string(),
+            token: "1".to_string(),
+            topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
+        });
+        let result = action.get_address("hello");
+
+        couchdb.delete().await.expect("Stopping Container Failed");
+        result.unwrap();
+    }
+
+    #[tokio::test]
+    #[should_panic(expected = "method not supported document")]
+    async fn get_event_sources_invalid_method() {
+        let _config = Config::new();
+        let couchdb = CouchDB::new("admin".to_string(), "password".to_string())
+            .await
+            .unwrap();
+        sleep(Duration::from_millis(5000)).await;
+        let url = format!("http://admin:password@localhost:{}", couchdb.port());
+        let _topic = "1234".to_string();
+        let _address = "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string();
+        let _token = "1".to_string();
+
+        let input = json!({
+            "db_url": url.clone(),
+            "db_name": "test".to_string(),
+            "__ow_method": "put".to_string(),
+            "address": "15ss3TDX2NLG31ugk6QN5zHhq2MUfiaPhePSjWwht6Dr9RUw".to_string(),
+            "balance_filter_db": "balance_filter_db".to_string(),
+            "event_registration_db": "event_registration_db".to_string(),
+            "token": "1".to_string(),
+            "topic": "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
+        });
+        let main = main(input);
+        couchdb.delete().await.expect("Stopping Container Failed");
+        main.unwrap();
     }
 }

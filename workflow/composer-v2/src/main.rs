@@ -36,6 +36,7 @@ fn set_panic_hook() {
     });
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn handle_error<T>(res: types::Result<T>) -> T {
     match res {
         Ok(t) => t,

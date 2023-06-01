@@ -12,7 +12,7 @@ members = [
     "workflow/polkadot_macro",
     # "workflow/composer-v2",
     "primitives",
-    "workflow/workflow_apis",
+    # "workflow/workflow_apis",
     "workflow/test_util"
 ]
 

@@ -15,12 +15,14 @@ use staking_payout::*;
 mod transfer;
 use transfer::*;
 
+#[cfg(not(tarpaulin_include))]
 #[proc_macro_derive(Polkadot, attributes(Chain, Operation))]
 pub fn polkadot_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
     impl_polkadot(ast)
 }
 
+#[cfg(not(tarpaulin_include))]
 ///Implement the general substrate methods for the struct.
 fn impl_polkadot(ast: DeriveInput) -> TokenStream {
     let polka = ast.ident.clone();

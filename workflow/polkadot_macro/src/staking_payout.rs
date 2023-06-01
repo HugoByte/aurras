@@ -2,6 +2,7 @@ use super::*;
 use syn::Ident;
 
 ///Implement the payout methids for the struct
+#[cfg(not(tarpaulin_include))]
 pub fn impl_payout(struct_name: Ident) -> TokenStream2 {
     let methods = quote! {
         impl #struct_name{
@@ -92,6 +93,7 @@ pub fn impl_payout(struct_name: Ident) -> TokenStream2 {
 }
 
 /// Implement the methods for batched payout
+#[cfg(not(tarpaulin_include))]
 pub fn impl_batched_payout(struct_name: Ident) -> TokenStream2 {
     let methods = quote! {
         impl #struct_name{

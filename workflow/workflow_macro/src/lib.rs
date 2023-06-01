@@ -5,12 +5,14 @@ use quote::*;
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
+#[cfg(not(tarpaulin_include))]
 #[proc_macro_derive(Flow)]
 pub fn derive_workflow(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
     impl_workflow(ast)
 }
 
+#[cfg(not(tarpaulin_include))]
 fn impl_workflow(ast: DeriveInput) -> TokenStream {
     let workflow = ast.ident;
 
