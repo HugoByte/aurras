@@ -93,7 +93,6 @@ pub fn _start(ptr: *mut u8, length: i32){{
     let serialized = serde_json::to_vec(&output).unwrap();
     let size = serialized.len() as i32;
     let ptr = serialized.as_ptr();
-    std::mem::forget(ptr);
     unsafe {{
         set_output(ptr as i32, size);
     }}
@@ -139,7 +138,7 @@ codec = {{ package = "parity-scale-codec", features = [
     "derive",
 ], version = "3.1.5" }}
 substrate_macro = "0.1.3"
-openwhisk-rust = {{ git = "https://github.com/shanithkk/openwhisk-client-rust.git", branch = "master" }}
+openwhisk-rust = "0.1.2"
 sp-core = {{ version = "6.0.0", default-features = false, features = ["full_crypto"], git = "https://github.com/paritytech/substrate.git", rev = "eb1a2a8" }}
 sp-runtime = {{ version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "eb1a2a8" }}
 substrate-api-client = {{ git = "https://github.com/HugoByte/substrate-api-client.git", default-features = false, features = ["staking-xt"], branch ="wasm-support"}}
