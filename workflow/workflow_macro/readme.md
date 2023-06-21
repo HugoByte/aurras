@@ -8,7 +8,7 @@ This is a Derive Macro for Workflow-Aurras. This macro implements necessary meth
 
  Add following libraries.
  ``` 
- workflow_macro = "0.0.2"
+ workflow_macro = "0.0.3"
  ``` 
  In your `Cargo.toml` file of your rust package. 
 

@@ -81,6 +81,8 @@ pub fn main(args: Value) -> Result<Value, Error> {
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
 
     #[test]
@@ -102,5 +104,18 @@ mod tests {
                 "brokers": ["172.17.0.1:9092"],
             })
         );
+    }
+
+    #[test]
+    #[should_panic(expected = "Action not Initialized!")]
+    fn parse_event_fail() {
+        let action = json!( {
+            "brokers": vec!["172.17.0.1:9092".to_string()],
+            "event": "{\"section\": \"balances\", \"method\": \"Transfer\", \"data\": [{\"AccountId\":\"148fP7zCq1JErXCy92PkNam4KZNcroG9zbbiPwMB1qehgeT4\"},{\"AccountId\":\"13bbv2rNzAKuT2oSkFJyHUJAmPVbBYNQbRQ95xW3sQBGffHa\"},{\"Balance\":\"24682100255\"}]}".to_string(),
+            "topic": "7231ea34-7bc2-44e8-8601-c8cceb78f8c3".to_string(),
+            "eventProcessor": "substrate_event_processor".to_string()
+        });
+
+        main(action).unwrap();
     }
 }

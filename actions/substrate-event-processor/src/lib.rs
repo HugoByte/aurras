@@ -68,15 +68,13 @@ impl Action {
                     })),
                     _ => Err(serde::de::Error::custom("Method Not Defined")),
                 }
-            },
+            }
             "staking" => {
                 return match self.params.event.method.as_str() {
                     "EraPaid" => Ok(serde_json::json!({
                         "era" :  self.params.event.data[0].get("eraIndex").unwrap().parse::<u32>().unwrap(),
-                    }),),
-                    _ => Ok(serde_json::json!({
-                        "era" : 0,
                     })),
+                    _ => Err(serde::de::Error::custom("Method Not Defined")),
                 }
             }
             _ => Err(serde::de::Error::custom("Method Not Defined")),
@@ -162,9 +160,71 @@ mod tests {
 
         let response = action.parse_event_data().unwrap();
 
-        assert_eq!(
-            response,
-            serde_json::json!({"era": 6320})
-        );
+        assert_eq!(response, serde_json::json!({"era": 6320}));
+    }
+
+    #[test]
+    #[should_panic]
+    fn parse_event_data_fail() {
+        let input = serde_json::json!({
+            "topic": "topic",
+            "brokers": ["172.17.0.1:9092"],
+            "event_producer_trigger": "produce_event",
+            "event": {
+                "section": "balances",
+                "method": "Transfer",
+                "meta": "[ Transfer succeeded. \\[from, to, value\\]]",
+                "data": [
+                    { "AccountId32": "13sc83poXh93CXtzNjaCwo2Q88cS9oNyJ6Ru7DyxchqKVbbc" },
+                    { "AccountId32": "1N55WJHup5j1LHpbzQX6zvYu7QeLcUBd1tBp8CvA7xHGixY" },
+                    { "u128": "731000000000" }
+                ]
+            },
+        });
+
+        main(input).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Method Not Defined")]
+    fn parse_staking_event_data_method_exception() {
+        let input = serde_json::from_value::<Input>(serde_json::json!({
+            "topic": "topic",
+            "brokers": ["172.17.0.1:9092"],
+            "event_producer_trigger": "produce_staking_event",
+            "event": {
+                "section": "staking",
+                "method": "Era",
+                "meta": "[ The era payout has been set. \\[EraIndex, validatorPayout, remainder\\]]",
+                "data": [
+                    { "Balance": "1287899239212" },
+                    { "Balance": "731000000000" }
+                ]
+            },
+        }))
+        .unwrap();
+        let action = Action::new(input);
+
+        action.parse_event_data().unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Method Not Defined")]
+    fn parse_staking_event_data_fail_invalid_category() {
+        let input = serde_json::from_value::<Input>(serde_json::json!({
+            "topic": "topic",
+            "brokers": ["172.17.0.1:9092"],
+            "event_producer_trigger": "produce_staking_event",
+            "event": {
+                "section": "system",
+                "method": "Era",
+                "data": [
+                ]
+            },
+        }))
+        .unwrap();
+        let action = Action::new(input);
+
+        action.parse_event_data().unwrap();
     }
 }

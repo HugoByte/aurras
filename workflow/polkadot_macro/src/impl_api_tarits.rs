@@ -1,5 +1,6 @@
 use super::*;
 
+#[cfg(not(tarpaulin_include))]
 pub fn impl_structs() -> TokenStream2 {
     let structs = quote! {
     #[derive(Serialize, Deserialize)]

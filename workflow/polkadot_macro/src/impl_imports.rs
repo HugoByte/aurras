@@ -1,5 +1,6 @@
 use super::*;
 
+#[cfg(not(tarpaulin_include))]
 pub fn impl_imports() -> TokenStream2{
     let imports = quote!{
         use codec::{Decode, Encode};

@@ -37,6 +37,7 @@ struct State {
     current_handle: WasiHttpHandle,
 }
 
+#[cfg(not(tarpaulin_include))]
 #[derive(Debug, thiserror::Error)]
 enum HttpError {
     #[error("Invalid handle: [{0}]")]
@@ -87,26 +88,31 @@ impl From<HttpError> for u32 {
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 impl From<PoisonError<std::sync::RwLockReadGuard<'_, State>>> for HttpError {
     fn from(_: PoisonError<std::sync::RwLockReadGuard<'_, State>>) -> Self {
         HttpError::RuntimeError
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 impl From<PoisonError<std::sync::RwLockWriteGuard<'_, State>>> for HttpError {
     fn from(_: PoisonError<std::sync::RwLockWriteGuard<'_, State>>) -> Self {
         HttpError::RuntimeError
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 impl From<PoisonError<&mut State>> for HttpError {
     fn from(_: PoisonError<&mut State>) -> Self {
         HttpError::RuntimeError
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 struct HostCalls;
 
+#[cfg(not(tarpaulin_include))]
 impl HostCalls {
     /// Remove the current handle from the state.
     /// Depending on the implementation, guest modules might
@@ -319,6 +325,7 @@ impl HostCalls {
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 /// Experimental HTTP extension object for Wasmtime.
 pub struct HttpCtx {
     state: Arc<RwLock<State>>,
@@ -326,6 +333,7 @@ pub struct HttpCtx {
     max_concurrent_requests: Option<u32>,
 }
 
+#[cfg(not(tarpaulin_include))]
 impl HttpCtx {
     /// Module the HTTP extension is going to be defined as.
     pub const MODULE: &'static str = "wasi_experimental_http";
@@ -511,6 +519,7 @@ impl HttpCtx {
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 #[tracing::instrument]
 fn request(
     url: &str,
@@ -590,6 +599,7 @@ fn request(
 /// Get the exported memory block called `memory`.
 /// This will return an `HttpError::MemoryNotFound` if the module does
 /// not export a memory block.
+#[cfg(not(tarpaulin_include))]
 fn memory_get<T>(caller: &mut Caller<'_, T>) -> Result<Memory, HttpError> {
     if let Some(Extern::Memory(mem)) = caller.get_export(MEMORY) {
         Ok(mem)
@@ -601,6 +611,7 @@ fn memory_get<T>(caller: &mut Caller<'_, T>) -> Result<Memory, HttpError> {
 /// Get a slice of length `len` from `memory`, starting at `offset`.
 /// This will return an `HttpError::BufferTooSmall` if the size of the
 /// requested slice is larger than the memory size.
+#[cfg(not(tarpaulin_include))]
 fn slice_from_memory(
     memory: &Memory,
     mut ctx: impl AsContextMut,
@@ -619,6 +630,7 @@ fn slice_from_memory(
 }
 
 /// Read a string of byte length `len` from `memory`, starting at `offset`.
+#[cfg(not(tarpaulin_include))]
 fn string_from_memory(
     memory: &Memory,
     ctx: impl AsContextMut,
@@ -632,6 +644,7 @@ fn string_from_memory(
 /// Check if guest module is allowed to send request to URL, based on the list of
 /// allowed hosts defined by the runtime.
 /// If `None` is passed, the guest module is not allowed to send the request.
+#[cfg(not(tarpaulin_include))]
 fn is_allowed(url: &str, allowed_hosts: Option<&[String]>) -> Result<bool, HttpError> {
     let url_host = Url::parse(url)
         .map_err(|_| HttpError::InvalidUrl)?
@@ -657,6 +670,7 @@ fn is_allowed(url: &str, allowed_hosts: Option<&[String]>) -> Result<bool, HttpE
 // https://github.com/rust-lang/rust/issues/86125
 
 /// Decode a header map from a string.
+#[cfg(not(tarpaulin_include))]
 fn string_to_header_map(s: &str) -> Result<HeaderMap, Error> {
     let mut headers = HeaderMap::new();
     for entry in s.lines() {
@@ -673,6 +687,7 @@ fn string_to_header_map(s: &str) -> Result<HeaderMap, Error> {
 }
 
 /// Encode a header map as a string.
+#[cfg(not(tarpaulin_include))]
 fn header_map_to_string(hm: &HeaderMap) -> Result<String, Error> {
     let mut res = String::new();
     for (name, value) in hm

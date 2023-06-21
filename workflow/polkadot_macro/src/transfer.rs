@@ -1,6 +1,7 @@
 use super::*;
 use syn::Ident;
 ///Implement the transfer method for the struct
+#[cfg(not(tarpaulin_include))]
 pub fn impl_transfer(struct_name: Ident) -> TokenStream2 {
     let transfer_methods = quote! {
         impl #struct_name{
