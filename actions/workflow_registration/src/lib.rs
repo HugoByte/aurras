@@ -2,15 +2,13 @@ extern crate serde_json;
 
 mod types;
 
-use chrono::{Duration, Utc};
-use types::{user::Claims, *};
+use types::{user::{Claims, WorkflowDetails}};
 
 #[cfg(test)]
 use actions_common::Config;
 use actions_common::Context;
-use bcrypt::verify;
 use chesterfield::sync::{Client, Database};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{decode, DecodingKey, Validation};
 use openwhisk_rust::*;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{Error, Value};
@@ -25,6 +23,8 @@ struct Input {
     kind: String,
     file: String,
     auth_token: String,
+    #[serde(default = "openwhisk_auth_key")]
+    openwhisk_auth: String,
 }
 
 struct Action {
@@ -76,7 +76,7 @@ impl Action {
             let context = Context::new(db, None);
             let _data = context.get_document(&uuid)?;
         }
-        let auth = "AAAAkbdB3Jk:APA91bGYmzmAJ6Vq6u-qHNK3Sf7OnMKWJSZy5LJYeGSnJ9hSeBz7K8Indv7t-jEbXGDM2waQ519wkISI6pUN7845zO9gOwjnQRXZ0wHMaVfV4ziGtBIhdfVwfSOMGSR0F_d8pmdFiuXq";
+        let auth = self.params.openwhisk_auth.clone();
         let client_props = WskProperties::new(
             auth.to_string(),
             self.params.endpoint.clone(),
@@ -117,7 +117,16 @@ impl Action {
 
         let res = client.actions().insert(&action, true);
         match res {
-            Ok(x) => serde_json::to_value(x),
+            Ok(x) => {
+
+                let doc = serde_json::to_value(WorkflowDetails{
+                    action_name: x.clone().name,
+                    trigger_name: Default::default(),
+                    rule_name: Default::default(),
+                }).unwrap();
+                self.get_context().insert_document(&doc, Some(uuid))?;
+                serde_json::to_value(x)
+            },
             Err(e) => return Err(e).map_err(serde::de::Error::custom),
         }
     }
@@ -133,4 +142,8 @@ pub fn main(args: Value) -> Result<Value, Error> {
 
 fn get_request_host() -> String {
     std::env::var("__OW_API_HOST").unwrap()
+}
+
+fn openwhisk_auth_key() -> String {
+    "AAAAkbdB3Jk:APA91bGYmzmAJ6Vq6u-qHNK3Sf7OnMKWJSZy5LJYeGSnJ9hSeBz7K8Indv7t-jEbXGDM2waQ519wkISI6pUN7845zO9gOwjnQRXZ0wHMaVfV4ziGtBIhdfVwfSOMGSR0F_d8pmdFiuXq".to_string()
 }
