@@ -2,7 +2,7 @@ extern crate serde_json;
 
 mod types;
 
-use types::{user::{Claims, WorkflowDetails}};
+use types::user::{Claims, WorkflowDetails};
 
 #[cfg(test)]
 use actions_common::Config;
@@ -18,13 +18,11 @@ struct Input {
     db_url: String,
     #[serde(default = "get_request_host")]
     endpoint: String,
-    workflow_name: String,
-    version: String,
-    kind: String,
-    file: String,
     auth_token: String,
     #[serde(default = "openwhisk_auth_key")]
     openwhisk_auth: String,
+    operation: String,
+    action_name: String,
 }
 
 struct Action {
@@ -65,7 +63,7 @@ impl Action {
         self.context.as_mut().expect("Action not Initialized!")
     }
 
-    pub fn workflow_registration(&mut self) -> Result<Value, Error> {
+    pub fn delete_workflow(&mut self) -> Result<Value, Error> {
         let decoding_key =
             DecodingKey::from_secret("user_registration_token_secret_key".as_bytes());
         let validation = Validation::default();
@@ -85,62 +83,24 @@ impl Action {
         );
         let client = OpenwhiskClient::<WasmClient>::new(Some(&client_props));
 
-        let mut image = String::new();
-        if self.params.kind == "rust:1.34".to_string() {
-            image = "openwhisk/action-rust-v1.34".to_string()
-        } else {
-            image = "hugobyte/openwhisk-runtime-rust:v0.3".to_string()
+        if self.params.operation == "action" {
+            client
+                .actions()
+                .delete(&self.params.action_name)
+                .map_err(serde::de::Error::custom)?;
+        } else if self.params.operation == "trigger" {
+            client
+                .triggers()
+                .delete(&self.params.action_name)
+                .map_err(serde::de::Error::custom)?;
+        } else if self.params.operation == "rule" {
+            client
+                .triggers()
+                .delete(&self.params.action_name)
+                .map_err(serde::de::Error::custom)?;
         }
 
-        let action = openwhisk_rust::Action {
-            namespace: "guest".to_string(),
-            name: self.params.workflow_name.clone(),
-            version: self.params.version.clone(),
-            limits: Default::default(),
-            exec: Exec {
-                kind: self.params.kind.clone(),
-                code: self.params.file.clone(),
-                image,
-                init: "".to_string(),
-                main: "".to_string(),
-                components: vec![],
-                binary: true,
-            },
-            error: "".to_string(),
-            publish: true,
-            updated: 0,
-            annotations: vec![KeyValue {
-                key: "feed".to_string(),
-                value: serde_json::json!({}),
-            }],
-        };
-
-        let res = client.actions().insert(&action, true);
-        match res {
-            Ok(x) => {
-
-                let doc =WorkflowDetails{
-                    action_name: x.clone().name,
-                    trigger_name: Default::default(),
-                    rule_name: Default::default(),
-                };
-                match self.get_context().get_document(&uuid){
-                    Ok(docs) => {
-                        let mut de_docs :Vec<WorkflowDetails> = serde_json::from_value(docs).unwrap();
-                        de_docs.push(doc);
-                        let updated_doc =  serde_json::to_value(de_docs).unwrap();
-                        self.get_context().update_document(&uuid,"",&updated_doc )?;
-                    },
-                    Err(_e) => {
-                        let doc = serde_json::to_value(vec![doc]).unwrap();
-                        self.get_context().insert_document(&doc, Some(uuid))?;
-                    },
-                }
-                
-                serde_json::to_value(x)
-            },
-            Err(e) => return Err(e).map_err(serde::de::Error::custom),
-        }
+        Ok(serde_json::json!({"message": "Deleted Successfull"}))
     }
 }
 
@@ -149,7 +109,7 @@ pub fn main(args: Value) -> Result<Value, Error> {
     let mut action = Action::new(input);
     #[cfg(not(test))]
     action.init();
-    action.workflow_registration()
+    action.delete_workflow()
 }
 
 fn get_request_host() -> String {

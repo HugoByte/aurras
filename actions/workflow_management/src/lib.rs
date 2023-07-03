@@ -2,7 +2,7 @@ extern crate serde_json;
 
 mod types;
 
-use types::{user::{Claims, WorkflowDetails}};
+use types::user::{Claims, WorkflowDetails};
 
 #[cfg(test)]
 use actions_common::Config;
@@ -15,13 +15,14 @@ use serde_json::{Error, Value};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
+    _ow_method: String,
     db_url: String,
     #[serde(default = "get_request_host")]
     endpoint: String,
-    workflow_name: String,
-    version: String,
-    kind: String,
-    file: String,
+    operation: String,
+    trigger_name: String,
+    action_name: String,
+    param_json: String,
     auth_token: String,
     #[serde(default = "openwhisk_auth_key")]
     openwhisk_auth: String,
@@ -85,62 +86,45 @@ impl Action {
         );
         let client = OpenwhiskClient::<WasmClient>::new(Some(&client_props));
 
-        let mut image = String::new();
-        if self.params.kind == "rust:1.34".to_string() {
-            image = "openwhisk/action-rust-v1.34".to_string()
+        let param: Vec<KeyValue> = if self.params.param_json.is_empty() {
+            Vec::new()
         } else {
-            image = "hugobyte/openwhisk-runtime-rust:v0.3".to_string()
-        }
-
-        let action = openwhisk_rust::Action {
-            namespace: "guest".to_string(),
-            name: self.params.workflow_name.clone(),
-            version: self.params.version.clone(),
-            limits: Default::default(),
-            exec: Exec {
-                kind: self.params.kind.clone(),
-                code: self.params.file.clone(),
-                image,
-                init: "".to_string(),
-                main: "".to_string(),
-                components: vec![],
-                binary: true,
-            },
-            error: "".to_string(),
-            publish: true,
-            updated: 0,
-            annotations: vec![KeyValue {
-                key: "feed".to_string(),
-                value: serde_json::json!({}),
-            }],
+            serde_json::from_str(&self.params.param_json).unwrap()
         };
 
-        let res = client.actions().insert(&action, true);
-        match res {
-            Ok(x) => {
+        let trigger = Trigger {
+            namespace: get_namespace(),
+            name: self.params.trigger_name.clone(),
 
-                let doc =WorkflowDetails{
-                    action_name: x.clone().name,
-                    trigger_name: Default::default(),
-                    rule_name: Default::default(),
-                };
-                match self.get_context().get_document(&uuid){
-                    Ok(docs) => {
-                        let mut de_docs :Vec<WorkflowDetails> = serde_json::from_value(docs).unwrap();
-                        de_docs.push(doc);
-                        let updated_doc =  serde_json::to_value(de_docs).unwrap();
-                        self.get_context().update_document(&uuid,"",&updated_doc )?;
-                    },
-                    Err(_e) => {
-                        let doc = serde_json::to_value(vec![doc]).unwrap();
-                        self.get_context().insert_document(&doc, Some(uuid))?;
-                    },
-                }
-                
-                serde_json::to_value(x)
-            },
-            Err(e) => return Err(e).map_err(serde::de::Error::custom),
-        }
+            annotations: vec![KeyValue {
+                key: "feed".to_string(),
+                value: serde_json::json!("feed"),
+            }],
+            parameters: param,
+
+            version: "0.0.1".to_string(),
+            ..Default::default()
+        };
+        let trigger = client
+            .triggers()
+            .insert(&trigger, true)
+            .map_err(serde::de::Error::custom)?;
+
+        let rule = Rule {
+            name: trigger.name.clone() + "_" + &self.params.action_name,
+            trigger: trigger.name.clone(),
+            action: self.params.action_name.clone(),
+        };
+
+        let rule = client
+            .rules()
+            .insert(&rule, true)
+            .map_err(serde::de::Error::custom)?;
+
+        Ok(serde_json::json!({
+            "messgae":"Rule and trigger are created",
+            "trigger": trigger.name,
+            "rule": rule.name}))
     }
 }
 
@@ -154,6 +138,9 @@ pub fn main(args: Value) -> Result<Value, Error> {
 
 fn get_request_host() -> String {
     std::env::var("__OW_API_HOST").unwrap()
+}
+fn get_namespace() -> String {
+    std::env::var("__OW_NAMESPACE").unwrap_or("guest".to_string())
 }
 
 fn openwhisk_auth_key() -> String {
