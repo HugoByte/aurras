@@ -8,8 +8,6 @@ members = [
     "actions/event-receiver",
     "actions/substrate-event-processor",
     "actions/workflow_registration",
-    "actions/workflow_delete_operation",
-    "actions/workflow_update_rule",
     "actions/workflow_management",
     "workflow/openwhisk_macro",
     "workflow/workflow_macro",

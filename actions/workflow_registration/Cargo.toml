@@ -13,7 +13,6 @@ serde_derive = "1.0"
 uuid = { version = "0.8", features = ["serde", "v4"] }
 chesterfield = "0.0.1"
 actions-common = { git = "https://github.com/hugobyte/aurras", rev = '1f7e117' }
-# reqwest = { version = "0.11", features = ["blocking", "json"] }
 bcrypt = "0.13.0"
 jsonwebtoken = "7.1"
 chrono = { version = "0.4", features = ["serde"] }
