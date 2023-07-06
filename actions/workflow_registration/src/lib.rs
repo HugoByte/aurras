@@ -9,7 +9,7 @@ use actions_common::Config;
 use actions_common::Context;
 use chesterfield::sync::{Client, Database};
 use jsonwebtoken::{decode, DecodingKey, Validation};
-use openwhisk_rust::*;
+use openwhisk_client_rust::*;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{Error, Value};
 
@@ -80,19 +80,18 @@ impl Action {
         let client_props = WskProperties::new(
             auth.to_string(),
             self.params.endpoint.clone(),
-            true,
             "guest".to_string(),
         );
-        let client = OpenwhiskClient::<WasmClient>::new(Some(&client_props));
+        let client = OpenwhiskClient::<NativeClient>::new(Some(&client_props));
 
-        let mut image = String::new();
+        let image :String;
         if self.params.kind == "rust:1.34".to_string() {
             image = "openwhisk/action-rust-v1.34".to_string()
         } else {
             image = "hugobyte/openwhisk-runtime-rust:v0.3".to_string()
         }
 
-        let action = openwhisk_rust::Action {
+        let action = openwhisk_client_rust::Action {
             namespace: "guest".to_string(),
             name: self.params.workflow_name.clone(),
             version: self.params.version.clone(),
