@@ -15,7 +15,7 @@ use serde_json::{Error, Value};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
-    _ow_method: String,
+    __ow_method: String,
     db_url: String,
     #[serde(default = "get_request_host")]
     endpoint: String,
@@ -73,7 +73,7 @@ impl Action {
         let claim = decode::<Claims>(&self.params.auth_token, &decoding_key, &validation).unwrap();
         let uuid = claim.claims.sub;
         {
-            let db = self.connect_db(&self.params.db_url, "user_registration");
+            let db = self.connect_db(&self.params.db_url, "user_registration_db");
             let context = Context::new(db, None);
             let _data = context.get_document(&uuid)?;
         }
@@ -155,7 +155,7 @@ impl Action {
         let claim = decode::<Claims>(&self.params.auth_token, &decoding_key, &validation).unwrap();
         let uuid = claim.claims.sub;
         {
-            let db = self.connect_db(&self.params.db_url, "user_registration");
+            let db = self.connect_db(&self.params.db_url, "user_registration_db");
             let context = Context::new(db, None);
             let _data = context.get_document(&uuid)?;
         }
@@ -186,7 +186,7 @@ impl Action {
         let claim = decode::<Claims>(&self.params.auth_token, &decoding_key, &validation).unwrap();
         let uuid = claim.claims.sub;
         {
-            let db = self.connect_db(&self.params.db_url, "user_registration");
+            let db = self.connect_db(&self.params.db_url, "user_registration_db");
             let context = Context::new(db, None);
             let _data = context.get_document(&uuid)?;
         }
@@ -210,7 +210,7 @@ impl Action {
         let claim = decode::<Claims>(&self.params.auth_token, &decoding_key, &validation).unwrap();
         let uuid = claim.claims.sub;
         {
-            let db = self.connect_db(&self.params.db_url, "user_registration");
+            let db = self.connect_db(&self.params.db_url, "user_registration_db");
             let context = Context::new(db, None);
             let _data = context.get_document(&uuid)?;
         }
@@ -246,16 +246,16 @@ pub fn main(args: Value) -> Result<Value, Error> {
     #[cfg(not(test))]
     action.init();
 
-    if input._ow_method.clone() == "get" {
+    if input.__ow_method.clone() == "get" {
         action.list_workflow()
-    } else if input._ow_method == "put" {
+    } else if input.__ow_method == "put" {
         action.workflow_management()
-    } else if input._ow_method.clone() == "post" {
+    } else if input.__ow_method.clone() == "post" {
         action.workflow_rule_update()
-    } else if input._ow_method.clone() == "delete" {
+    } else if input.__ow_method.clone() == "delete" {
         action.delete_workflow()
     } else {
-        return Err(format!("Error in method {}", input._ow_method.clone()))
+        return Err(format!("Error in method {}", input.__ow_method.clone()))
             .map_err(serde::de::Error::custom);
     }
 }
