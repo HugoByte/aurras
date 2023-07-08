@@ -2,7 +2,7 @@ extern crate serde_json;
 
 mod types;
 
-use types::user::{Claims, WorkflowDetails};
+use types::user::{Claims, WorkflowDetails, WorkflowDetail};
 
 #[cfg(test)]
 use actions_common::Config;
@@ -43,13 +43,13 @@ impl Action {
 
     #[cfg(test)]
     pub fn init(&mut self, config: &Config) {
-        let db = self.connect_db(&self.params.db_url, "workflow_registration");
+        let db = self.connect_db(&self.params.db_url, "workflow_management_db");
         self.context = Some(Context::new(db, Some(config)));
     }
 
     #[cfg(not(test))]
     pub fn init(&mut self) {
-        let db = self.connect_db(&self.params.db_url, "workflow_registration");
+        let db = self.connect_db(&self.params.db_url, "workflow_management_db");
         self.context = Some(Context::new(db, None));
     }
 
@@ -86,7 +86,7 @@ impl Action {
         .set_bypass_cerificate_check(true);
         let client = OpenwhiskClient::<NativeClient>::new(Some(&client_props));
 
-        let param: Vec<KeyValue> = if self.params.param_json.clone().unwrap().is_empty() {
+        let param: Vec<KeyValue> = if self.params.param_json.clone().is_none() {
             Vec::new()
         } else {
             serde_json::from_str(&self.params.param_json.clone().unwrap()).unwrap()
@@ -123,15 +123,14 @@ impl Action {
             .map_err(serde::de::Error::custom)?;
 
         {
-            let doc = WorkflowDetails {
-                action_name: Default::default(),
+            let doc = WorkflowDetail {
                 trigger_name: trigger.name.clone(),
                 rule_name: rule.name.clone(),
             };
             match self.get_context().get_document(&uuid) {
                 Ok(docs) => {
-                    let mut de_docs: Vec<WorkflowDetails> = serde_json::from_value(docs).unwrap();
-                    de_docs.push(doc);
+                    let mut de_docs:WorkflowDetails = serde_json::from_value(docs).unwrap();
+                    de_docs.list.push(doc);
                     let updated_doc = serde_json::to_value(de_docs).unwrap();
                     self.get_context()
                         .update_document(&uuid, "", &updated_doc)?;
