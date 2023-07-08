@@ -42,8 +42,13 @@ pub struct Claims {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct WorkflowDetails {
-    pub action_name: String,
+pub struct WorkflowDetail {
+    // pub action_name: String,
     pub trigger_name: String,
     pub rule_name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WorkflowDetails {
+    pub list: Vec<WorkflowDetail>,
 }

@@ -119,21 +119,19 @@ impl Action {
         match res {
             Ok(x) => {
                 let doc = WorkflowDetails {
-                    action_name: x.clone().name,
-                    trigger_name: Default::default(),
-                    rule_name: Default::default(),
+                    action_list:[x.clone().name].to_vec(),
                 };
                 match self.get_context().get_document(&uuid) {
                     Ok(docs) => {
-                        let mut de_docs: Vec<WorkflowDetails> =
+                        let mut de_docs: WorkflowDetails =
                             serde_json::from_value(docs).unwrap();
-                        de_docs.push(doc);
+                        de_docs.action_list.push(x.clone().name);
                         let updated_doc = serde_json::to_value(de_docs).unwrap();
                         self.get_context()
                             .update_document(&uuid, "", &updated_doc)?;
                     }
                     Err(_e) => {
-                        let doc = serde_json::to_value(vec![doc]).unwrap();
+                        let doc = serde_json::to_value(doc).unwrap();
                         self.get_context().insert_document(&doc, Some(uuid))?;
                     }
                 }

@@ -136,7 +136,8 @@ impl Action {
                         .update_document(&uuid, "", &updated_doc)?;
                 }
                 Err(_e) => {
-                    let doc = serde_json::to_value(vec![doc]).unwrap();
+                    let doc = WorkflowDetails{list: vec![doc]};
+                    let doc = serde_json::to_value(doc).unwrap();
                     self.get_context().insert_document(&doc, Some(uuid))?;
                 }
             }
