@@ -2,7 +2,7 @@ extern crate serde_json;
 
 mod types;
 
-use types::{user::{Claims, WorkflowDetails}};
+use types::user::{Claims, WorkflowDetails};
 
 #[cfg(test)]
 use actions_common::Config;
@@ -72,7 +72,7 @@ impl Action {
         let claim = decode::<Claims>(&self.params.auth_token, &decoding_key, &validation).unwrap();
         let uuid = claim.claims.sub;
         {
-            let db = self.connect_db(&self.params.db_url, "user_registration");
+            let db = self.connect_db(&self.params.db_url, "user_registration_db");
             let context = Context::new(db, None);
             let _data = context.get_document(&uuid)?;
         }
@@ -81,10 +81,11 @@ impl Action {
             auth.to_string(),
             self.params.endpoint.clone(),
             "guest".to_string(),
-        );
+        )
+        .set_bypass_cerificate_check(true);
         let client = OpenwhiskClient::<NativeClient>::new(Some(&client_props));
 
-        let image :String;
+        let image: String;
         if self.params.kind == "rust:1.34".to_string() {
             image = "openwhisk/action-rust-v1.34".to_string()
         } else {
@@ -117,27 +118,28 @@ impl Action {
         let res = client.actions().insert(&action, true);
         match res {
             Ok(x) => {
-
-                let doc =WorkflowDetails{
+                let doc = WorkflowDetails {
                     action_name: x.clone().name,
                     trigger_name: Default::default(),
                     rule_name: Default::default(),
                 };
-                match self.get_context().get_document(&uuid){
+                match self.get_context().get_document(&uuid) {
                     Ok(docs) => {
-                        let mut de_docs :Vec<WorkflowDetails> = serde_json::from_value(docs).unwrap();
+                        let mut de_docs: Vec<WorkflowDetails> =
+                            serde_json::from_value(docs).unwrap();
                         de_docs.push(doc);
-                        let updated_doc =  serde_json::to_value(de_docs).unwrap();
-                        self.get_context().update_document(&uuid,"",&updated_doc )?;
-                    },
+                        let updated_doc = serde_json::to_value(de_docs).unwrap();
+                        self.get_context()
+                            .update_document(&uuid, "", &updated_doc)?;
+                    }
                     Err(_e) => {
                         let doc = serde_json::to_value(vec![doc]).unwrap();
                         self.get_context().insert_document(&doc, Some(uuid))?;
-                    },
+                    }
                 }
-                
+
                 serde_json::to_value(x)
-            },
+            }
             Err(e) => return Err(e).map_err(serde::de::Error::custom),
         }
     }
@@ -156,5 +158,5 @@ fn get_request_host() -> String {
 }
 
 fn openwhisk_auth_key() -> String {
-    "AAAAkbdB3Jk:APA91bGYmzmAJ6Vq6u-qHNK3Sf7OnMKWJSZy5LJYeGSnJ9hSeBz7K8Indv7t-jEbXGDM2waQ519wkISI6pUN7845zO9gOwjnQRXZ0wHMaVfV4ziGtBIhdfVwfSOMGSR0F_d8pmdFiuXq".to_string()
+    "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP".to_string()
 }

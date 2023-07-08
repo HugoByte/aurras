@@ -19,10 +19,10 @@ struct Input {
     db_url: String,
     #[serde(default = "get_request_host")]
     endpoint: String,
-    name: String,
+    name: Option<String>,
     action_name: Option<String>,
     param_json: Option<String>,
-    status:Option<String>,
+    status: Option<String>,
     auth_token: String,
     #[serde(default = "openwhisk_auth_key")]
     openwhisk_auth: String,
@@ -82,7 +82,8 @@ impl Action {
             auth.to_string(),
             self.params.endpoint.clone(),
             get_namespace(),
-        );
+        )
+        .set_bypass_cerificate_check(true);
         let client = OpenwhiskClient::<NativeClient>::new(Some(&client_props));
 
         let param: Vec<KeyValue> = if self.params.param_json.clone().unwrap().is_empty() {
@@ -93,7 +94,7 @@ impl Action {
 
         let trigger = Trigger {
             namespace: get_namespace(),
-            name: self.params.name.clone(),
+            name: self.params.name.clone().unwrap(),
 
             annotations: vec![KeyValue {
                 key: "feed".to_string(),
@@ -164,16 +165,17 @@ impl Action {
             auth.to_string(),
             self.params.endpoint.clone(),
             get_namespace(),
-        );
+        )
+        .set_bypass_cerificate_check(true);
         let client = OpenwhiskClient::<NativeClient>::new(Some(&client_props));
 
         client
             .triggers()
-            .delete(&self.params.name)
+            .delete(&self.params.name.clone().unwrap())
             .map_err(serde::de::Error::custom)?;
         client
             .rules()
-            .delete(&(self.params.name.clone() + "_rule"))
+            .delete(&(self.params.name.clone().unwrap() + "_rule"))
             .map_err(serde::de::Error::custom)?;
 
         Ok(serde_json::json!({"message": "Action Deleted Successfull"}))
@@ -195,12 +197,13 @@ impl Action {
             auth.to_string(),
             self.params.endpoint.clone(),
             get_namespace(),
-        );
+        )
+        .set_bypass_cerificate_check(true);
         let client = OpenwhiskClient::<NativeClient>::new(Some(&client_props));
 
         let list = client.actions().list().map_err(serde::de::Error::custom)?;
 
-        Ok(serde_json::json!({"Actions": list}))
+        Ok(serde_json::json!({ "Actions": list }))
     }
 
     pub fn workflow_rule_update(&mut self) -> Result<Value, Error> {
@@ -219,23 +222,20 @@ impl Action {
             auth.to_string(),
             self.params.endpoint.clone(),
             get_namespace(),
-        );
+        )
+        .set_bypass_cerificate_check(true);
         let client = OpenwhiskClient::<NativeClient>::new(Some(&client_props));
 
-        let rule = Rule {
-            name: self.params.name.clone()+"_rule",
-            trigger: "".to_string(),
-            action: "".to_string(),
-            status: self.params.status.clone().unwrap(),
-        };
-
-        let rule = client
+        let res = client
             .rules()
-            .insert(&rule, true)
+            .setstate(
+                &(self.params.name.clone().unwrap() + "_rule"),
+                &self.params.status.clone().unwrap(),
+            )
             .map_err(serde::de::Error::custom)?;
 
         Ok(serde_json::json!({
-            "messgae":"Action ".to_string()+ &self.params.name.clone()+"is now "+ &rule.status
+            "messgae":"Action ".to_string()+ &self.params.name.clone().unwrap()+"is now "+ &res.status
         }))
     }
 }
@@ -268,5 +268,5 @@ fn get_namespace() -> String {
 }
 
 fn openwhisk_auth_key() -> String {
-    "AAAAkbdB3Jk:APA91bGYmzmAJ6Vq6u-qHNK3Sf7OnMKWJSZy5LJYeGSnJ9hSeBz7K8Indv7t-jEbXGDM2waQ519wkISI6pUN7845zO9gOwjnQRXZ0wHMaVfV4ziGtBIhdfVwfSOMGSR0F_d8pmdFiuXq".to_string()
+    "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP".to_string()
 }
