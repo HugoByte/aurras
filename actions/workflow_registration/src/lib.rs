@@ -21,6 +21,7 @@ struct Input {
     workflow_name: String,
     version: String,
     kind: String,
+    image: String,
     file: String,
     auth_token: String,
     #[serde(default = "openwhisk_auth_key")]
@@ -84,14 +85,7 @@ impl Action {
         )
         .set_bypass_cerificate_check(true);
         let client = OpenwhiskClient::<NativeClient>::new(Some(&client_props));
-
-        let image: String;
-        if self.params.kind == "rust:1.34".to_string() {
-            image = "openwhisk/action-rust-v1.34".to_string()
-        } else {
-            image = "hugobyte/openwhisk-runtime-rust:v0.3".to_string()
-        }
-
+        
         let action = openwhisk_client_rust::Action {
             namespace: "guest".to_string(),
             name: self.params.workflow_name.clone(),
@@ -105,7 +99,7 @@ impl Action {
             exec: Exec {
                 kind: self.params.kind.clone(),
                 code: self.params.file.clone(),
-                image,
+                image: self.params.image.clone(),
                 init: "".to_string(),
                 main: "".to_string(),
                 components: vec![],
