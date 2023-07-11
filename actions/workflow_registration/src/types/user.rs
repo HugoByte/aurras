@@ -41,7 +41,11 @@ pub struct Claims {
     pub exp: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct WorkflowDetails {
-    pub action_list: Vec<String>, 
+    #[serde(skip_serializing, rename(deserialize = "_id"))]
+    pub id: String,
+    #[serde(skip_serializing, rename(deserialize = "_rev"))]
+    pub rev: String,
+    pub action_list: Vec<String>,
 }
