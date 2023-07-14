@@ -23,6 +23,8 @@ struct Input {
     kind: String,
     image: String,
     file: String,
+    #[serde(default)]
+    parameters: Vec<KeyValue>,
     auth_token: String,
     #[serde(default = "openwhisk_auth_key")]
     openwhisk_auth: String,
@@ -85,17 +87,17 @@ impl Action {
         )
         .set_bypass_cerificate_check(true);
         let client = OpenwhiskClient::<NativeClient>::new(Some(&client_props));
-        
+
         let action = openwhisk_client_rust::Action {
             namespace: "guest".to_string(),
             name: self.params.workflow_name.clone(),
             version: self.params.version.clone(),
-            limits: Limits {
-                memory: 128,
-                timeout: 3000,
-                concurrency: 1,
+            limits: Some(Limits {
+                memory: Some(128),
+                timeout: Some(3000),
+                concurrency: Some(1),
                 ..Default::default()
-            },
+            }),
             exec: Exec {
                 kind: self.params.kind.clone(),
                 code: self.params.file.clone(),
@@ -112,12 +114,13 @@ impl Action {
                 key: "feed".to_string(),
                 value: serde_json::json!({}),
             }],
+            parameters: self.params.parameters.clone(),
         };
 
         let res = client.actions().insert(&action, true);
         match res {
             Ok(x) => {
-                let doc = serde_json::json!({"action_list":vec![x.clone().name]});
+                let doc = serde_json::json!({ "action_list": vec![x.clone().name] });
                 match self.get_context().get_document(&uuid) {
                     Ok(docs) => {
                         let mut de_docs: WorkflowDetails = serde_json::from_value(docs).unwrap();
@@ -152,5 +155,5 @@ fn get_request_host() -> String {
 }
 
 fn openwhisk_auth_key() -> String {
-    "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP".to_string()
+    std::env::var("__OW_API_KEY").unwrap()
 }

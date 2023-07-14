@@ -2,7 +2,7 @@ extern crate serde_json;
 
 mod types;
 
-use types::user::{Claims, WorkflowDetails, WorkflowDetail};
+use types::user::{Claims, WorkflowDetail, WorkflowDetails};
 
 #[cfg(test)]
 use actions_common::Config;
@@ -129,14 +129,14 @@ impl Action {
             };
             match self.get_context().get_document(&uuid) {
                 Ok(docs) => {
-                    let mut de_docs:WorkflowDetails = serde_json::from_value(docs).unwrap();
+                    let mut de_docs: WorkflowDetails = serde_json::from_value(docs).unwrap();
                     de_docs.list.push(doc);
                     let updated_doc = serde_json::to_value(de_docs).unwrap();
                     self.get_context()
                         .update_document(&uuid, "", &updated_doc)?;
                 }
                 Err(_e) => {
-                    let doc = WorkflowDetails{list: vec![doc]};
+                    let doc = WorkflowDetails { list: vec![doc] };
                     let doc = serde_json::to_value(doc).unwrap();
                     self.get_context().insert_document(&doc, Some(uuid))?;
                 }
@@ -228,14 +228,14 @@ impl Action {
 
         let res = client
             .rules()
-            .setstate(
+            .set_state(
                 &(self.params.name.clone().unwrap() + "_rule"),
                 &self.params.status.clone().unwrap(),
             )
             .map_err(serde::de::Error::custom)?;
 
         Ok(serde_json::json!({
-            "messgae":"Action ".to_string()+ &self.params.name.clone().unwrap()+"is now "+ &res.status
+            "messgae":"Action is updated successfully"
         }))
     }
 }
@@ -268,5 +268,5 @@ fn get_namespace() -> String {
 }
 
 fn openwhisk_auth_key() -> String {
-    "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP".to_string()
+    std::env::var("__OW_API_KEY").unwrap()
 }
