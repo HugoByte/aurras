@@ -74,7 +74,7 @@ impl Action {
                     "EraPaid" => Ok(serde_json::json!({
                         "era" :  self.params.event.data[0].get("u32").unwrap().parse::<u32>().unwrap(),
                     })),
-                    _ => Err(serde::de::Error::custom("Method Not Defined")),
+                    _ => Err(serde::de::Error::custom(format!("Method {} Not Defined", self.params.event.method.as_str()))),
                 }
             }
             _ => Err(serde::de::Error::custom(format!("Section {} Not Defined", self.params.event.section.as_str()))),
@@ -186,7 +186,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Method Not Defined")]
+    #[should_panic(expected = "Method Era Not Defined")]
     fn parse_staking_event_data_method_exception() {
         let input = serde_json::from_value::<Input>(serde_json::json!({
             "topic": "topic",
@@ -209,7 +209,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Method Not Defined")]
+    #[should_panic(expected = "Section system Not Defined")]
     fn parse_staking_event_data_fail_invalid_category() {
         let input = serde_json::from_value::<Input>(serde_json::json!({
             "topic": "topic",
