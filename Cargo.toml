@@ -7,6 +7,8 @@ members = [
     "actions/push-notification",
     "actions/event-receiver",
     "actions/substrate-event-processor",
+    "actions/user_registration",
+    "actions/user_login",
     "workflow/openwhisk_macro",
     "workflow/workflow_macro",
     "workflow/polkadot_macro",
