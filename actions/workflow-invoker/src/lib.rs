@@ -149,10 +149,8 @@ mod tests {
         });
         workflow_management_db_context
             .insert_document(&doc, Some(action.params.messages[0].topic.clone()));
-
-        // action.init(&config);
         let res = action.fetch_input();
-
-        println!("{:?}", res);
+        assert!(res.is_ok());
+        couchdb.delete().await.expect("Stopping Container Failed");
     }
 }
