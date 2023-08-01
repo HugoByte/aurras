@@ -103,10 +103,7 @@ pub fn _start(ptr: *mut u8, length: i32){{
 
 def cargo_generator(task_list):
     cargo_dependencies = ""
-    for task in task_list:
-        kind = task['kind']
-    if kind == "OpenWhisk":
-        cargo_dependencies = f"""
+    cargo_dependencies = f"""
 [lib]
 crate-type = ["cdylib"]
 
@@ -129,37 +126,10 @@ substrate-api-client = {{ git = "https://github.com/HugoByte/substrate-api-clien
 pallet-staking = {{ git = "https://github.com/paritytech/substrate.git", package = "pallet-staking" ,rev = "eb1a2a8" }}
 
 """
-    else:
-        cargo_dependencies = f"""
-[lib]
-crate-type = ["cdylib"]
-
-[dependencies]
-derive-enum-from-into = "0.1.1"
-paste = "1.0.7"
-dyn-clone = "1.0.7"
-workflow_macro = "0.0.3"
-serde_json = {{ version = "1.0", features = ["raw_value"] }}
-serde = {{ version = "1.0", features = ["derive"] }}
-codec = {{ package = "parity-scale-codec", features = [
-    "derive",
-], version = "3.1.5" }}
-substrate_macro = "0.1.3"
-openwhisk-rust = "0.1.2"
-sp-core = {{ version = "6.0.0", default-features = false, features = ["full_crypto"], git = "https://github.com/paritytech/substrate.git", rev = "eb1a2a8" }}
-sp-runtime = {{ version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "eb1a2a8" }}
-substrate-api-client = {{ git = "https://github.com/HugoByte/substrate-api-client.git", default-features = false, features = ["staking-xt"], branch ="wasm-support"}}
-pallet-staking = {{ git = "https://github.com/paritytech/substrate.git", package = "pallet-staking" ,rev = "eb1a2a8" }}
-
-"""
     return cargo_dependencies
 
 def global_import_generator(task_list):
-    global_imports = ""
-    for task in task_list:
-        kind = task['kind']
-    if kind == "OpenWhisk":
-        global_imports = f"""
+    global_imports = f"""
 #![allow(unused_imports)]
 
 mod common;
@@ -198,43 +168,5 @@ pub struct StakingLedger {{
     pub claimed_rewards: Vec<u32>,
 }}
 """
-    else:
-        global_imports = f"""
-#![allow(unused_imports)]
-        
-mod common;
-mod traits;
-mod types;
-use dyn_clone::{{clone_trait_object, DynClone}};
-use serde::{{Deserialize, Serialize}};
-use std::collections::HashMap;
-use std::fmt::Debug;
-use serde_json::{{Value}};
-use derive_enum_from_into::{{EnumFrom,EnumTryInto}};
-use workflow_macro::Flow;
-use serde_json::to_value;
 
-use std::convert::TryInto;
-use paste::*;
-use common::*;
-use traits::*;
-use types::*;
-extern crate alloc;
-use core::alloc::Layout;
-use sp_core::H256;
-use codec::{{Encode, Decode}};
-use sp_runtime::AccountId32;
-use substrate_macro::Polkadot;
-
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug)]
-pub struct StakingLedger {{
-    pub stash: AccountId32,
-    #[codec(compact)]
-    pub total: u128,
-    #[codec(compact)]
-    pub active: u128,
-    pub unlocking: Vec<u32>,
-    pub claimed_rewards: Vec<u32>,
-}}
-"""
     return global_imports
