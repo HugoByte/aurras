@@ -111,15 +111,22 @@ def cargo_generator(task_list):
 crate-type = ["cdylib"]
 
 [dependencies]
-serde = "1.0.137"
-serde_json = "1.0.81"
-serde_derive = "1.0.81"
 derive-enum-from-into = "0.1.1"
-openwhisk-rust = "0.1.2"
 openwhisk_macro = "0.1.6"
 paste = "1.0.7"
 dyn-clone = "1.0.7"
 workflow_macro = "0.0.3"
+serde_json = {{ version = "1.0", features = ["raw_value"] }}
+serde = {{ version = "1.0", features = ["derive"] }}
+codec = {{ package = "parity-scale-codec", features = [
+    "derive",
+], version = "3.1.5" }}
+substrate_macro = "0.1.3"
+openwhisk-rust = "0.1.2"
+sp-core = {{ version = "6.0.0", default-features = false, features = ["full_crypto"], git = "https://github.com/paritytech/substrate.git", rev = "eb1a2a8" }}
+sp-runtime = {{ version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "eb1a2a8" }}
+substrate-api-client = {{ git = "https://github.com/HugoByte/substrate-api-client.git", default-features = false, features = ["staking-xt"], branch ="wasm-support"}}
+pallet-staking = {{ git = "https://github.com/paritytech/substrate.git", package = "pallet-staking" ,rev = "eb1a2a8" }}
 
 """
     else:
@@ -176,6 +183,20 @@ use traits::*;
 use types::*;
 extern crate alloc;
 use core::alloc::Layout;
+use sp_core::H256;
+use substrate_macro::Polkadot;
+use codec::{{Encode, Decode}};
+use sp_runtime::AccountId32;
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug)]
+pub struct StakingLedger {{
+    pub stash: AccountId32,
+    #[codec(compact)]
+    pub total: u128,
+    #[codec(compact)]
+    pub active: u128,
+    pub unlocking: Vec<u32>,
+    pub claimed_rewards: Vec<u32>,
+}}
 """
     else:
         global_imports = f"""
