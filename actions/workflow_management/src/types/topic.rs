@@ -6,7 +6,7 @@ pub struct Topic {
     pub id: String,
     #[serde(rename = "_rev")]
     pub rev: String,
-    pub data: Vec<DbDatas>,
+    pub data: Vec<serde_json::Value>,
 }
 
 #[allow(clippy::derive_partial_eq_without_eq)]

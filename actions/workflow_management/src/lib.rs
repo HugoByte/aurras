@@ -25,11 +25,9 @@ struct Input {
     #[serde(default = "empty_string")]
     topic: String,
     #[serde(default = "empty_string")]
-    endpoint: String,
-    #[serde(default = "empty_string")]
-    validator: String,
-    #[serde(default = "empty_string")]
-    key: String,
+    token: String,
+    #[serde(default)]
+    input: Value,
 }
 
 fn empty_string() -> String {
@@ -107,38 +105,28 @@ impl Action {
         }
     }
 
-    pub fn add_data_to_db(
-        &self,
-        endpoint: &str,
-        validator: &str,
-        key: &str,
-        topic: &str,
-    ) -> Result<String, Error> {
+    pub fn add_data_to_db(&mut self) -> Result<String, Error> {
         #[cfg(not(test))]
         self.user_validate()?;
 
+        let mut db_input = self.params.input.clone();
+        db_input["token"] = serde_json::json!(self.params.token.clone());
+        let topic = self.params.topic.clone();
+
         let db = self.connect_db(&self.params.db_url, &self.params.workflow_management_db);
         let context = Context::new(db, None);
-        if context.get_document(topic).is_err() {
+        if context.get_document(&topic).is_err() {
             context.insert_document(
                 &serde_json::json!({
-                    "data": [DbDatas{
-                        endpoint: endpoint.to_string(),
-                        validator: validator.to_string(),
-                        key: key.to_string(),
-                    }]
+                    "data": [db_input]
                 }),
                 Some(topic.to_string()),
             )
         } else {
-            let mut doc: Topic = serde_json::from_value(context.get_document(topic)?)?;
+            let mut doc: Topic = serde_json::from_value(context.get_document(&topic)?)?;
 
-            doc.data.push(DbDatas {
-                endpoint: endpoint.to_string(),
-                validator: validator.to_string(),
-                key: key.to_string(),
-            });
-            context.update_document(topic, &doc.rev, &serde_json::to_value(doc.clone())?)
+            doc.data.push(db_input);
+            context.update_document(&topic, &doc.rev, &serde_json::to_value(doc.clone())?)
         }
     }
 }
@@ -154,12 +142,7 @@ pub fn main(args: Value) -> Result<Value, Error> {
 
     match action.method().as_ref() {
         "post" => {
-            let _id = action.add_data_to_db(
-                &action.params.endpoint,
-                &action.params.validator,
-                &action.params.key,
-                &action.params.topic,
-            )?;
+            let _id = action.add_data_to_db()?;
             Ok(serde_json::json!({
                 "statusCode": 200,
                 "headers": { "Content-Type": "application/json" },
@@ -202,9 +185,12 @@ mod tests {
             event_registration_db: "event_registration_db".to_string(),
             auth_token: "1".to_string(),
             topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
-            endpoint: "".to_string(),
-            key: "".to_string(),
-            validator: "".to_string(),
+            token: "akjDSIJGFIJHNSdmngknomlmxcgknhNDlnglnlkoNSDG".to_string(),
+            input: serde_json::json!({
+                "endpoint": "".to_string(),
+                "key": "".to_string(),
+                "validator": "".to_string(),
+            }),
         });
         action.init(&config);
 
@@ -224,18 +210,8 @@ mod tests {
         let workflow_db =
             action.connect_db(&action.params.db_url, &action.params.workflow_management_db);
         let workflow_management_db_context = Context::new(workflow_db, None);
-        let _res = action.add_data_to_db(
-            &action.params.endpoint,
-            &action.params.validator,
-            &action.params.key,
-            &action.params.topic,
-        );
-        let _res = action.add_data_to_db(
-            &action.params.endpoint,
-            &action.params.validator,
-            &action.params.key,
-            &action.params.topic,
-        );
+        let _res = action.add_data_to_db();
+        let _res = action.add_data_to_db();
         let res_data =
             workflow_management_db_context.get_document("418a8b8c-02b8-11ec-9a03-0242ac130003");
         let res = serde_json::from_value::<Topic>(res_data.unwrap());
