@@ -1,0 +1,87 @@
+# ------------------------------------------------------------------------------------------------------- #
+#                                                                                                         #
+# Config file to generate rust code for workflow execution                                                #
+#                                                                                                         #
+# Config file have three different section                                                                #
+#  1. Tasks                                                                                               #
+#  2. Flows                                                                                               #
+#  3. WorkFlow                                                                                            #
+#                                                                                                         #
+# Tasks section of config contains list of tasks which refers to actions which needs to be executed       #
+# Flows section of config contains list of flows which represents order of execution of task              #
+# Workflow section of config is to define about workflow                                                  #
+#                                                                                                         #
+# task hook for generating rust code for actions deployed on openwhisk                                    #
+# flow hook for organising order of task execution                                                        #
+
+tasks:
+  - ->: task
+      #kind filed spcifies what type of task it is.
+      #(i.e for now we are focusing on openwhisk actions, future it can be any serverless functions and written in any langunage)
+    kind: "Polkadot"
+    name:
+      "stakingpayout"
+      #for input struct to provide input for actions
+    input_args:
+      - name: "url"
+        type: "String"
+      - name: "owner_key"
+        type: "String"
+      - name: "address"
+        type: "String"
+      - name: "era"
+        type: "u32"
+      #for output struct to store output from actions for deserilization
+    output_args:
+      - name: "result"
+        type: "Option<H256>"
+    properties:
+      chain: "Westend"
+      operation: "stakingpayout"
+    
+  - ->: task
+      #kind filed spcifies what type of task it is.
+      #(i.e for now we are focusing on openwhisk actions, future it can be any serverless functions and written in any langunage)
+    kind: "OpenWhisk"
+    name: "push_notification"
+      #for input struct to provide input for actions
+    input_args:
+      - name: "token"
+        type: "String"
+      - name: "message"
+        type: "Value"
+      - name: "result"
+        type: "Option<H256>"
+      #for output struct to store output from actions for deserilization
+    output_args:
+      - name: "action"
+        type: "String"
+    properties:
+        api_host: "https://139.84.142.77:31001"
+        auth_token: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+        insecure: "true"
+        namespace: "guest"
+
+flows:
+  - ->: flow
+    #type in flow is used to mention what will be order of execution
+    type: "Init"
+    task_name:
+      "stakingpayout"
+      #to mention flow what task it is depends on
+    depends_on: null
+  
+  - ->: flow
+    type: "Term"
+    task_name: "push_notification"
+    depends_on:
+      operation: null
+      task:
+        - name: "stakingpayout"
+          fields:
+            - result          
+
+workflows:
+  ->: workflow
+  name: "workflow"
+  version: "0.0.1"
