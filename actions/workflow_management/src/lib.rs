@@ -187,8 +187,8 @@ mod tests {
             topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
             token: "akjDSIJGFIJHNSdmngknomlmxcgknhNDlnglnlkoNSDG".to_string(),
             input: serde_json::json!({
-                "endpoint": "".to_string(),
-                "key": "".to_string(),
+                "url": "".to_string(),
+                "owner_key": "".to_string(),
                 "validator": "".to_string(),
             }),
         });

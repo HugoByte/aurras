@@ -1,6 +1,4 @@
-use super::Topic;
 use serde_derive::{Deserialize, Serialize};
-use serde_json::{from_str, Error};
 
 // pub type Payload = Vec<(Era, Topic)>;
 
@@ -17,10 +15,4 @@ pub struct Message {
 pub struct Era {
     #[serde(rename = "era")]
     pub era: u32,
-}
-
-impl Message {
-    pub fn parse_value(&self) -> Result<Era, Error> {
-        from_str(&self.value)
-    }
 }

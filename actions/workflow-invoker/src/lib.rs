@@ -11,9 +11,8 @@ use actions_common::Config;
 use chesterfield::sync::{Client, Database};
 use types::Message;
 
-use types::DbDatas;
-// #[cfg(test)]
-use types::{Era, Topic};
+use crate::types::update_with;
+use types::Topic;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
@@ -60,7 +59,7 @@ impl Action {
         self.context.as_mut().expect("Action not Initialized!")
     }
 
-    pub fn fetch_input(&mut self) -> Result<Vec<DbDatas>, Error> {
+    pub fn fetch_input(&mut self) -> Result<Vec<Value>, Error> {
         let id = self.params.messages.clone()[0].topic.clone();
         let data = self.get_context().get_document(&id)?;
         println!("{:?}", data);
@@ -68,30 +67,32 @@ impl Action {
         Ok(parsed.data)
     }
 
-    pub fn invoke_trigger(&mut self, payload: Vec<DbDatas>) -> Result<Value, Error> {
+    pub fn invoke_trigger(&mut self, payload: &mut Vec<Value>) -> Result<Value, Error> {
         let mut failed_triggers = vec![];
-        for message in payload.iter() {
-            let era = serde_json::from_str::<Era>(&self.params.messages[0].value)?;
+        for message in payload.iter_mut() {
+            let data = serde_json::from_str::<Value>(&self.params.messages[0].value).unwrap();
+            update_with(message, &data);
+
+            let url = match message.get("url") {
+                Some(_x) => message["url"].to_string(),
+                None => String::new(),
+            };
+
             let trigger = self.params.polkadot_payout_trigger.clone();
             if self
                 .get_context()
                 .invoke_trigger(
                     &trigger,
-                    &serde_json::json!({"allowed_hosts": [message.endpoint.clone()],
-                    "data": {
-                        "address": message.validator,
-                        "era": era.era,
-                        "owner_key": message.key,
-                        "url": message.endpoint
-                    }}),
+                    &serde_json::json!({"allowed_hosts": [url , get_request_host() ],
+                    "data": message}),
                 )
                 .is_err()
             {
-                failed_triggers.push(message.validator.clone());
+                failed_triggers.push(self.params.messages[0].value.clone());
             }
         }
         if !failed_triggers.is_empty() {
-            return Err(format!("error in triggers {}", failed_triggers.join(", ")))
+            return Err(format!("error in triggers {:?}", failed_triggers))
                 .map_err(serde::de::Error::custom);
         }
         Ok(serde_json::json!({
@@ -108,9 +109,8 @@ pub fn main(args: Value) -> Result<Value, Error> {
     #[cfg(not(test))]
     action.init();
 
-    let payload = action.fetch_input()?;
-    println!("22   {:?}", payload);
-    action.invoke_trigger(payload)
+    let mut payload = action.fetch_input()?;
+    action.invoke_trigger(&mut payload)
 }
 
 #[cfg(test)]
@@ -138,19 +138,46 @@ mod tests {
             polkadot_payout_trigger: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
             messages: vec![Message {
                 topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
-                value: "{ \"era\" :0}".to_string(),
+                value: serde_json::json!({ "era" :0}).to_string(),
             }],
         });
         action.init(&config);
         let workflow_db = action.connect_db(&action.params.db_url, &action.params.db_name);
         let workflow_management_db_context = Context::new(workflow_db, None);
         let doc = serde_json::json!({
-            "data": [DbDatas{ endpoint: "todo!()".to_string(), validator: "todo!()".to_string(), key: "todo!()".to_string() }]
+            "data": [{ "url": "todo!()".to_string(), "validator": "todo!()".to_string(), "owner_key": "todo!()".to_string() }]
         });
-        workflow_management_db_context
+        let _ = workflow_management_db_context
             .insert_document(&doc, Some(action.params.messages[0].topic.clone()));
         let res = action.fetch_input();
         assert!(res.is_ok());
         couchdb.delete().await.expect("Stopping Container Failed");
     }
+
+    #[test]
+    fn test_update_value() {
+        let action = Action::new(Input {
+            db_url: "url".to_string(),
+            db_name: "test".to_string(),
+            polkadot_payout_trigger: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
+            messages: vec![Message {
+                topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
+                value: serde_json::json!({ "era" :0}).to_string(),
+            }],
+        });
+
+        let mut doc = serde_json::json!({
+            "url": "todo!()".to_string(), "validator": "todo!()".to_string(), "owner_key": "todo!()".to_string() }
+        );
+        let data = serde_json::from_str::<Value>(&action.params.messages[0].value).unwrap();
+        update_with(&mut doc, &data);
+        assert_eq!(
+            doc,
+            serde_json::json!({"url":"todo!()","era":0,"owner_key":"todo!()","validator":"todo!()"})
+        )
+    }
+}
+
+fn get_request_host() -> String {
+    std::env::var("__OW_API_HOST").unwrap()
 }

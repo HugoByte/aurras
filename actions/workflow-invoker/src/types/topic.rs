@@ -1,7 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use std::collections::HashMap;
-
-use super::DbDatas;
+use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Topic {
@@ -9,7 +7,7 @@ pub struct Topic {
     pub id: String,
     #[serde(skip_serializing, rename(deserialize = "_rev"))]
     pub rev: String,
-    pub data: Vec<DbDatas>,
+    pub data: Vec<Value>,
 }
 
 #[allow(clippy::derive_partial_eq_without_eq)]
