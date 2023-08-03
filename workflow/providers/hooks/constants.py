@@ -103,32 +103,13 @@ pub fn _start(ptr: *mut u8, length: i32){{
 
 def cargo_generator(task_list):
     cargo_dependencies = ""
-    for task in task_list:
-        kind = task['kind']
-    if kind == "OpenWhisk":
-        cargo_dependencies = f"""
+    cargo_dependencies = f"""
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-serde = "1.0.137"
-serde_json = "1.0.81"
-serde_derive = "1.0.81"
 derive-enum-from-into = "0.1.1"
-openwhisk-rust = "0.1.2"
 openwhisk_macro = "0.1.6"
-paste = "1.0.7"
-dyn-clone = "1.0.7"
-workflow_macro = "0.0.3"
-
-"""
-    else:
-        cargo_dependencies = f"""
-[lib]
-crate-type = ["cdylib"]
-
-[dependencies]
-derive-enum-from-into = "0.1.1"
 paste = "1.0.7"
 dyn-clone = "1.0.7"
 workflow_macro = "0.0.3"
@@ -148,11 +129,7 @@ pallet-staking = {{ git = "https://github.com/paritytech/substrate.git", package
     return cargo_dependencies
 
 def global_import_generator(task_list):
-    global_imports = ""
-    for task in task_list:
-        kind = task['kind']
-    if kind == "OpenWhisk":
-        global_imports = f"""
+    global_imports = f"""
 #![allow(unused_imports)]
 
 mod common;
@@ -176,35 +153,10 @@ use traits::*;
 use types::*;
 extern crate alloc;
 use core::alloc::Layout;
-"""
-    else:
-        global_imports = f"""
-#![allow(unused_imports)]
-        
-mod common;
-mod traits;
-mod types;
-use dyn_clone::{{clone_trait_object, DynClone}};
-use serde::{{Deserialize, Serialize}};
-use std::collections::HashMap;
-use std::fmt::Debug;
-use serde_json::{{Value}};
-use derive_enum_from_into::{{EnumFrom,EnumTryInto}};
-use workflow_macro::Flow;
-use serde_json::to_value;
-
-use std::convert::TryInto;
-use paste::*;
-use common::*;
-use traits::*;
-use types::*;
-extern crate alloc;
-use core::alloc::Layout;
 use sp_core::H256;
+use substrate_macro::Polkadot;
 use codec::{{Encode, Decode}};
 use sp_runtime::AccountId32;
-use substrate_macro::Polkadot;
-
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug)]
 pub struct StakingLedger {{
     pub stash: AccountId32,
@@ -216,4 +168,5 @@ pub struct StakingLedger {{
     pub claimed_rewards: Vec<u32>,
 }}
 """
+
     return global_imports

@@ -72,12 +72,12 @@ impl Action {
             "staking" => {
                 return match self.params.event.method.as_str() {
                     "EraPaid" => Ok(serde_json::json!({
-                        "era" :  self.params.event.data[0].get("eraIndex").unwrap().parse::<u32>().unwrap(),
+                        "era" :  self.params.event.data[0].get("u32").unwrap().parse::<u32>().unwrap(),
                     })),
-                    _ => Err(serde::de::Error::custom("Method Not Defined")),
+                    _ => Err(serde::de::Error::custom(format!("Method {} Not Defined", self.params.event.method.as_str()))),
                 }
             }
-            _ => Err(serde::de::Error::custom("Method Not Defined")),
+            _ => Err(serde::de::Error::custom(format!("Section {} Not Defined", self.params.event.section.as_str()))),
         };
     }
 
@@ -149,9 +149,9 @@ mod tests {
                 "method": "EraPaid",
                 "meta": "[ The era payout has been set. \\[EraIndex, validatorPayout, remainder\\]]",
                 "data": [
-                    { "eraIndex": "6320" },
-                    { "Balance": "1287899239212" },
-                    { "Balance": "731000000000" }
+                    { "u32": "6320" },
+                    { "u128": "1287899239212" },
+                    { "u128": "731000000000" }
                 ]
             },
         }))
@@ -186,7 +186,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Method Not Defined")]
+    #[should_panic(expected = "Method Era Not Defined")]
     fn parse_staking_event_data_method_exception() {
         let input = serde_json::from_value::<Input>(serde_json::json!({
             "topic": "topic",
@@ -197,8 +197,8 @@ mod tests {
                 "method": "Era",
                 "meta": "[ The era payout has been set. \\[EraIndex, validatorPayout, remainder\\]]",
                 "data": [
-                    { "Balance": "1287899239212" },
-                    { "Balance": "731000000000" }
+                    { "u32": "1287899239212" },
+                    { "u128": "731000000000" }
                 ]
             },
         }))
@@ -209,7 +209,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Method Not Defined")]
+    #[should_panic(expected = "Section system Not Defined")]
     fn parse_staking_event_data_fail_invalid_category() {
         let input = serde_json::from_value::<Input>(serde_json::json!({
             "topic": "topic",
