@@ -11,6 +11,7 @@ members = [
     "actions/user_login",
     "actions/workflow-invoker",
     "actions/workflow_management",
+    "actions/workflow_registration",
     "workflow/openwhisk_macro",
     "workflow/workflow_macro",
     "workflow/polkadot_macro",
