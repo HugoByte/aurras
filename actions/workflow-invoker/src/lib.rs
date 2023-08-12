@@ -70,7 +70,7 @@ impl Action {
             update_with(message, &data);
 
             let url = match message.get("url") {
-                Some(_x) => serde_json::from_value::<String>(x.clone()).unwrap(),
+                Some(x) => serde_json::from_value::<String>(x.clone()).unwrap(),
                 None => String::new(),
             };
 
