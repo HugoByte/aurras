@@ -3,15 +3,12 @@ extern crate serde_json;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{Error, Value};
 mod types;
-use actions_common::Context;
-
+use crate::types::update_with;
 #[cfg(test)]
 use actions_common::Config;
-
+use actions_common::Context;
 use chesterfield::sync::{Client, Database};
 use types::Message;
-
-use crate::types::update_with;
 use types::Topic;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
