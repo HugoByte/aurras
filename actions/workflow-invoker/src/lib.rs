@@ -62,7 +62,6 @@ impl Action {
     pub fn fetch_input(&mut self) -> Result<Vec<Value>, Error> {
         let id = self.params.messages.clone()[0].topic.clone();
         let data = self.get_context().get_document(&id)?;
-        println!("{:?}", data);
         let parsed = serde_json::from_value::<Topic>(data)?;
         Ok(parsed.data)
     }
@@ -74,7 +73,7 @@ impl Action {
             update_with(message, &data);
 
             let url = match message.get("url") {
-                Some(_x) => message["url"].to_string(),
+                Some(_x) => serde_json::from_value::<String>(x.clone()).unwrap(),
                 None => String::new(),
             };
 
