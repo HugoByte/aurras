@@ -23,4 +23,7 @@ check wsk
 build
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$TEMP_DIR/main.zip" --docker "$DOCKER_IMAGE" \
---auth "$openwhiskApiKey" --param polkadot_payout_trigger "payout_polkadot" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --param db_name "workflow_management_db" -a provide-api-key true
+--auth "$openwhiskApiKey" --param polkadot_payout_trigger "send-payout-notify" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --param db_name "workflow_management_db" -a provide-api-key true
+
+$WSK_CLI -i --apihost "$openwhiskApiHost" trigger update "send-payout-notify" --auth "$openwhiskApiKey"
+# $WSK_CLI -i --apihost "$openwhiskApiHost" rule update "payout_notify-rule" "send-payout-notify" "payout_notify" --auth "$openwhiskApiKey" // after deploying the action for polkadot payout

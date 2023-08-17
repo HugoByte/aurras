@@ -69,19 +69,10 @@ impl Action {
             let data = serde_json::from_str::<Value>(&self.params.messages[0].value).unwrap();
             update_with(message, &data);
 
-            let url = match message.get("url") {
-                Some(x) => serde_json::from_value::<String>(x.clone()).unwrap(),
-                None => String::new(),
-            };
-
             let trigger = self.params.polkadot_payout_trigger.clone();
             if self
                 .get_context()
-                .invoke_trigger(
-                    &trigger,
-                    &serde_json::json!({"allowed_hosts": [url , get_request_host() ],
-                    "data": message}),
-                )
+                .invoke_trigger(&trigger, &serde_json::json!({"data": message}))
                 .is_err()
             {
                 failed_triggers.push(self.params.messages[0].value.clone());
@@ -172,8 +163,4 @@ mod tests {
             serde_json::json!({"url":"todo!()","era":0,"owner_key":"todo!()","validator":"todo!()"})
         )
     }
-}
-
-fn get_request_host() -> String {
-    std::env::var("__OW_API_HOST").unwrap()
 }
