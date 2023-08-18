@@ -9,7 +9,7 @@ openwhiskNamespace=${openwhiskNamespace:-guest}
 build=${build:-push-notification,balance-filter,event-receiver,event-registration,balance-notification-registration,event-producer,kafka-provider-feed,kafka-provider-web,substrate-event-processor}
 skip=${skip:-}
 
-actions=("actions/push-notification" "actions/balance-filter" "actions/event-receiver" "actions/event-registration" "actions/balance-notification-registration" "actions/event-producer" "actions/kafka-provider-feed" "actions/kafka-provider-web" "actions/substrate-event-processor")
+actions=("actions/push-notification" "actions/balance-filter" "actions/event-receiver" "actions/event-registration" "actions/balance-notification-registration" "actions/event-producer" "actions/kafka-provider-feed" "actions/kafka-provider-web" "actions/substrate-event-processor" "actions/user_registration" "actions/user_login" "actions/workflow-invoker" "actions/workflow_registration" "actions/workflow_management")
 
 source ./scripts/accept_params.sh
 source ./scripts/util.sh
