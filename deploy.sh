@@ -6,7 +6,7 @@
 openwhiskApiHost=${openwhiskApiHost:-https://localhost:31001}
 openwhiskApiKey=${openwhiskApiKey:-23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP}
 openwhiskNamespace=${openwhiskNamespace:-guest}
-build=${build:-push-notification,balance-filter,event-receiver,event-registration,balance-notification-registration,event-producer,kafka-provider-feed,kafka-provider-web,substrate-event-processor}
+build=${build:-push-notification,balance-filter,event-receiver,event-registration,balance-notification-registration,event-producer,kafka-provider-feed,kafka-provider-web,substrate-event-processor,user_registration,user_login,workflow-invoker,workflow_registration,workflow_management}
 skip=${skip:-}
 
 actions=("actions/push-notification" "actions/balance-filter" "actions/event-receiver" "actions/event-registration" "actions/balance-notification-registration" "actions/event-producer" "actions/kafka-provider-feed" "actions/kafka-provider-web" "actions/substrate-event-processor" "actions/user_registration" "actions/user_login" "actions/workflow-invoker" "actions/workflow_registration" "actions/workflow_management")
