@@ -4,9 +4,11 @@ use chesterfield::sync::{Client, Database};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{Error, Value};
 mod types;
-use bcrypt::verify;
-use jsonwebtoken::{decode, DecodingKey, Header, Validation};
-use types::{Claims, DbDatas, Response, Topic};
+#[cfg(not(test))]
+use jsonwebtoken::{decode, DecodingKey, Validation};
+#[cfg(not(test))]
+use types::Claims;
+use types::{Response, Topic};
 
 #[cfg(test)]
 use actions_common::Config;
@@ -100,7 +102,7 @@ impl Action {
         {
             let db = self.connect_db(&self.params.db_url, &"user_registration_db".to_string());
             let context = Context::new(db, None);
-            let data = context.get_document(&uuid)?;
+            let _data = context.get_document(&uuid)?;
             Ok(())
         }
     }

@@ -3,15 +3,12 @@ extern crate serde_json;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{Error, Value};
 mod types;
-use actions_common::Context;
-
+use crate::types::update_with;
 #[cfg(test)]
 use actions_common::Config;
-
+use actions_common::Context;
 use chesterfield::sync::{Client, Database};
 use types::Message;
-
-use crate::types::update_with;
 use types::Topic;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -62,7 +59,6 @@ impl Action {
     pub fn fetch_input(&mut self) -> Result<Vec<Value>, Error> {
         let id = self.params.messages.clone()[0].topic.clone();
         let data = self.get_context().get_document(&id)?;
-        println!("{:?}", data);
         let parsed = serde_json::from_value::<Topic>(data)?;
         Ok(parsed.data)
     }
@@ -73,19 +69,10 @@ impl Action {
             let data = serde_json::from_str::<Value>(&self.params.messages[0].value).unwrap();
             update_with(message, &data);
 
-            let url = match message.get("url") {
-                Some(_x) => message["url"].to_string(),
-                None => String::new(),
-            };
-
             let trigger = self.params.polkadot_payout_trigger.clone();
             if self
                 .get_context()
-                .invoke_trigger(
-                    &trigger,
-                    &serde_json::json!({"allowed_hosts": [url , get_request_host() ],
-                    "data": message}),
-                )
+                .invoke_trigger(&trigger, &serde_json::json!({"data": message}))
                 .is_err()
             {
                 failed_triggers.push(self.params.messages[0].value.clone());
@@ -176,8 +163,4 @@ mod tests {
             serde_json::json!({"url":"todo!()","era":0,"owner_key":"todo!()","validator":"todo!()"})
         )
     }
-}
-
-fn get_request_host() -> String {
-    std::env::var("__OW_API_HOST").unwrap()
 }
