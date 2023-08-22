@@ -7,6 +7,7 @@ members = [
     "actions/push-notification",
     "actions/event-receiver",
     "actions/substrate-event-processor",
+    "actions/icon-event-processor",
     "actions/user_registration",
     "actions/user_login",
     "actions/workflow-invoker",
