@@ -125,6 +125,17 @@ sp-runtime = {{ version = "6.0.0", default-features = false, git = "https://gith
 substrate-api-client = {{ git = "https://github.com/HugoByte/substrate-api-client.git", default-features = false, features = ["staking-xt"], branch ="wasm-support"}}
 pallet-staking = {{ git = "https://github.com/paritytech/substrate.git", package = "pallet-staking" ,rev = "eb1a2a8" }}
 
+[profile.release]
+# Do not perform backtrace for panic on release builds.
+panic = 'abort'
+# Perform optimizations on all codegen units.
+codegen-units = 1
+# Optimize for size.
+opt-level = 'z' # or 'z' to optimize "aggressively" for size
+# Enable link time optimization.
+lto = true
+strip = true
+
 """
     return cargo_dependencies
 
