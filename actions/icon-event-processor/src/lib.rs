@@ -63,7 +63,8 @@ impl Action {
             "CallMessage(str,str,int,int,bytes)" => {
                 return Ok(serde_json::json!({
                     "data": self.params.event.data[1],
-                    "req_id": self.params.event.data[0],
+                    // "req_id": self.params.event.data[0],
+                    "req_id":  i64::from_str_radix(&self.params.event.data[0].clone()[2..], 16).unwrap(),
                     "to": self.params.event.indexed[2],
                     "from": self.params.event.indexed[1]
                 }));
@@ -131,7 +132,7 @@ mod tests {
 
         assert_eq!(
             response,
-            serde_json::json!({"data":"0x73656e6443616c6c4d6573736167655f686172646861745f69636f6e30","to":"cxdf97f11ef352727f5d826eec68e569d6471aa9a4","req_id":"0x1","from":"btp://0x539.hardhat/0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"})
+            serde_json::json!({"data":"0x73656e6443616c6c4d6573736167655f686172646861745f69636f6e30","to":"cxdf97f11ef352727f5d826eec68e569d6471aa9a4","req_id":1,"from":"btp://0x539.hardhat/0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"})
         );
     }
 
