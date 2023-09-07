@@ -4,6 +4,7 @@ mod types;
 #[cfg(test)]
 use actions_common::Config;
 use actions_common::Context;
+use chesterfield::sync::{Client, Database};
 // use chesterfield::sync::{Client, Database};
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
@@ -29,12 +30,34 @@ impl Action {
         }
     }
 
+    #[cfg(test)]
+    pub fn init(&mut self, config: &Config) {
+        let db = self.connect_db("http://admin:p@ssw0rd@172.17.0.1:5984", "icon_filter_db");
+        self.context = Some(Context::new(db, Some(config)));
+    }
+
+    #[cfg(not(test))]
+    pub fn init(&mut self) {
+        let db = self.connect_db("http://admin:p@ssw0rd@172.17.0.1:5984", "icon_filter_db");
+        self.context = Some(Context::new(db, None));
+    }
+
+    fn connect_db(&self, db_url: &str, db_name: &str) -> Database {
+        let client = Client::new(db_url).unwrap();
+        let db = client.database(db_name).unwrap();
+        if !db.exists().unwrap() {
+            db.create().unwrap();
+        }
+        db
+    }
+
     pub fn get_context(&mut self) -> &Context {
         self.context.as_mut().expect("Action not Initialized!")
     }
 
     pub fn invoke_push_notification(&mut self, value: &Value) -> Result<Value, Error> {
-        self.get_context().invoke_action("push_notification", value)
+        self.get_context()
+            .invoke_trigger("send-push-notification", value)
     }
 
     pub fn get_keccak_hash(&self, input: String) -> String {
@@ -87,13 +110,14 @@ impl Action {
 pub fn main(args: Value) -> Result<Value, Error> {
     let input = serde_json::from_value::<Input>(args)?;
     let mut action = Action::new(input);
-
+    #[cfg(not(test))]
+    action.init();
     action.filter_event()
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{Action, Input, main};
+    use crate::Action;
 
     #[test]
     fn test_get_keccak_hash() {
@@ -145,7 +169,7 @@ mod tests {
     //         "to":"0x16f7d9e9e594e72a2e6120902a1339f4be2c2f06b73a09dc24c1956d61880911"});
 
     //     let input = serde_json::json!({"data": data});
-        
+
     //    main(input);
     // }
 }
