@@ -1,30 +1,56 @@
 import React from "react";
+import config from "../config";
+
 function SignUpForm() {
   const [state, setState] = React.useState({
     name: "",
     email: "",
-    password: ""
+    password: "",
   });
-  const handleChange = evt => {
+  const handleChange = (evt) => {
     const value = evt.target.value;
     setState({
       ...state,
-      [evt.target.name]: value
+      [evt.target.name]: value,
     });
   };
 
-  const handleOnSubmit = evt => {
+  const handleOnSubmit = (evt) => {
     evt.preventDefault();
 
     const { name, email, password } = state;
-    alert(
-      `You are sign up with name: ${name} email: ${email} and password: ${password}`
-    );
+
+    var requestOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name, email, password }),
+    };
+    console.log(requestOptions);
+    fetch(`${config.api}default/user-registration.json`, requestOptions)
+      .then((response) => response.json())
+      .then((data) => {
+        alert(
+          `You are sign up with name: ${name} email: ${email} and password: ${password}`
+        );
+      })
+      .catch((err) => {
+        console.log(err);
+        alert(`Error  ${err}`);
+      });
 
     for (const key in state) {
       setState({
         ...state,
-        [key]: ""
+        [key]: "",
+      });
+    }
+
+    for (const key in state) {
+      setState({
+        ...state,
+        [key]: "",
       });
     }
   };
