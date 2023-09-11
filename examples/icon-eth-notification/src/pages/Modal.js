@@ -3,6 +3,7 @@ import Modal from "react-modal";
 import config from "../config";
 import { getMessaging } from "firebase/messaging/sw";
 import { getToken } from "firebase/messaging";
+import { json } from "react-router-dom";
 
 const customStyles = {
   content: {
@@ -35,7 +36,9 @@ function ModalApp(props) {
   });
   const [busy, setBusy] = useState(false);
   getToken(messaging)
-    .then((token) => setToken(token))
+    .then((token) => {
+      setToken(token);
+    })
     .catch((err) => {
       console.log(err);
     });
@@ -63,29 +66,34 @@ function ModalApp(props) {
 
   function register({ auth_token, topic, token, address, action }) {
     setBusy(true);
-    const input = JSON.stringify({ address });
+    const input = { address: address };
     var requestOptions = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // "mode": "cors",
-        // "Access-Control-Allow-Origin": "http://localhost:3000",
+        mode: "no-cors",
+        "Access-Control-Allow-Origin": "*",
         // "Access-Control-Allow-Methods": "GET,POST,OPTIONS,PUT,PATCH,DELETE",
         // "Access-Control-Allow-Credentials" : "true"
-
       },
-      body: {
+      body: JSON.stringify({
         address: action,
         topic: topic,
         token: token,
         input: input,
         auth_token: auth_token,
-      },
+      }),
     };
     console.log(requestOptions.body);
-    fetch(`${config.api}default/workflow-management`, requestOptions)
-      .then((response) => response.json())
+
+    console.log(requestOptions.headers);
+    fetch(`${config.api}default/workflow-management.json`, requestOptions)
+      .then((response) => {
+        console.log(response);
+        response.json();
+      })
       .then((data) => {
+        console.log(data);
         setNotification({
           visible: true,
           title: "Success",
