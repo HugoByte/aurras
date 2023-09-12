@@ -38,7 +38,7 @@ function SignInForm() {
       .then((response) => response.json())
       .then((data) => {
         console.log(data["error"]);
-        if (data.error != "") {
+        if (data.error != undefined) {
           alert("Invalid username or password please login again");
           navigate("/");
         } else {
