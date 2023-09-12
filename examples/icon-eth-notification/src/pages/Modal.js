@@ -73,13 +73,14 @@ function ModalApp(props) {
         "Content-Type": "application/json",
         mode: "no-cors",
         "Access-Control-Allow-Origin": "*",
+        authorization: localStorage.getItem("authToken")
         // "Access-Control-Allow-Methods": "GET,POST,OPTIONS,PUT,PATCH,DELETE",
         // "Access-Control-Allow-Credentials" : "true"
       },
       body: JSON.stringify({
         address: action,
         topic: topic,
-        token: token,
+        token: localStorage.getItem("authToken"),
         input: input,
         auth_token: auth_token,
       }),
