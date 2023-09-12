@@ -13,12 +13,13 @@ import {
   Image,
   Label,
 } from "semantic-ui-react";
+import { useNavigate } from "react-router-dom";
 
 function Main() {
   const location = useLocation();
-  const user_auth_token = location.state.auth_token;
-  console.log(location.state.auth_token);
-  const [auther, setAuth] = useState(location.state.auth_token);
+  const navigate = useNavigate();
+  // const user_auth_token = location.state.auth_token;
+  const [auther, setAuth] = useState(localStorage.getItem("authToken"));
 
   const [activeScreen, setActiveScreen] = useState("home");
 
@@ -35,7 +36,9 @@ function Main() {
   };
 
   if (auther == "") {
-    console.log("please login");
+    // console.log("please login");
+    alert(" Please Login");
+    navigate("/");
   }
 
   return (

@@ -37,17 +37,21 @@ function SignInForm() {
     fetch(`${config.api}default/user-login.json`, requestOptions)
       .then((response) => response.json())
       .then((data) => {
-        console.log(data);
-        const asd = data;
-        console.log(asd);
-        const user = asd["user_token"];
-        localStorage.setItem("authToken", user);
-        navigate(
-          "/main"
-          // { state : {
-          //   auth_token : user,
-          // }}
-        );
+        console.log(data["error"]);
+        if (data.error != "") {
+          alert("Invalid username or password please login again");
+          navigate("/");
+        } else {
+          const asd = data;
+          const user = asd["user_token"];
+          localStorage.setItem("authToken", user);
+          navigate(
+            "/main"
+            // { state : {
+            //   auth_token : user,
+            // }}
+          );
+        }
       })
       .catch((err) => {
         alert(`Error ${err}`);
