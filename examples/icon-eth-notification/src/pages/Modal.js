@@ -174,7 +174,7 @@ function ModalApp(props) {
           <div className="ui input focus">
             <input
               type="text"
-              placeholder="Address in BTP format"
+              placeholder="Address in BTP format <btp://<network>/<contract address>>"
               value={address}
               onChange={(event) => SetAddress(event.target.value)}
             />

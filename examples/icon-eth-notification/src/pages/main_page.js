@@ -116,15 +116,14 @@ function Main() {
         </div>
       )}
 
-      {activeScreen === "table" && <table>table</table>}
-
+      {/* {activeScreen === "table" && <table>table</table>}
       <button
         onClick={() => {
           handleChangeActiveScreen("table");
         }}
       >
         Table
-      </button>
+      </button> */}
 
       {/* <div className="two">
         <h1></h1>
