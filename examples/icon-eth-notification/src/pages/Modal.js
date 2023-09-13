@@ -64,7 +64,7 @@ function ModalApp(props) {
     setIsOpen(false);
   }
 
-  function register({ auth_token, topic, token, address, action }) {
+  function register({ topic, token, address, action }) {
     setBusy(true);
     const input = { address: address };
     var requestOptions = {
@@ -80,9 +80,9 @@ function ModalApp(props) {
       body: JSON.stringify({
         address: action,
         topic: topic,
-        token: localStorage.getItem("authToken"),
+        token: token,
         input: input,
-        auth_token: auth_token,
+        auth_token: localStorage.getItem("authToken"),
       }),
     };
     console.log(requestOptions.body);
@@ -191,7 +191,6 @@ function ModalApp(props) {
             <button
               onClick={() =>
                 register({
-                  auth_token: user_auth,
                   topic: selected,
                   token,
                   address: address,
