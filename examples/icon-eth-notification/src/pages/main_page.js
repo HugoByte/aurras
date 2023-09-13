@@ -35,6 +35,9 @@ function Main() {
     localStorage.clear();
   };
 
+  const handleAbout = () => {
+    activeScreen === "home"
+  };
   if (auther == "") {
     // console.log("please login");
     alert(" Please Login");
@@ -45,8 +48,8 @@ function Main() {
     <>
       <Nav>
         <NavMenu>
-          <NavLink to="/about" activeStyle>
-            About
+          <NavLink to="/main" activeStyle OnClick={handleAbout}>
+            Home
           </NavLink>
           {/* <NavLink to="/model" activeStyle>
             Register
