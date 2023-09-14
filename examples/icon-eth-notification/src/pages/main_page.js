@@ -191,7 +191,6 @@ function Main() {
                 onChange={handleInputChange}
               />
             </div>
-
             {/* <div className="submit-button">
               {activeScreen === "table" && <h1>hello</h1>}
               <button onClick={handleSubmit}>Submit</button>
