@@ -293,8 +293,14 @@ footer a {
     /* float: left; */
 }
 
-p{
+.para{
   /* width: 50%; */
+
+  font-size: 14px;
+  font-weight: 100;
+  line-height: 20px;
+  letter-spacing: 0.5px;
+  margin: 20px 0 30px;
   justify-content: center;
   align-items: center;
   flex-direction: column;

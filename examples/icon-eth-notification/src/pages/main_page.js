@@ -88,7 +88,7 @@ function Main() {
       {activeScreen === "home" && (
         <div className="one">
           <h1></h1>
-          <p>
+          <p className="para">
             Aurras is a middleware that acts as an event processor and a low
             code workflow orchestration platform. Aurras is being pitched as a
             next-generation system for enabling decentralized push notification.
@@ -97,24 +97,22 @@ function Main() {
             brokers. The broader architecture consist of parachain from which
             the middleware listens for the events.
           </p>
-          <p>
-            Aurras is a middleware that acts as an event processor and a low
-            code workflow orchestration platform. Aurras is being pitched as a
-            next-generation system for enabling decentralized push notification.
-            This middleware solution listens to events from blockchain
-            applications and propagates them to a registered pool of MQTT
-            brokers. The broader architecture consist of parachain from which
-            the middleware listens for the events.
+          <p className="para">
+            Aurras present you an application for icon-eth notification system that will help the developers and users 
+            to notify one message is recieved on the other end chain. for do so you need to register with your DAPP
+            address. the system will register your dapp and along with the device token. once an event emitted from the 
+            xcall, aurras event feed will catch and give to the aurras system. aurras system will filter and parse the event
+            and it will check for any register user and sent the notification
           </p>
 
-          <p>
-            Aurras is a middleware that acts as an event processor and a low
-            code workflow orchestration platform. Aurras is being pitched as a
-            next-generation system for enabling decentralized push notification.
-            This middleware solution listens to events from blockchain
-            applications and propagates them to a registered pool of MQTT
-            brokers. The broader architecture consist of parachain from which
-            the middleware listens for the events.
+          <p className="para">
+            Future scope of this system is the automating the execute call, personalizing the notification for specid dapp and also 
+            for the user.
+          </p>
+
+          <p className="para">
+            while registering for the notification, you should provide the DAPP address in btp format 
+            for example <b>btp://0x3.icon/cxabsabcababcbacbabcbabcabacbacb  </b>
           </p>
         </div>
       )}
