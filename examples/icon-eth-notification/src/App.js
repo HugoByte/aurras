@@ -8,7 +8,7 @@ import {
   Link,
 } from "react-router-dom";
 import Home from "./pages";
-import Main from "./pages/main_page";
+import Main from "./pages/MainPage";
 import ModalApp from "./pages/Modal";
 
 export default function App() {

@@ -1,7 +1,7 @@
 import React from "react";
 
 import { useLocation } from "react-router-dom";
-import { Nav, NavLink, NavMenu } from "./nav";
+import { Nav, NavLink, NavMenu } from "./Navigate";
 import { useState } from "react";
 import ModalApp from "./Modal";
 import {
