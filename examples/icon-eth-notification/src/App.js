@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import "./styles.css";
-import "./pages/test.css"
 import {
   BrowserRouter as Router,
   Route,
@@ -17,8 +16,8 @@ export default function App() {
     <Router>
       <Routes>
         <Route exact path="/" element={<Home />} />
-        <Route path='/main' element={<Main />} />
-        <Route path='/model' element={<ModalApp />} />
+        <Route path="/main" element={<Main />} />
+        <Route path="/model" element={<ModalApp />} />
       </Routes>
     </Router>
   );

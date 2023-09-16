@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import Modal from "react-modal";
 import config from "../config";
-import { getMessaging } from "firebase/messaging/sw";
+import { getMessaging } from "firebase/messaging";
 import { getToken } from "firebase/messaging";
-import { json } from "react-router-dom";
 
 const customStyles = {
   content: {
@@ -35,7 +34,11 @@ function ModalApp(props) {
     variant: "",
   });
   const [busy, setBusy] = useState(false);
-  getToken(messaging)
+
+  getToken(messaging, {
+    vapidKey:
+      "BDMgMV3-YUMUohnjYtx4i878p1Vlkl9cV-xpf0evThEhASiVgBhw9kE_1VYB7qPA_2qHL4YyPyOeDimPs15lGHU",
+  })
     .then((token) => {
       setToken(token);
     })
@@ -73,7 +76,7 @@ function ModalApp(props) {
         "Content-Type": "application/json",
         mode: "no-cors",
         "Access-Control-Allow-Origin": "*",
-        authorization: localStorage.getItem("authToken")
+        authorization: localStorage.getItem("authToken"),
         // "Access-Control-Allow-Methods": "GET,POST,OPTIONS,PUT,PATCH,DELETE",
         // "Access-Control-Allow-Credentials" : "true"
       },
