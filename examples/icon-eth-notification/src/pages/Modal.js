@@ -77,8 +77,6 @@ function ModalApp(props) {
         mode: "no-cors",
         "Access-Control-Allow-Origin": "*",
         authorization: localStorage.getItem("authToken"),
-        // "Access-Control-Allow-Methods": "GET,POST,OPTIONS,PUT,PATCH,DELETE",
-        // "Access-Control-Allow-Credentials" : "true"
       },
       body: JSON.stringify({
         address: action,
@@ -137,15 +135,6 @@ function ModalApp(props) {
         style={customStyles}
         contentLabel="Register Icon Notification"
       >
-        {/* <div className="ui grid">
-                    <div className="ten column row">
-                        <div className="right floated column">
-                            <button className="circular ui icon button" onClick={closeModal}>
-                                <i className="icon close"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div> */}
         {notification.visible && (
           <div className={"ui message ".concat(notification.variant)}>
             <i className="close icon"></i>

@@ -1,13 +1,11 @@
-
 import React, { useState } from "react";
 import "../styles.css";
 import SignInForm from "./SignIn";
 import SignUpForm from "./SignUp";
 
-function Home(){
-
-const [type, setType] = useState("signIn");
-  const handleOnClick = text => {
+function Home() {
+  const [type, setType] = useState("signIn");
+  const handleOnClick = (text) => {
     if (text !== type) {
       setType(text);
       return;
@@ -51,23 +49,7 @@ const [type, setType] = useState("signIn");
         </div>
       </div>
     </div>
-  
-  
-  
   );
-  }
+}
 
-  export default Home;
-
-
-
- 
-// const Home = () => {
-//     return (
-//         <div>
-//             <h1>Sign Up Successful</h1>
-//         </div>
-//     );
-// };
- 
-// export default Home;
+export default Home;

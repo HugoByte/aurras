@@ -24,8 +24,6 @@ function SignInForm() {
 
     const { email, password } = state;
 
-    // alert(`You are login with email: ${email} and password: ${password}`);
-
     var requestOptions = {
       method: "POST",
       headers: {
@@ -45,12 +43,7 @@ function SignInForm() {
           const asd = data;
           const user = asd["user_token"];
           localStorage.setItem("authToken", user);
-          navigate(
-            "/main"
-            // { state : {
-            //   auth_token : user,
-            // }}
-          );
+          navigate("/main");
         }
       })
       .catch((err) => {
@@ -70,18 +63,6 @@ function SignInForm() {
     <div className="form-container sign-in-container">
       <form onSubmit={handleOnSubmit}>
         <h1>Sign in</h1>
-        {/* <div className="social-container">
-          <a href="#" className="social">
-            <i className="fab fa-facebook-f" />
-          </a>
-          <a href="#" className="social">
-            <i className="fab fa-google-plus-g" />
-          </a>
-          <a href="#" className="social">
-            <i className="fab fa-linkedin-in" />
-          </a>
-        </div> */}
-        {/* <span>or use your account</span> */}
         <input
           type="email"
           placeholder="Email"

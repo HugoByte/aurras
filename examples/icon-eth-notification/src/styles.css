@@ -268,9 +268,7 @@ footer a {
   display: flex;
   align-items: top;
   justify-content: left;
-  /* height: 100px; */
   top:10%;
-  /* width:30%; */
 }
 
 .one
@@ -283,18 +281,14 @@ footer a {
 .two
 {
     background-color:white;
-    /* width: 50%; */
     height: 550px;
-    /* float: left; */
 }
 .three
 {
     background-color: rgb(17, 182, 168);
-    /* float: left; */
 }
 
 .para{
-  /* width: 50%; */
 
   font-size: 14px;
   font-weight: 100;

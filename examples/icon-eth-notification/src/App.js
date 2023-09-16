@@ -4,8 +4,6 @@ import {
   BrowserRouter as Router,
   Route,
   Routes,
-  IndexRoute,
-  Link,
 } from "react-router-dom";
 import Home from "./pages";
 import Main from "./pages/MainPage";

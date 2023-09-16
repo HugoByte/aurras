@@ -36,10 +36,9 @@ function Main() {
   };
 
   const handleAbout = () => {
-    activeScreen === "home"
+    activeScreen === "home";
   };
   if (auther == "") {
-    // console.log("please login");
     alert(" Please Login");
     navigate("/");
   }
@@ -51,22 +50,10 @@ function Main() {
           <NavLink to="/main" activeStyle OnClick={handleAbout}>
             Home
           </NavLink>
-          {/* <NavLink to="/model" activeStyle>
-            Register
-          </NavLink> */}
           <Menu.Menu position="right" style={{ alignItems: "center" }}>
             {auther ? <ModalApp user_auth_token={auther}></ModalApp> : null}
             {!auther ? (
               <span>
-                {/* Create an account with Polkadot-JS Extension (
-              <a target="_blank" rel="noreferrer" href={CHROME_EXT_URL}>
-                Chrome
-              </a>
-              ,&nbsp;
-              <a target="_blank" rel="noreferrer" href={FIREFOX_ADDON_URL}>
-                Firefox
-              </a>
-              )&nbsp; */}
               </span>
             ) : null}
           </Menu.Menu>
@@ -98,37 +85,29 @@ function Main() {
             the middleware listens for the events.
           </p>
           <p className="para">
-            Aurras present you an application for icon-eth notification system that will help the developers and users 
-            to notify one message is recieved on the other end chain. for do so you need to register with your DAPP
-            address. the system will register your dapp and along with the device token. once an event emitted from the 
-            xcall, aurras event feed will catch and give to the aurras system. aurras system will filter and parse the event
-            and it will check for any register user and sent the notification
+            Aurras present you an application for icon-eth notification system
+            that will help the developers and users to notify one message is
+            recieved on the other end chain. for do so you need to register with
+            your DAPP address. the system will register your dapp and along with
+            the device token. once an event emitted from the xcall, aurras event
+            feed will catch and give to the aurras system. aurras system will
+            filter and parse the event and it will check for any register user
+            and sent the notification
           </p>
 
           <p className="para">
-            Future scope of this system is the automating the execute call, personalizing the notification for specid dapp and also 
-            for the user.
+            Future scope of this system is the automating the execute call,
+            personalizing the notification for specid dapp and also for the
+            user.
           </p>
 
           <p className="para">
-            while registering for the notification, you should provide the DAPP address in btp format 
-            for example <b>btp://0x3.icon/cxabsabcababcbacbabcbabcabacbacb  </b>
+            while registering for the notification, you should provide the DAPP
+            address in btp format for example{" "}
+            <b>btp://0x3.icon/cxabsabcababcbacbabcbabcabacbacb </b>
           </p>
         </div>
       )}
-
-      {/* {activeScreen === "table" && <table>table</table>}
-      <button
-        onClick={() => {
-          handleChangeActiveScreen("table");
-        }}
-      >
-        Table
-      </button> */}
-
-      {/* <div className="two">
-        <h1></h1>
-      </div> */}
 
       <div className="three">
         <h1></h1>
