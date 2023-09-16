@@ -1,0 +1,6 @@
+{
+    "APP_NAME": "substrate-front-end-tutorial",
+    "DEVELOPMENT_KEYRING": true,
+    "RPC": {},
+    "api": "https://139.84.142.77:31001/api/v1/web/guest/"
+  }
