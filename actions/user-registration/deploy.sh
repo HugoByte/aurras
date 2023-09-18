@@ -6,9 +6,9 @@
 openwhiskApiHost=${openwhiskApiHost:-https://localhost:31001}
 openwhiskApiKey=${openwhiskApiKey:-23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP}
 openwhiskNamespace=${openwhiskNamespace:-guest}
-actionHome=${actionHome:-actions/balance-notification-registration}
+actionHome=${actionHome:-actions/user_registration}
 
-ACTION="workflow-registration
+ACTION="user-registration"
 ACTION_TYPE="rust"
 SCRIPTS_DIR="$PWD/scripts"
 SRC_DIR="$PWD/${actionHome}"
@@ -23,4 +23,4 @@ check wsk
 build
 
 $WSK_CLI -i --apihost "$openwhiskApiHost" action update ${ACTION} "$TEMP_DIR/main.zip" --docker "$DOCKER_IMAGE" \
---auth "$openwhiskApiKey" --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --web true -a provide-api-key true
+--auth "$openwhiskApiKey" --timeout 300000 --web true --param db_url "http://admin:p@ssw0rd@172.17.0.1:5984" --param db_name "user_registration_db"

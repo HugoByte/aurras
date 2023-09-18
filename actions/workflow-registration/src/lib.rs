@@ -135,7 +135,7 @@ impl Action {
                     }
                 }
 
-                serde_json::to_value(x)
+                Ok(serde_json::json!({"action_name" : x.name}))
             }
             Err(e) => return Err(e).map_err(serde::de::Error::custom),
         }
