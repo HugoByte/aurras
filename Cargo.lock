@@ -80,7 +80,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "action-workflow-delete"
+name = "action-user-login"
 version = "0.1.0"
 dependencies = [
  "actions-common 0.1.0 (git+https://github.com/hugobyte/aurras?rev=1f7e117)",
@@ -88,7 +88,7 @@ dependencies = [
  "chesterfield",
  "chrono",
  "jsonwebtoken",
- "openwhisk-client-rust 0.1.7",
+ "reqwest 0.11.11",
  "serde",
  "serde_derive",
  "serde_json",
@@ -97,15 +97,43 @@ dependencies = [
 ]
 
 [[package]]
-name = "action-workflow-management"
+name = "action-user-registartion"
 version = "0.1.0"
 dependencies = [
  "actions-common 0.1.0 (git+https://github.com/hugobyte/aurras?rev=1f7e117)",
  "bcrypt",
  "chesterfield",
- "chrono",
+ "reqwest 0.11.11",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "tokio 1.19.2",
+ "uuid 0.8.2",
+]
+
+[[package]]
+name = "action-workflow-invoker"
+version = "0.1.0"
+dependencies = [
+ "actions-common 0.1.0 (git+https://github.com/hugobyte/aurras?rev=1f7e117)",
+ "chesterfield",
+ "reqwest 0.11.11",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "tokio 1.19.2",
+ "uuid 0.8.2",
+]
+
+[[package]]
+name = "action-workflow-mngmnt"
+version = "0.1.0"
+dependencies = [
+ "actions-common 0.1.0 (git+https://github.com/hugobyte/aurras?rev=1f7e117)",
+ "bcrypt",
+ "chesterfield",
  "jsonwebtoken",
- "openwhisk-client-rust 0.1.7",
+ "reqwest 0.11.11",
  "serde",
  "serde_derive",
  "serde_json",
@@ -115,23 +143,6 @@ dependencies = [
 
 [[package]]
 name = "action-workflow-registartion"
-version = "0.1.0"
-dependencies = [
- "actions-common 0.1.0 (git+https://github.com/hugobyte/aurras?rev=1f7e117)",
- "bcrypt",
- "chesterfield",
- "chrono",
- "jsonwebtoken",
- "openwhisk-client-rust 0.1.7",
- "serde",
- "serde_derive",
- "serde_json",
- "tokio 1.19.2",
- "uuid 0.8.2",
-]
-
-[[package]]
-name = "action-workflow-update-rule"
 version = "0.1.0"
 dependencies = [
  "actions-common 0.1.0 (git+https://github.com/hugobyte/aurras?rev=1f7e117)",
@@ -2432,8 +2443,7 @@ dependencies = [
 [[package]]
 name = "openwhisk-client-rust"
 version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d54a2db242ff8a9d83f58e1aa61efa972315ee5ba3b5eb11ebb1fb5bf92ecba"
+source = "git+https://github.com/HugoByte/openwhisk-client-rust.git#75ebaaa272d95e6112d097ae1e36e33b7ad52304"
 dependencies = [
  "async-std",
  "base64 0.13.0",
