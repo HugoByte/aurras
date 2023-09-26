@@ -14,7 +14,7 @@ use types::Topic;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
     messages: Vec<Message>,
-    polkadot_payout_trigger: String,
+    invoke_action_name: String,
     db_name: String,
     db_url: String,
 }
@@ -63,16 +63,16 @@ impl Action {
         Ok(parsed.data)
     }
 
-    pub fn invoke_trigger(&mut self, payload: &mut Vec<Value>) -> Result<Value, Error> {
+    pub fn invoke_action(&mut self, payload: &mut Vec<Value>) -> Result<Value, Error> {
         let mut failed_triggers = vec![];
         for message in payload.iter_mut() {
             let data = serde_json::from_str::<Value>(&self.params.messages[0].value).unwrap();
             update_with(message, &data);
 
-            let trigger = self.params.polkadot_payout_trigger.clone();
+            let trigger = self.params.invoke_action_name.clone();
             if self
                 .get_context()
-                .invoke_trigger(&trigger, &serde_json::json!({"data": message}))
+                .invoke_action(&trigger, &serde_json::json!({"data": message}))
                 .is_err()
             {
                 failed_triggers.push(self.params.messages[0].value.clone());
@@ -97,7 +97,7 @@ pub fn main(args: Value) -> Result<Value, Error> {
     action.init();
 
     let mut payload = action.fetch_input()?;
-    action.invoke_trigger(&mut payload)
+    action.invoke_action(&mut payload)
 }
 
 #[cfg(test)]
@@ -122,7 +122,7 @@ mod tests {
         let mut action = Action::new(Input {
             db_url: url.clone(),
             db_name: "test".to_string(),
-            polkadot_payout_trigger: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
+            invoke_action_name: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
             messages: vec![Message {
                 topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
                 value: serde_json::json!({ "era" :0}).to_string(),
@@ -146,7 +146,7 @@ mod tests {
         let action = Action::new(Input {
             db_url: "url".to_string(),
             db_name: "test".to_string(),
-            polkadot_payout_trigger: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
+            invoke_action_name: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
             messages: vec![Message {
                 topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
                 value: serde_json::json!({ "era" :0}).to_string(),
