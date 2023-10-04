@@ -14,7 +14,7 @@ use types::Topic;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
     messages: Vec<Message>,
-    invoke_action_name: String,
+    event_registration_db: String,
     db_name: String,
     db_url: String,
 }
@@ -63,23 +63,42 @@ impl Action {
         Ok(parsed.data)
     }
 
+    // fetch action name from the database 
+    fn get_action_name(&self, topic: &str) -> Result<String, Error>{
+
+        let db = self.connect_db(&self.params.db_url, &self.params.event_registration_db);
+        let context = Context::new(db, None);
+        let data = context.get_document(&topic)?;
+  
+        if let Some(value) =  data.get("name") {
+            Ok(value.to_string())
+        } else {
+            Err("action name does not exists within the event registration database")
+                .map_err(serde::de::Error::custom)
+        }
+    }
+
     pub fn invoke_action(&mut self, payload: &mut Vec<Value>) -> Result<Value, Error> {
-        let mut failed_triggers = vec![];
+
+        let mut failed_actions = vec![];
+        
         for message in payload.iter_mut() {
             let data = serde_json::from_str::<Value>(&self.params.messages[0].value).unwrap();
             update_with(message, &data);
+            
+            // fetching the action name from the database
+            let action_name = self.get_action_name(&self.params.messages[0].topic)?;
 
-            let trigger = self.params.invoke_action_name.clone();
             if self
                 .get_context()
-                .invoke_action(&trigger, &serde_json::json!({"data": message}))
+                .invoke_action(&action_name, &serde_json::json!({"data": message}))
                 .is_err()
             {
-                failed_triggers.push(self.params.messages[0].value.clone());
+                failed_actions.push(self.params.messages[0].value.clone()); 
             }
         }
-        if !failed_triggers.is_empty() {
-            return Err(format!("error in triggers {:?}", failed_triggers))
+        if !failed_actions.is_empty() {
+            return Err(format!("error in triggers {:?}", failed_actions))
                 .map_err(serde::de::Error::custom);
         }
         Ok(serde_json::json!({
@@ -122,7 +141,7 @@ mod tests {
         let mut action = Action::new(Input {
             db_url: url.clone(),
             db_name: "test".to_string(),
-            invoke_action_name: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
+            event_registration_db: "event_registration_db".to_string(),
             messages: vec![Message {
                 topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
                 value: serde_json::json!({ "era" :0}).to_string(),
@@ -146,7 +165,7 @@ mod tests {
         let action = Action::new(Input {
             db_url: "url".to_string(),
             db_name: "test".to_string(),
-            invoke_action_name: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
+            event_registration_db: "event_registration_db".to_string(),
             messages: vec![Message {
                 topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
                 value: serde_json::json!({ "era" :0}).to_string(),
