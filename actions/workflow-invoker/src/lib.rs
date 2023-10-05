@@ -63,31 +63,25 @@ impl Action {
         Ok(parsed.data)
     }
 
-    // fetch action name from the database 
-    fn get_action_name(&self, topic: &str) -> Result<String, Error>{
-
-        let db = self.connect_db(&self.params.db_url, &self.params.event_registration_db);
-        let context = Context::new(db, None);
-        let data = context.get_document(&topic)?;
-  
-        if let Some(value) =  data.get("name") {
-            Ok(value.to_string())
-        } else {
-            Err("action name does not exists within the event registration database")
-                .map_err(serde::de::Error::custom)
-        }
-    }
-
     pub fn invoke_action(&mut self, payload: &mut Vec<Value>) -> Result<Value, Error> {
 
         let mut failed_actions = vec![];
-        
+
+        let db = self.connect_db(&self.params.db_url, &self.params.event_registration_db);
+        let context = Context::new(db, None);
+
         for message in payload.iter_mut() {
             let data = serde_json::from_str::<Value>(&self.params.messages[0].value).unwrap();
             update_with(message, &data);
             
-            // fetching the action name from the database
-            let action_name = self.get_action_name(&self.params.messages[0].topic)?;
+            // fetching the action name from database
+            let action_name = 
+                context
+                    .get_document(&self.params.messages[0].topic)?
+                    .get("name")
+                    .unwrap()
+                    .to_string()
+                    .replace("\"", "");
 
             if self
                 .get_context()
