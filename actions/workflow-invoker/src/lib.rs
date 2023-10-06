@@ -73,7 +73,7 @@ impl Action {
         let data:Value= match context.get_document(&self.params.messages[0].topic){
             Ok(document) => document,
             Err(_)  => {
-                return Err("topic {topic} is not exists in the database".to_string())
+                return Err(format!("topic {} is not exists in the database", &self.params.messages[0].topic))
                 .map_err(serde::de::Error::custom);
             }
         };
