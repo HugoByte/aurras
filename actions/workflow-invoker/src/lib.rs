@@ -2,6 +2,7 @@ extern crate serde_json;
 
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{Error, Value};
+use types::UserData;
 mod types;
 use crate::types::update_with;
 #[cfg(test)]
@@ -56,26 +57,30 @@ impl Action {
         self.context.as_mut().expect("Action not Initialized!")
     }
 
-    pub fn fetch_input(&mut self) -> Result<Vec<Value>, Error> {
+    pub fn fetch_input(&mut self) -> Result<Vec<UserData>, Error> {
         let id = self.params.messages.clone()[0].topic.clone();
         let data = self.get_context().get_document(&id)?;
         let parsed = serde_json::from_value::<Topic>(data)?;
         Ok(parsed.data)
     }
 
-    pub fn invoke_trigger(&mut self, payload: &mut Vec<Value>) -> Result<Value, Error> {
+    pub fn invoke_trigger(&mut self, payload: &mut Vec<UserData>) -> Result<Value, Error> {
         let mut failed_triggers = vec![];
-        for message in payload.iter_mut() {
+
+        for user in payload.iter_mut() {
             let data = serde_json::from_str::<Value>(&self.params.messages[0].value).unwrap();
-            update_with(message, &data);
+            update_with(&mut user.input_data, &data);
 
             let trigger = self.params.polkadot_payout_trigger.clone();
-            if self
-                .get_context()
-                .invoke_trigger(&trigger, &serde_json::json!({"data": message}))
-                .is_err()
-            {
-                failed_triggers.push(self.params.messages[0].value.clone());
+
+            if user.status == "active".to_string() {
+                if self
+                    .get_context()
+                    .invoke_trigger(&trigger, &serde_json::json!({"data": user.input_data}))
+                    .is_err()
+                {
+                    failed_triggers.push(self.params.messages[0].value.clone());
+                }
             }
         }
         if !failed_triggers.is_empty() {
@@ -132,7 +137,11 @@ mod tests {
         let workflow_db = action.connect_db(&action.params.db_url, &action.params.db_name);
         let workflow_management_db_context = Context::new(workflow_db, None);
         let doc = serde_json::json!({
-            "data": [{ "url": "todo!()".to_string(), "validator": "todo!()".to_string(), "owner_key": "todo!()".to_string() }]
+            "data": [{
+                "user_id" : "asdf",
+                "status" : "active",
+                "input_data" :{ "url": "todo!()".to_string(), "validator": "todo!()".to_string(), "owner_key": "todo!()".to_string() }
+            }]
         });
         let _ = workflow_management_db_context
             .insert_document(&doc, Some(action.params.messages[0].topic.clone()));
