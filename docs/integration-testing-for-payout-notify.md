@@ -58,7 +58,7 @@
 12.  Add [API configuration](../examples/substrate-push-notification/#api-configuration) and [Firebase Push Notification Configuration](../examples/substrate-push-notification/#push-notification-configuration)
 13.  Install Node Dependencies using `yarn install` or `npm install`.
 14.  Start susbtrate-push-notification using `npx yarn start`
-> For Brave brower enable `Use Google services for push messaging` using brave://settings/privacy
+> For Brave browser enable `Use Google services for push messaging` using brave://settings/privacy
 15.  Select the account for which polkadot notification to be received
 16.  Click Register Balance Notification button
 17.  Select the event source, here in this case `polkadot_payout`. Copy the Push notification token(user device token).
