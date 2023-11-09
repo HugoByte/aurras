@@ -46,29 +46,38 @@
     curl -X POST "<API_HOST>/api/v1/web/guest/default/user-login.json?blocking=true&result=true" -H 'Content-Type: application/json' -u "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123z03xZCLrMN6v2BKK1dXYFpX1PkCcOFqm12CdAsMgRU4VrNZ9lyGVCGUMDGIWP" -d '{"email": "email@gmail.com", "password": "password"}' -k
     ```
 
-11. Perform the action invoke `user-login` by giving the below command, this will create a user token
+OR
+
+    Perform the action invoke `user-login` by giving the below command, this will create a user token
     
     ```
     wsk -i action invoke user-login --param email email@gmail.com --param password password -b -r
     ```
 
-12. Navigate to examples/susbtrate-push-notification
-13. Add [API configuration](../examples/substrate-push-notification/#api-configuration) and [Firebase Push Notification Configuration](../examples/substrate-push-notification/#push-notification-configuration)
-14. Install Node Dependencies using `yarn install`
-15. Start susbtrate-push-notification using `npx yarn start`
+11.  Navigate to examples/susbtrate-push-notification
+12.  Add [API configuration](../examples/substrate-push-notification/#api-configuration) and [Firebase Push Notification Configuration](../examples/substrate-push-notification/#push-notification-configuration)
+13.  Install Node Dependencies using `yarn install`
+14.  Start susbtrate-push-notification using `npx yarn start`
 > For Brave brower enable `Use Google services for push messaging` using brave://settings/privacy
+<<<<<<< Updated upstream
 1.   Select the account for which polkadot notification to be received
 2.  Click Register Balance Notification button
 3.  Select the event source, here in this case `polkadot_payout`. Copy the Push notification token(user device token).
 4.  Open postman and try to execute it there by pasting the copied user-device-token, adding owner key, adding topic and adding   auth-token.
+=======
+15.    Select the account for which polkadot notification to be received
+16.   Click Register Balance Notification button
+17.   Select the event source, here in this case `polkadot_payout`. Copy the Push notification token(user device token).
+18.   Open postman and try to execute it there by pasting the copied user-device-token, adding owner key, adding topic and adding   auth-token.
+>>>>>>> Stashed changes
     ![Allow Push Notification](../examples/substrate-push-notification/images/Screen.png)
     
 
-20. Now the next step is to run [aurras-event-feed-substrate](https://github.com/HugoByte/aurras-event-feed-substrate-js).
-21. Here, change the env variables according to your usage. 
-22. Install the Node Dependencies using `yarn install` 
-23. Start aurras-event-feed-substrate-js using `npx yarn serve`
-24. Here 1 era = 6 hours. After 1 era we will get a notification saying, "era payout completed".
+19. Now the next step is to run [aurras-event-feed-substrate](https://github.com/HugoByte/aurras-event-feed-substrate-js).
+20. Here, change the env variables according to your usage. 
+21. Install the Node Dependencies using `yarn install` 
+22. Start aurras-event-feed-substrate-js using `npx yarn serve`
+23. Here 1 era = 6 hours. After 1 era we will get a notification saying, "era payout completed".
     
 ### Expected Output
 - Payout notification
