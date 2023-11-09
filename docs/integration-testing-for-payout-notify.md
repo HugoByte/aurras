@@ -43,7 +43,7 @@
 10. User can login with the credentials mentioned during the registration, this will create the JWT token
     
     ```
-    curl -X POST "<API_HOST>/api/v1/web/guest/default/user-login.json?blocking=true&result=true" -H 'Content-Type: application/json' -u "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123z03xZCLrMN6v2BKK1dXYFpX1PkCcOFqm12CdAsMgRU4VrNZ9lyGVCGUMDGIWP" -d '{"email": "administrator@gmail.com", "password": "password"}' -k
+    curl -X POST "<API_HOST>/api/v1/web/guest/default/user-login.json?blocking=true&result=true" -H 'Content-Type: application/json' -u "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123z03xZCLrMN6v2BKK1dXYFpX1PkCcOFqm12CdAsMgRU4VrNZ9lyGVCGUMDGIWP" -d '{"email": "email@gmail.com", "password": "password"}' -k
     ```
 
 11. Perform the action invoke `user-login` by giving the below command, this will create a user token
