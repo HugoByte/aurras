@@ -51,23 +51,23 @@
     Perform the action invoke `user-login` by giving the below command, this will create a user token
     
     ```
-    wsk -i action invoke user-login --param email john.doe@domain.com --param password abc@123 -b -r
+    wsk -i action invoke user-login --param email <john.doe@domain.com> --param password <abc@123> -b -r
     ```
 
-11.  Navigate to examples/susbtrate-push-notification
+11.  Navigate to examples/susbtrate-push-notification in Aurras
 12.  Add [API configuration](../examples/substrate-push-notification/#api-configuration) and [Firebase Push Notification Configuration](../examples/substrate-push-notification/#push-notification-configuration)
-13.  Install Node Dependencies using `yarn install`
+13.  Install Node Dependencies using `yarn install` or `npm install`.
 14.  Start susbtrate-push-notification using `npx yarn start`
 > For Brave brower enable `Use Google services for push messaging` using brave://settings/privacy
-15.    Select the account for which polkadot notification to be received
-16.   Click Register Balance Notification button
-17.   Select the event source, here in this case `polkadot_payout`. Copy the Push notification token(user device token).
-18.   Open postman and try to execute it there by pasting the copied user-device-token, adding owner key, adding topic and adding  auth-token.
+15.  Select the account for which polkadot notification to be received
+16.  Click Register Balance Notification button
+17.  Select the event source, here in this case `polkadot_payout`. Copy the Push notification token(user device token).
+18.  Open postman and try to execute it there by pasting the copied user-device-token, adding owner key, adding topic and adding  auth-token.
     ![Allow Push Notification](../examples/substrate-push-notification/images/Screen-6.png)
     
 19. Now the next step is to run [aurras-event-feed-substrate](https://github.com/HugoByte/aurras-event-feed-substrate-js).
 20. Here, change the env variables according to your usage. 
-21. Install the Node Dependencies using `yarn install` 
+21. Install the Node Dependencies using `yarn install` or `npm install`.
 22. Start aurras-event-feed-substrate-js using `npx yarn serve`
     
 ### Expected Output
