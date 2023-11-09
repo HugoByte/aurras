@@ -13,6 +13,6 @@ pub struct Topic {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct UserData {
     pub user_id: String,
-    pub status: String,
+    pub status: bool,
     pub input_data: serde_json::Value,
 }

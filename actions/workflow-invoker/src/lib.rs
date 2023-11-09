@@ -73,7 +73,7 @@ impl Action {
 
             let trigger = self.params.polkadot_payout_trigger.clone();
 
-            if user.status == "active".to_string() {
+            if user.status {
                 if self
                     .get_context()
                     .invoke_trigger(&trigger, &serde_json::json!({"data": user.input_data}))
@@ -139,7 +139,7 @@ mod tests {
         let doc = serde_json::json!({
             "data": [{
                 "user_id" : "asdf",
-                "status" : "active",
+                "status" : true,
                 "input_data" :{ "url": "todo!()".to_string(), "validator": "todo!()".to_string(), "owner_key": "todo!()".to_string() }
             }]
         });

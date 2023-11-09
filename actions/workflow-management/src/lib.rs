@@ -126,7 +126,7 @@ impl Action {
                 &serde_json::json!({
                     "data": [{
                         "user_id": user_id,
-                        "status": String::from("active"),
+                        "status": true,
                         "input_data": db_input
                     }]
                 }),
@@ -145,7 +145,7 @@ impl Action {
                 None => {
                     let new_user = UserData {
                         user_id,
-                        status: "active".to_string(),
+                        status: true,
                         input_data: db_input,
                     };
                     doc.data.push(new_user);
@@ -169,8 +169,9 @@ impl Action {
                 user_index = Some(index);
             }
         }
+        let status =  self.params.status.clone() == "active".to_string();
         match user_index {
-            Some(x) => doc.data[x].status = self.params.status.clone(),
+            Some(x) => doc.data[x].status = status,
             None => (),
         }
 
@@ -655,7 +656,7 @@ mod tests {
         let res_data =
             workflow_management_db_context.get_document("418a8b8c-02b8-11ec-9a03-0242ac130003");
         let res = serde_json::from_value::<Topic>(res_data.unwrap());
-        println!("{:?}", res);
+        assert!(res.is_ok());
         couchdb.delete().await.expect("Stopping Container Failed");
     }
 
