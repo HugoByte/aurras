@@ -59,11 +59,10 @@
 > For Brave brower enable `Use Google services for push messaging` using brave://settings/privacy
 16. Select the account for which polkadot notification to be received
 17. Click Register Balance Notification button
-18. Select the event source, here in this case `invoker`.
+18. Select the event source, here in this case `invoker`. Copy the Push notification token(user device token).
+19. Open postman and try to execute it there by pasting the copied user-device-token, adding owner key, adding topic and adding   auth-token.
     ![Allow Push Notification](../examples/substrate-push-notification/images/Screen-6.png)
-
-19. Click on Register
-    ![Allow Push Notification](../examples/substrate-push-notification/images/Screen-7.png)
+    
 
 20. Now the next step is to run [aurras-event-feed-substrate](https://github.com/HugoByte/aurras-event-feed-substrate-js).
 21. Here, change the env variables according to your usage. 
@@ -73,7 +72,7 @@
     
 ### Expected Output
 - Payout notification
-  ![Allow Push Notification](../examples/substrate-push-notification/images/Screen-8.png)
+  ![Allow Push Notification](../examples/substrate-push-notification/images/Screen-7.png)
 
 - Checking the verification process in chrome
-  ![Allow Push Notification](../examples/substrate-push-notification/images/Screen-9.png)
+  ![Allow Push Notification](../examples/substrate-push-notification/images/Screen-8.png)
