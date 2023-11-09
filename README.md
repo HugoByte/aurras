@@ -42,6 +42,12 @@ This is the end user facing component to utilize the workflow. This component co
 * Balance Filter
 * Balance Notification Register
 * Push Notification
+* Substrate Event Processor
+* User Login
+* User Registration
+* Workflow Invoker
+* Workflow Management
+* Workflow Registration
 
 ### Installation
 
@@ -59,7 +65,7 @@ git clone https://github.com/HugoByte/aurras.git
 cd aurras
 ```
 
-  3. Generate server token from https://console.firebase.google.com/project/[<PROJECT_NAME>/settings/cloudmessaging and add as env FIREBASE_API_KEY
+  3. Generate server token from https://console.firebase.google.com/project/<PROJECT_NAME>/settings/cloudmessaging and add as env FIREBASE_API_KEY
 
   4. Deploy the actions using the deploy script. The script supports optional parameters which can be found [here](./docs/configuration.md).
 
