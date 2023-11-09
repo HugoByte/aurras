@@ -20,16 +20,16 @@
    zip -r - Cargo.toml src output.wasm | docker run -e RELEASE=true -i --rm hugobyte/openwhisk-runtime-rust:v0.3 -compile main > output.zip
    ```
 
-6. Creating the action `payout_notify`
+6. Creating the action `polkadot_payout`
    
    ```
-   wsk -i action create payout_notify  output.zip --docker hugobyte/openwhisk-runtime-rust:v0.3 --timeout 300000 --web true --param allowed_hosts "<allowed_hosts>"
+   wsk -i action create polkadot_payout  output.zip --docker hugobyte/openwhisk-runtime-rust:v0.3 --timeout 300000 --web true --param allowed_hosts "<allowed_hosts>"
    ```
 
-7. Register event source using the below command with name as param eg: --name invoker.
+7. Register event source using the below command with name as param eg: --name polkadot_payout.
    
    ```
-   ./register_event_source_polkadot.sh --name invoker --openwhiskApiHost <API_HOST>
+   ./register_event_source_polkadot.sh --name polkadot_payout --openwhiskApiHost <API_HOST>
    ```
 
 8. After registering the event, the system generates a topic. Keep a record of this token.
@@ -57,10 +57,10 @@
 14. Install Node Dependencies using `yarn install`
 15. Start susbtrate-push-notification using `npx yarn start`
 > For Brave brower enable `Use Google services for push messaging` using brave://settings/privacy
-16. Select the account for which polkadot notification to be received
-17. Click Register Balance Notification button
-18. Select the event source, here in this case `invoker`. Copy the Push notification token(user device token).
-19. Open postman and try to execute it there by pasting the copied user-device-token, adding owner key, adding topic and adding   auth-token.
+1.   Select the account for which polkadot notification to be received
+2.  Click Register Balance Notification button
+3.  Select the event source, here in this case `polkadot_payout`. Copy the Push notification token(user device token).
+4.  Open postman and try to execute it there by pasting the copied user-device-token, adding owner key, adding topic and adding   auth-token.
     ![Allow Push Notification](../examples/substrate-push-notification/images/Screen.png)
     
 
