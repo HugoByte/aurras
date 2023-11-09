@@ -42,6 +42,12 @@ This is the end user facing component to utilize the workflow. This component co
 * Balance Filter
 * Balance Notification Register
 * Push Notification
+* Substrate Event Processor
+* User Login
+* User Registration
+* Workflow Invoker
+* Workflow Management
+* Workflow Registration
 
 ### Installation
 
