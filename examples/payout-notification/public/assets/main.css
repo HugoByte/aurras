@@ -1,0 +1,14 @@
+.github-fork-ribbon.right-bottom:before {
+  background-color: #222
+}
+
+.w-full {
+    width: 100%;
+}
+
+.pt{
+  margin-top: 0.5rem;
+}
+.pb{
+  margin-bottom: 0.725rem;
+}
