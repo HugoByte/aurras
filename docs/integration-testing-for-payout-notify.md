@@ -10,7 +10,7 @@
    Generating a wasm file `e.g.: output.wasm` from the [PayoutNotification.yaml](../workflow/examples/PayoutNotification.yaml).
 
    ```
-   cat examples/PayoutNotification.yaml | docker run -i hugobyte/workflow-composer:v0.2 generate > workflow.wasm
+   cat workflow/examples/PayoutNotification.yaml | docker run -i hugobyte/workflow-composer:v0.2 generate > workflow.wasm
    ```
 
 5. **Deployment to openwhisk environment:**
