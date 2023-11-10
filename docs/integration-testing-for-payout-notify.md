@@ -10,21 +10,23 @@
    Generating a wasm file `e.g.: output.wasm` from the [PayoutNotification.yaml](../workflow/examples/PayoutNotification.yaml).
 
    ```
-   cat examples/PayoutNotification.yaml | docker run -i hugobyte/workflow-composer:v0.2 generate > output.wasm
+   cat examples/PayoutNotification.yaml | docker run -i hugobyte/workflow-composer:v0.2 generate > workflow.wasm
    ```
 
 5. **Deployment to openwhisk environment:**
    After creating a wasm file, copy the wasm file from `workflow` directory to the `runtime/openwhisk` directory. However wasm file should undergo compilation into executable format, tailord for openwhisk depolyment. Which can be done by using the below command
    
    ```
-   zip -r - Cargo.toml src output.wasm | docker run -e RELEASE=true -i --rm hugobyte/openwhisk-runtime-rust:v0.3 -compile main > output.zip
+   zip -r - Cargo.toml src workflow.wasm | docker run -e RELEASE=true -i --rm hugobyte/openwhisk-runtime-rust:v0.3 -compile main > workflow.zip
    ```
 
 6. **Creating the action:** Action name -  `polkadot_payout`
    
    ```
-   wsk -i action create polkadot_payout  output.zip --docker hugobyte/openwhisk-runtime-rust:v0.3 --timeout 300000 --web true --param allowed_hosts "<allowed_hosts>"
+   wsk -i action create polkadot_payout  workflow.zip --docker hugobyte/openwhisk-runtime-rust:v0.3 --timeout 300000 --web true --param allowed_hosts "[\"https://westend-rpc.polkadot.io\", \"http://122.17.0.1:8887\",\"https://139.0.0.0:3100\"]"
    ```
+
+   > Note: The given allowed_hosts are sample hosts
 
 7. Register event source using the below command with name as param `e.g.: --name polkadot_payout`.
    
@@ -51,7 +53,7 @@
     Perform the action invoke `user-login` by giving the below command, this will create a user token
     
     ```
-    wsk -i action invoke user-login --param email <john.doe@domain.com> --param password <abc@123> -b -r
+    wsk -i action invoke user-login --param email john.doe@domain.com --param password abc@123 -b -r
     ```
 
 11.  Navigate to examples/susbtrate-push-notification in Aurras
