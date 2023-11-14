@@ -3,9 +3,8 @@ pub mod source;
 pub mod topic;
 pub use message::{Era, Message};
 pub use source::Source;
-pub use topic::Topic;
 mod data;
-pub use data::*;
+pub use data::{Topic, UserData};
 
 pub fn update_with(dest: &mut serde_json::Value, src: &serde_json::Value) {
     use serde_json::Value::{Null, Object};
