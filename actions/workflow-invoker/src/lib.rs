@@ -64,7 +64,7 @@ impl Action {
         Ok(parsed.data)
     }
 
-    pub fn invoke_trigger(&mut self, payload: &mut Vec<UserData>) -> Result<Value, Error> {
+    pub fn invoke_trigger(&mut self, payload: &mut [UserData]) -> Result<Value, Error> {
         let mut failed_triggers = vec![];
 
         for user in payload.iter_mut() {
@@ -73,6 +73,7 @@ impl Action {
 
             let trigger = self.params.polkadot_payout_trigger.clone();
 
+            #[allow(clippy::collapsible_if)]
             if user.status {
                 if self
                     .get_context()
@@ -84,7 +85,7 @@ impl Action {
             }
         }
         if !failed_triggers.is_empty() {
-            return Err(format!("error in triggers {:?}", failed_triggers))
+            return Err(format!("error in triggers {failed_triggers:?}"))
                 .map_err(serde::de::Error::custom);
         }
         Ok(serde_json::json!({

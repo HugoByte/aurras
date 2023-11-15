@@ -130,7 +130,7 @@ impl Action {
                         "input_data": db_input
                     }]
                 }),
-                Some(topic.to_string()),
+                Some(topic),
             )
         } else {
             let mut doc: Topic = serde_json::from_value(context.get_document(&topic)?)?;
@@ -169,10 +169,9 @@ impl Action {
                 user_index = Some(index);
             }
         }
-        let status =  self.params.status.clone() == "active".to_string();
-        match user_index {
-            Some(x) => doc.data[x].status = status,
-            None => (),
+        let status = self.params.status.clone() == "active";
+        if let Some(x) = user_index {
+            doc.data[x].status = status
         }
 
         context.update_document(&topic, &doc.rev, &serde_json::to_value(doc.clone())?)
@@ -196,7 +195,7 @@ impl Action {
                 doc.data.remove(x);
             }
             None => {
-                return Err(format!("User didnt subscribed this service",))
+                return Err("User didnt subscribed this service".to_string())
                     .map_err(serde::de::Error::custom)
             }
         }
@@ -247,8 +246,9 @@ pub fn main(args: Value) -> Result<Value, Error> {
             }))
         }
 
-        method => Err(format!("method not supported document {}", method))
-            .map_err(serde::de::Error::custom),
+        method => {
+            Err(format!("method not supported document {method}")).map_err(serde::de::Error::custom)
+        }
     }
 }
 
