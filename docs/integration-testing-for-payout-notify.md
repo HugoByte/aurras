@@ -42,39 +42,42 @@
 
 10. Navigate to `aurras/example/payout-notification` directory.
 
-11.  Add [API configuration](../examples/payout-notification/src/config/common.json) and [Firebase Push Notification Configuration](../examples/payout-notification/src/config/firebase.js). 
+11.  Add [API configuration](../examples/payout-notification/src/config/common.json) and [Firebase Push Notification Configuration](../examples/payout-notification/src/config/firebase.js).
 
 12. Install Node Dependencies using `yarn install` or `npm install`
 
 13. Start Payout-notification using `npx yarn start`
 > For Brave browser enable `Use Google services for push messaging` using brave://settings/privacy
 
-14.  User registration and user login actions are performed here by giving the credentials like name, email and password.
+14.   User registration and user login actions are performed here by giving the credentials like name, email and password.
     ![Allow Push Notification](../examples/substrate-push-notification/images/login.png)
 
-    **OR**
+### OR
 
-    **By Using Curl Command**
+### By Using Curl Command 
 
-    User registration should be done by giving the parameters like name, email and password. 
+User registration should be done by giving the parameters like name, email and password. 
     
-    ```
-    curl -X POST "<API_HOST>/api/v1/web/guest/default/user-registration.json?blocking=true&result=true" -H 'Content-Type: application/json' -u <TOPIC_TOKEN> -d '{"name": "john.doe", "email": "john.doe@domain.com", "password":"abc@123"}' -k
-    ```
+   ```
+   curl -X POST "<API_HOST>/api/v1/web/guest/default/user-registration.json?blocking=true&result=true" -H 'Content-Type: application/json' -u <TOPIC_TOKEN> -d '{"name": "john.doe", "email": "john.doe@domain.com", "password":"abc@123"}' -k
+   ```
+    
 
-    User can login with the credentials mentioned during the registration, this will create the JWT token
+User can login with the credentials mentioned during the registration, this will create the JWT token
     
-    ```
-    curl -X POST "<API_HOST>/api/v1/web/guest/default/user-login.json?blocking=true&result=true" -H 'Content-Type: application/json' -u <TOPIC_TOKEN> -d '{"email": "john.doe@domain.com", "password": "abc@123"}' -k
-    ```
+   ```
+   curl -X POST "<API_HOST>/api/v1/web/guest/default/user-login.json?blocking=true&result=true" -H 'Content-Type: application/json' -u <TOPIC_TOKEN> -d '{"email": "john.doe@domain.com", "password": "abc@123"}' -k
+   ```
+
     
-15. Registering the payout notification
+15.  Registering the payout notification
     ![Allow Push Notification](../examples/substrate-push-notification/images/register%20payout.png)
 
-16. Now the next step is to run [aurras-event-feed-substrate-js](https://github.com/HugoByte/aurras-event-feed-substrate-js).
+16.  Now the next step is to run [aurras-event-feed-substrate-js](https://github.com/HugoByte/aurras-event-feed-substrate-js).
 
-17. Create a `.env` file.
-    ```
+17.  Create a `.env` file.
+    
+   ```
     CHAIN_NAME=NodeTemplate
     CHAIN_ENDPOINT=wss://westend-rpc.polkadot.io
     LOGGERS=console,info;file,error,./logs/event-feed.log
@@ -87,8 +90,9 @@
     EVENT_RECEIVER=event-receiver
     EVENT_PROCESSOR=substrate-event-processor
     TOPICS=staking=<TOPIC> 
-    ```
+   ```
     
+
 18.  Install the Node Dependencies using `yarn install` or `npm install`.
 
 19.  Start aurras-event-feed-substrate-js using `npx yarn serve`
