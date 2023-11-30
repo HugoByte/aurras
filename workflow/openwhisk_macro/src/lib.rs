@@ -47,7 +47,6 @@ fn impl_openwhisk_client(ast: DeriveInput) -> TokenStream {
 
     let auth_token = property_map["AuthKey"].clone();
     let api_host = property_map["ApiHost"].clone();
-    let insecure = insecure;
     let namespace = property_map["Namespace"].clone();
 
     let impl_whisk_client = quote! {
