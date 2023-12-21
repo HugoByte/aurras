@@ -2,38 +2,39 @@ use std::{
     env::current_dir,
     ffi::OsStr,
     fs,
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
+use anyhow::Error;
 
-use crate::{errors, types::Result, types::FILE_EXTENSION};
 use itertools::Either;
 use walkdir::WalkDir;
 use std::collections::HashSet;
-use crate::types::Parser;
 
-#[derive(Clone)]
+use crate::constant::FILE_EXTENSION;
+
+#[derive(Clone, Debug  )]
 pub struct SourceFiles {
     base: PathBuf,
     files: HashSet<PathBuf>,
 }
 
 impl SourceFiles {
-    pub fn new(path: Option<PathBuf>) -> Result<SourceFiles> {
-        let mut base = match path {
+    pub fn new(path: Option<PathBuf>) -> Result<SourceFiles, Error> {
+        let base = match path {
             Some(path) => {
                 if path.is_file() {
                     path.parent().unwrap().to_path_buf()
                 } else if path.is_dir() {
                     path
                 } else {
-                    return Err(Box::new(errors::IOError::PathNotFound));
+                    return Err(Error::msg("PathNotFound"));
                 }
             }
-            None => current_dir().map_err(errors::io_error)?,
+            None => current_dir().unwrap(),
         };
 
         let file_paths = fs::read_dir(&base)
-            .map_err(errors::io_error)?
+            .unwrap()
             .into_iter()
             .flat_map(|item| {
                 let item = item.unwrap();

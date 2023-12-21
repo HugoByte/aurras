@@ -1,12 +1,13 @@
+#![allow(special_module_name)]
 mod lib;
-pub(crate)use lib::*;
+pub(crate) use lib::*;
 
-use types::Context;
+use clap::Parser;
 use cli::*;
 use commands::*;
-use aurras_primitives::Execute;
+use composer_primitives::{Result, Execute};
 use std::process::exit;
-use clap::Parser;
+use types::Context;
 
 fn set_panic_hook() {
     #[cfg(not(debug_assertions))]
@@ -17,7 +18,7 @@ fn set_panic_hook() {
                 std::thread::current().name().unwrap_or("<unnamed>"),
                 e
             );
-            eprintln!("stack backtrace: \n{:?}", backtrace::Backtrace::new());
+            eprintln!("stack backtrace: \n{:?}", std::backtrace::Backtrace::capture());
             eprintln!("error: internal composer error: unexpected panic\n");
             eprintln!("note: the composer unexpectedly panicked. this is a bug.\n");
             eprintln!(
@@ -37,24 +38,25 @@ fn set_panic_hook() {
 }
 
 #[cfg(not(tarpaulin_include))]
-pub fn handle_error<T>(res: types::Result<T>) -> T {
+pub fn handle_error<T>(res: Result<T>) -> T {
     match res {
         Ok(t) => t,
         Err(err) => {
-            eprintln!("{err}");
+            eprintln!("{:?}", err);
             exit(err.code());
         }
     }
 }
 
-pub fn run_with_args(cli: CLI) -> types::Result<()> {
+pub fn run_with_args(cli: CLI) -> Result<()> {
+    let mut context = handle_error(Context::new());
     if !cli.quiet() {
-
+        context.quiet();
     }
-
-    let context = handle_error(Context::new());
     match cli.command {
         Commands::Build { command } => command.execute(context)?,
+        Commands::Create { command } => command.execute(),
+        Commands::Validate { command } => command.execute(context)?,
     };
 
     Ok(())

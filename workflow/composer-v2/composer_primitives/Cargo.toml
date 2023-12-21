@@ -1,0 +1,19 @@
+[package]
+name = "composer_primitives"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# [lib]
+# crate-type = ["cdylib","rlib"]
+
+[dependencies]
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0.107"
+allocative = "0.3.0"
+thiserror = "1.0.50"
+itertools = "0.10.5"
+tempfile = "3.2.0"
+walkdir = "2"
+anyhow = "1.0.65"

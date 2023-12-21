@@ -1,0 +1,34 @@
+
+stakingpayout = task(
+    kind = "Polkadot",
+    action_name = "stakingpayout",
+    input_arguments = [
+        argument(
+            name="url",
+            input_type= String
+        ),
+        argument(
+            name="owner_key",
+            input_type= String
+        ),
+        argument(
+            name="address",
+            input_type= String
+        ),
+        argument(
+            name="era",
+            input_type= Uint
+        ),
+    ],
+    attributes = {
+        "chain" : "westend",
+        "operation" : "stakingpayout"
+    },
+    depend_on = [],
+)
+
+Polkadot = workflows(
+    name = "polkadot_test",
+    version = "0.0.1",
+    tasks = [stakingpayout]
+)

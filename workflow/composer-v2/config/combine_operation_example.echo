@@ -1,0 +1,60 @@
+attributes = {
+    "api_host" : "http://127.0.0.1:1234",
+    "auth_key" : "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",
+    "insecure" : "true",
+    "namespace" : "guest"   
+}
+
+get_company_name = task(
+    kind = "openwhisk",
+    action_name = "get_company_name",
+    input_arguments = [
+        argument(name = "company_id", input_type = String ),  
+    ],
+    attributes = attributes,
+)
+
+
+employee_ids = task(
+    kind = "openwhisk",
+    action_name = "employee_ids",
+    input_arguments = [
+        argument(name = "role", input_type = String ),  
+    ],
+    attributes = attributes,
+)
+
+getaddress = task(
+    kind = "openwhisk",
+    action_name = "getaddress",
+    input_arguments = [
+        argument(name = "id", input_type = Int)
+    ],
+    attributes = attributes,
+    operation = Operation.map("address"),
+    depend_on = [
+        depend(task_name = "employee_ids", cur_field = "id", prev_field = "ids")
+    ]
+)
+salary = task(
+    kind = "openwhisk",
+    action_name = "salary",
+    input_arguments = [
+        argument(name = "company_name", input_type = String),
+        argument(name = "company_reg_id", input_type = String),
+        argument(name = "address_details", input_type = HashMap(Int, String))
+    ],
+    attributes = attributes,
+    operation = Operation.combine(),
+     depend_on = [
+        depend(task_name = "get_company_name", cur_field = "company_name", prev_field = "company"),
+        depend(task_name = "get_company_name", cur_field = "company_reg_id", prev_field = "company_reg_id"),
+        depend(task_name = "getaddress", cur_field = "address_details", prev_field = "result"),
+    ]
+) 
+
+employee_salary_workflow = workflows(
+    name = "combine_operation_test",
+    version = "0.0.1",
+    tasks = [get_company_name, employee_ids, getaddress, salary]
+)
