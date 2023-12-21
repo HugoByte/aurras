@@ -14,7 +14,7 @@ use types::Topic;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Input {
     messages: Vec<Message>,
-    invoke_action_name: String,
+    event_registration_db: String,
     db_name: String,
     db_url: String,
 }
@@ -63,23 +63,54 @@ impl Action {
         Ok(parsed.data)
     }
 
+    // fetching the action name from database
+    fn get_action_name(&mut self) -> Result<String, Error> {
+        // creating connection with the event registration database
+        let db = self.connect_db(&self.params.db_url, &self.params.event_registration_db);
+        let context = Context::new(db, None);
+
+        let data: Value = match context.get_document(&self.params.messages[0].topic) {
+            Ok(document) => document,
+            Err(_) => {
+                return Err(format!(
+                    "topic {} is not exists in the database",
+                    &self.params.messages[0].topic
+                ))
+                .map_err(serde::de::Error::custom);
+            }
+        };
+
+        // getting action name from the document
+        let action_name: String =
+            serde_json::from_value(
+                data
+                  .get("name")
+                  .unwrap()
+                  .clone()
+            ).unwrap();
+
+        Ok(action_name)
+    }
+
     pub fn invoke_action(&mut self, payload: &mut Vec<Value>) -> Result<Value, Error> {
-        let mut failed_triggers = vec![];
+        let mut failed_actions = vec![];
+
+        let action_name = self.get_action_name().unwrap();
+
         for message in payload.iter_mut() {
             let data = serde_json::from_str::<Value>(&self.params.messages[0].value).unwrap();
             update_with(message, &data);
 
-            let trigger = self.params.invoke_action_name.clone();
             if self
                 .get_context()
-                .invoke_action(&trigger, &serde_json::json!({"data": message}))
+                .invoke_action(&action_name, &serde_json::json!({"data": message}))
                 .is_err()
             {
-                failed_triggers.push(self.params.messages[0].value.clone());
+                failed_actions.push(self.params.messages[0].value.clone());
             }
         }
-        if !failed_triggers.is_empty() {
-            return Err(format!("error in triggers {:?}", failed_triggers))
+        if !failed_actions.is_empty() {
+            return Err(format!("error in triggers {:?}", failed_actions))
                 .map_err(serde::de::Error::custom);
         }
         Ok(serde_json::json!({
@@ -122,7 +153,7 @@ mod tests {
         let mut action = Action::new(Input {
             db_url: url.clone(),
             db_name: "test".to_string(),
-            invoke_action_name: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
+            event_registration_db: "event_registration_db".to_string(),
             messages: vec![Message {
                 topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
                 value: serde_json::json!({ "era" :0}).to_string(),
@@ -137,6 +168,7 @@ mod tests {
         let _ = workflow_management_db_context
             .insert_document(&doc, Some(action.params.messages[0].topic.clone()));
         let res = action.fetch_input();
+
         assert!(res.is_ok());
         couchdb.delete().await.expect("Stopping Container Failed");
     }
@@ -146,7 +178,7 @@ mod tests {
         let action = Action::new(Input {
             db_url: "url".to_string(),
             db_name: "test".to_string(),
-            invoke_action_name: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
+            event_registration_db: "event_registration_db".to_string(),
             messages: vec![Message {
                 topic: "418a8b8c-02b8-11ec-9a03-0242ac130003".to_string(),
                 value: serde_json::json!({ "era" :0}).to_string(),
@@ -162,5 +194,66 @@ mod tests {
             doc,
             serde_json::json!({"url":"todo!()","era":0,"owner_key":"todo!()","validator":"todo!()"})
         )
+    }
+
+    #[tokio::test]
+    async fn get_action_name_pass() {
+        let config = Config::new();
+        let couchdb = CouchDB::new("admin".to_string(), "password".to_string())
+            .await
+            .unwrap();
+        sleep(Duration::from_millis(5000)).await;
+        let url = format!("http://admin:password@localhost:{}", couchdb.port());
+        let mut action = Action::new(Input {
+            db_url: url.clone(),
+            db_name: "test".to_string(),
+            event_registration_db: "event_registration_db".to_string(),
+            messages: vec![Message {
+                topic: "0a36fd24-84ac-420e-9187-912929c782ea".to_string(),
+                value: serde_json::json!({ "era" :0}).to_string(),
+            }],
+        });
+        action.init(&config);
+
+        let event_registration_db =
+            action.connect_db(&action.params.db_url, "event_registration_db");
+        let event_registration_db_context = Context::new(event_registration_db, None);
+
+        let json_value = r#"{"name": "icon-eth-notification", "trigger": "0a36fd24-84ac-420e-9187-912929c782ea"}"#;
+        let doc: Value = serde_json::from_str(json_value).unwrap();
+
+        let _ = event_registration_db_context
+            .insert_document(&doc, Some(action.params.messages[0].topic.clone()));
+
+        let invoke_action_name = action.get_action_name().unwrap();
+        assert_eq!(&invoke_action_name, "icon-eth-notification");
+
+        couchdb.delete().await.expect("Stopping Container Failed");
+    }
+
+    #[tokio::test]
+    #[should_panic = "topic 0a36fd24-84ac-420e-9187-912929c782ea is not exists in the database"]
+    async fn get_action_name_fail() {
+        let config = Config::new();
+        let couchdb = CouchDB::new("admin".to_string(), "password".to_string())
+            .await
+            .unwrap();
+        sleep(Duration::from_millis(5000)).await;
+        let url = format!("http://admin:password@localhost:{}", couchdb.port());
+        let mut action = Action::new(Input {
+            db_url: url.clone(),
+            db_name: "test".to_string(),
+            event_registration_db: "event_registration_db".to_string(),
+            messages: vec![Message {
+                topic: "0a36fd24-84ac-420e-9187-912929c782ea".to_string(),
+                value: serde_json::json!({ "era" :0}).to_string(),
+            }],
+        });
+        action.init(&config);
+
+        let invoke_action_name = action.get_action_name().unwrap();
+        assert_eq!(&invoke_action_name, "icon-eth-notification");
+
+        couchdb.delete().await.expect("Stopping Container Failed");
     }
 }
