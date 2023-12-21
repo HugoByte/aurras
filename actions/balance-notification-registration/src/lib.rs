@@ -139,8 +139,9 @@ pub fn main(args: Value) -> Result<Value, Error> {
             }))
         }
         "get" => action.get_event_sources(),
-        method => Err(format!("method not supported document {}", method))
-            .map_err(serde::de::Error::custom),
+        method => {
+            Err(format!("method not supported document {method}")).map_err(serde::de::Error::custom)
+        }
     }
 }
 

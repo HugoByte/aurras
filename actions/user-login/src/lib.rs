@@ -66,7 +66,7 @@ impl Action {
         let user_id: UserId = serde_json::from_value(user_id_res).unwrap();
         let res = self.get_context().get_document(&user_id.user_id)?;
         let user: User = serde_json::from_value(res).unwrap();
-        if verify(self.params.password.clone(), &user.get_password()).unwrap() {
+        if verify(self.params.password.clone(), user.get_password()).unwrap() {
             let headers = Header::default();
             let encoding_key =
                 EncodingKey::from_secret("user_registration_token_secret_key".as_bytes());
@@ -127,7 +127,7 @@ mod tests {
         });
         let id = uuid::Uuid::new_v4().to_string();
         let doc_id = serde_json::to_value(UserId::new(id.clone())).unwrap();
-        let _id_store= action
+        let _id_store = action
             .get_context()
             .insert_document(&doc_id, Some("test@example.com".to_string()))
             .unwrap();
@@ -179,8 +179,8 @@ mod tests {
             .get_context()
             .insert_document(&user, Some(id.clone()));
         assert_eq!(user_id.unwrap(), id);
-        action.login_user().unwrap();
-
+        let res = action.login_user();
         couchdb.delete().await.expect("Stopping Container Failed");
+        res.unwrap();
     }
 }

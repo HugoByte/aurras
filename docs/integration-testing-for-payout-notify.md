@@ -14,10 +14,10 @@
    ```
 
 5. **Deployment to openwhisk environment:**
-   After creating a wasm file, copy the wasm file from `workflow` directory to the `runtime/openwhisk` directory. However wasm file should undergo compilation into executable format, tailord for openwhisk depolyment. Which can be done by using the below command
+   After creating a wasm file, copy the wasm file from `workflow` directory to the `runtime/openwhisk` directory. Rename the `output.wasm` into `workflow.wasm`, However wasm file should undergo compilation into executable format, tailord for openwhisk depolyment. Which can be done by using the below command
    
    ```
-   zip -r - Cargo.toml src output.wasm | docker run -e RELEASE=true -i --rm hugobyte/openwhisk-runtime-rust:v0.3 -compile main > output.zip
+   zip -r - Cargo.toml src workflow.wasm | docker run -e RELEASE=true -i --rm hugobyte/openwhisk-runtime-rust:v0.3 -compile main > output.zip
    ```
 
 6. **Creating the action:** Action name -  `polkadot_payout`
@@ -26,50 +26,85 @@
    wsk -i action create polkadot_payout  output.zip --docker hugobyte/openwhisk-runtime-rust:v0.3 --timeout 300000 --web true --param allowed_hosts "<allowed_hosts>"
    ```
 
-7. Register event source using the below command with name as param `e.g.: --name polkadot_payout`.
+7. After Creating the action, **create a rule** for it
+
+   ```
+   wsk -i --apihost <API_HOST> rule update "payout_notify-rule" "send-payout-notify" "payout_notify" --auth <AUTH_KEY>
+   ```
+
+8. Register event source using the below command with name as param `e.g.: --name polkadot_payout`.
    
    ```
    ./register_event_source_polkadot.sh --name polkadot_payout --openwhiskApiHost <API_HOST>
    ```
 
-8. After registering the event, the system generates a topic. Please make sure to keep a record of this token.
+9.  After registering the event, the system generates a topic. Please make sure to keep a record of this token.
 
-9. User registration should be done by giving the parameters like name, email and password. 
-    
-    ```
-    curl -X POST "<API_HOST>/api/v1/web/guest/default/user-registration.json?blocking=true&result=true" -H 'Content-Type: application/json' -u <TOPIC_TOKEN> -d '{"name": "john.doe", "email": "john.doe@domain.com", "password":"abc@123"}' -k
-    ```
+10. Navigate to `aurras/example/payout-notification` directory.
 
-10. User can login with the credentials mentioned during the registration, this will create the JWT token
-    
-    ```
-    curl -X POST "<API_HOST>/api/v1/web/guest/default/user-login.json?blocking=true&result=true" -H 'Content-Type: application/json' -u <TOPIC_TOKEN> -d '{"email": "john.doe@domain.com", "password": "abc@123"}' -k
-    ```
+11.  Add [API configuration](../examples/payout-notification/src/config/common.json) and [Firebase Push Notification Configuration](../examples/payout-notification/src/config/firebase.js).
 
-    OR
+12. Install Node Dependencies using `yarn install` or `npm install`
 
-    Perform the action invoke `user-login` by giving the below command, this will create a user token
-    
-    ```
-    wsk -i action invoke user-login --param email <john.doe@domain.com> --param password <abc@123> -b -r
-    ```
-
-11.  Navigate to examples/susbtrate-push-notification in Aurras
-12.  Add [API configuration](../examples/substrate-push-notification/#api-configuration) and [Firebase Push Notification Configuration](../examples/substrate-push-notification/#push-notification-configuration)
-13.  Install Node Dependencies using `yarn install` or `npm install`.
-14.  Start susbtrate-push-notification using `npx yarn start`
+13. Start Payout-notification using `npx yarn start`
 > For Brave browser enable `Use Google services for push messaging` using brave://settings/privacy
-15.  Select the account for which polkadot notification to be received
-16.  Click Register Balance Notification button
-17.  Select the event source, here in this case `polkadot_payout`. Copy the Push notification token(user device token).
-18.  Open postman and try to execute it there by pasting the copied user-device-token, adding owner key, adding topic and adding  auth-token.
-    ![Allow Push Notification](../examples/substrate-push-notification/images/Screen-6.png)
+
+14.   User registration and user login actions are performed here by giving the credentials like name, email and password.
+    ![Allow Push Notification](../examples/substrate-push-notification/images/login.png)
+
+### OR
+
+### By Using Curl Command 
+
+User registration should be done by giving the parameters like name, email and password. 
     
-19. Now the next step is to run [aurras-event-feed-substrate](https://github.com/HugoByte/aurras-event-feed-substrate-js).
-20. Here, change the env variables according to your usage. 
-21. Install the Node Dependencies using `yarn install` or `npm install`.
-22. Start aurras-event-feed-substrate-js using `npx yarn serve`
+   ```
+   curl -X POST "<API_HOST>/api/v1/web/guest/default/user-registration.json?blocking=true&result=true" -H 'Content-Type: application/json' -u <TOPIC_TOKEN> -d '{"name": "john.doe", "email": "john.doe@domain.com", "password":"abc@123"}' -k
+   ```
     
+
+User can login with the credentials mentioned during the registration, this will create the JWT token
+    
+   ```
+   curl -X POST "<API_HOST>/api/v1/web/guest/default/user-login.json?blocking=true&result=true" -H 'Content-Type: application/json' -u <TOPIC_TOKEN> -d '{"email": "john.doe@domain.com", "password": "abc@123"}' -k
+   ```
+
+    
+15.  Registering the payout notification
+    ![Allow Push Notification](../examples/substrate-push-notification/images/register%20payout.png)
+
+16.  Now the next step is to run [aurras-event-feed-substrate-js](https://github.com/HugoByte/aurras-event-feed-substrate-js).
+
+17.  Create a `.env` file.
+    
+   ```
+    CHAIN_NAME=NodeTemplate
+    CHAIN_ENDPOINT=wss://westend-rpc.polkadot.io
+    LOGGERS=console,info;file,error,./logs/event-feed.log
+    EXCLUDES=system; balances Deposit, Endowed, DustLost; staking-Chilled, ForceEra, Kicked, Slashed,  SlashReported, Stakers Elected, Validator
+    TYPES_FILE=/config/types.json
+    KAFKA_BROKERS=172.17.0.1:9092
+    OPENWHISK_API_KEY=<AUTH_KEY>
+    OPENWHISK_API_HOST=<API_HOST>
+    OPENWHISK_NAMESPACE=guest
+    EVENT_RECEIVER=event-receiver
+    EVENT_PROCESSOR=substrate-event-processor
+    TOPICS=staking=<TOPIC> 
+   ```
+    
+
+18.  Install the Node Dependencies using `yarn install` or `npm install`.
+
+19.  Start aurras-event-feed-substrate-js using `npx yarn serve`
+    
+*NOTE*
+
+### Mocking the era payout, Instead waiting for 6 hours.###
+
+In postman,
+- Giving post method with https://<API_HOST>/api/v1/namespaces/guest/actions/substrate-event-processor?blocking=true&result=true
+  ![Allow Push Notification](../examples/substrate-push-notification/images/postman.png)
+
 ### Expected Output
 - Payout notification : Here 1 era = 6 hours. After 1 era we will get a notification saying, "era payout completed".
   ![Allow Push Notification](../examples/substrate-push-notification/images/Screen-7.png)
