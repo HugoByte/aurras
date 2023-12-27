@@ -11,6 +11,7 @@ use super::*;
 const COMMON: &str = include_str!("../../../composer-boilerplate/src/common.rs");
 const LIB: &str = include_str!("../../../composer-boilerplate/src/lib.rs");
 const TRAIT: &str = include_str!("../../../composer-boilerplate/src/traits.rs");
+const MACROS: &str = include_str!("../../../composer-boilerplate/src/macros.rs");
 const CARGO: &str = include_str!("../../../composer-boilerplate/Cargo.toml");
 
 #[derive(Debug, ProvidesStaticType, Default)]
@@ -131,6 +132,9 @@ impl Composer {
 
         let temp_path = src_curr.as_path().join("traits.rs");
         std::fs::write(temp_path, &TRAIT[..])?;
+
+        let temp_path = src_curr.as_path().join("macros.rs");
+        std::fs::write(temp_path, &MACROS[..])?;
 
         let cargo_path = curr.join("Cargo.toml");
         std::fs::write(cargo_path.clone(), &CARGO[..])?;

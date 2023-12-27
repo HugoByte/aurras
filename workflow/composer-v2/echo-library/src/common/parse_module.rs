@@ -15,196 +15,9 @@ pub fn get_task_kind(kind: &str) -> Result<String, ErrorKind> {
     match kind.to_lowercase().as_str() {
         "openwhisk" => Ok("OpenWhisk".to_string()),
         "polkadot" => Ok("Polkadot".to_string()),
+        "hello_world" => Ok("HelloWorldDerive".to_string()),
         _ => Err(ErrorKind::NotFound),
     }
-}
-
-/// Returns a string containing Rust code to create structs using macros
-///
-/// # Returns
-///
-/// * A String containing Rust code for creating structs using macros
-///
-fn get_macros_code() -> String {
-    "
-use serde_derive::{Serialize, Deserialize};
-use std::collections::HashMap;
-use super::*;
-use openwhisk_rust::*;
-
-macro_rules! make_input_struct {
-    (
-        $x:ident,
-        // list of field and it's type
-        [$(
-            $(#[$default_derive:stmt])?
-            $visibility:vis $element:ident : $ty:ty),*],
-        // list of derive macros
-        [$($der:ident),*]
-) => {
-        #[derive($($der),*)]
-            pub struct $x { 
-            $(
-                $(#[serde(default=$default_derive)])?
-                $visibility  $element: $ty
-            ),*
-        }
-    }
-}
-
-macro_rules! make_main_struct {
-    (
-        $name:ident,
-        $input:ty,
-        [$($der:ident),*],
-        // list of attributes
-        [$($key:ident : $val:expr),*],
-        $output_field: ident
-) => {
-        #[derive($($der),*)]
-        $(
-            #[$key = $val]
-        )*
-        pub struct $name {
-            action_name: String,
-            pub input: $input,
-            pub output: Value,
-            pub mapout: Value
-        }
-        impl $name{
-            pub fn output(&self) -> Value {
-                self.$output_field.clone()
-            }
-        }
-    }
-}
-
-macro_rules! impl_new {
-    (
-        $name:ident,
-        $input:ident,
-        []
-    ) => {
-        impl $name{
-            pub fn new(action_name:String) -> Self{
-                Self{
-                    action_name,
-                    input: $input{
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                }      
-            }
-        }
-    };
-    (
-        $name:ident,
-        $input:ident,
-        [$($element:ident : $ty:ty),*]
-    ) => {
-        impl $name{
-            pub fn new($( $element: $ty),*, action_name:String) -> Self{
-                Self{
-                    action_name,
-                    input: $input{
-                        $($element),*,
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                }      
-            }
-        }
-    }
-}
-
-macro_rules! impl_setter {
-    (
-        $name:ty,
-        [$($element:ident : $key:expr),*]
-    ) => {
-        impl $name{
-            pub fn setter(&mut self, value: Value) {
-                $(
-                    let val = value.get($key).unwrap();
-                    self.input.$element = serde_json::from_value(val.clone()).unwrap();
-                )*
-            }
-        }
-    }
-}
-
-macro_rules! impl_map_setter {
-    (
-        $name:ty,
-        $element:ident : $key:expr,  
-        $typ_name : ty,
-        $out:expr
-    ) => {
-        impl $name {
-            pub fn setter(&mut self, val: Value) {
-                
-                    let value = val.get($key).unwrap();
-                    let value = serde_json::from_value::<Vec<$typ_name>>(value.clone()).unwrap();
-                    let mut map: HashMap<_, _> = value
-                        .iter()
-                        .map(|x| {
-                            self.input.$element = x.to_owned() as $typ_name;
-                            self.run();
-                            (x.to_owned(), self.output.get($out).unwrap().to_owned())
-                        })
-                        .collect();
-                    self.mapout = to_value(map).unwrap();
-                
-            }
-        }
-    }
-    }
-
-macro_rules! impl_concat_setter {
-    (
-        $name:ty,
-        $input:ident
-    ) => {
-        impl $name{
-            pub fn setter(&mut self, val: Value) {
-                
-                    let val: Vec<Value> = serde_json::from_value(val).unwrap();
-                    let res = join_hashmap(
-                        serde_json::from_value(val[0].to_owned()).unwrap(),
-                        serde_json::from_value(val[1].to_owned()).unwrap(),
-                    );
-                    self.input.$input = res;
-            }
-        }
-    }
-}
-
-#[allow(unused)]
-macro_rules! impl_combine_setter {
-    (
-        $name:ty,
-        [$(
-            $(($value_input:ident))?
-            $([$index:expr])?
-            $element:ident : $key:expr),*]
-    ) => {
-        impl $name{
-            pub fn setter(&mut self, value: Value) {
-
-                let value: Vec<Value> = serde_json::from_value(value).unwrap();
-                $(
-                    if stringify!($($value_input)*).is_empty(){
-                        let val = value[$($index)*].get($key).unwrap();
-                        self.input.$element = serde_json::from_value(val.clone()).unwrap();
-                    }else{
-                        self.input.$element = serde_json::from_value(value[$($index)*].to_owned()).unwrap();
-                    }
-                )*
-            }
-        }
-    }
-}"
-    .to_string()
 }
 
 fn get_main_method_code_template(tasks_length: usize) -> String {
@@ -670,9 +483,8 @@ pub fn generate_types_rs_file_code(
     custom_types: &HashMap<String, String>,
 ) -> Result<String, Error> {
     let main_file = format!(
-        "{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}}}",
+        "use super::*;\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}}}",
         add_polkadot_openwhisk(workflow),
-        get_macros_code(),
         get_task_input_type_constructors(workflow),
         get_task_main_type_constructors(workflow)?,
         get_impl_setters_code(workflow)?,
@@ -707,6 +519,11 @@ sp-runtime = { version = \"6.0.0\", default-features = false, git = \"https://gi
 
 pub fn generate_cargo_toml_dependencies(workflow: &Workflow) -> String {
     let mut dependency_map = HashMap::new();
+
+    let hello_world_dependency = "hello_world_macro = {git= \"https://github.com/shanithkk/aurras\", branch = \"feature/composer-v2\", package = \"hello_world_macro\"}"
+    .to_string();
+
+    dependency_map.insert("hello_world", hello_world_dependency);
     dependency_map.insert("openwhisk", get_openwhisk_kind_dependencies());
     dependency_map.insert("polkadot", get_polkadot_kind_dependencies());
 
@@ -745,6 +562,7 @@ pub fn get_polkadot() -> String {
 pub fn get_openwhisk() -> String {
     "\
     use openwhisk_macro::*;
+    use openwhisk_rust::*;
     
     "
     .to_string()
@@ -765,6 +583,10 @@ pub fn add_polkadot_openwhisk(workflow: &Workflow) -> String {
 
     if kinds.contains("openwhisk") && kinds.contains("polkadot") {
         toml_dependencies = handle_multiple_kinds();
+    }
+
+    if kinds.contains("hello_world") {
+        toml_dependencies += "\nuse hello_world_macro::HelloWorldDerive;";
     }
 
     toml_dependencies
@@ -800,9 +622,9 @@ pub fn get_struct_stake_ledger(workflow: &Workflow) -> String {
     toml_dependencies
 }
 
-pub fn get_common_kind(workflow: &Workflow) -> HashSet<String>{
+pub fn get_common_kind(workflow: &Workflow) -> HashSet<String> {
     let mut kinds = HashSet::new();
-    for task in workflow.tasks.values(){
+    for task in workflow.tasks.values() {
         kinds.insert(task.kind.to_lowercase());
     }
     kinds

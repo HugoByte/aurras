@@ -7,26 +7,28 @@
 #![allow(unused_must_use)]
 
 mod common;
+mod macros;
 mod traits;
 mod types;
+
+use common::*;
 use derive_enum_from_into::{EnumFrom, EnumTryInto};
 use dyn_clone::{clone_trait_object, DynClone};
+use macros::*;
+use openwhisk_rust::*;
+use paste::*;
 use serde::{Deserialize, Serialize};
 use serde_json::to_value;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::fmt::Debug;
-use workflow_macro::Flow;
-
-use common::*;
-use paste::*;
 use std::convert::TryInto;
+use std::fmt::Debug;
 use traits::*;
 use types::*;
+use workflow_macro::Flow;
 extern crate alloc;
 use codec::{Decode, Encode};
 use core::alloc::Layout;
-
 
 #[no_mangle]
 pub fn _start(ptr: *mut u8, length: i32) {

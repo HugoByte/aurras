@@ -18,23 +18,24 @@ impl Create {
 
         let temp_path = package.join("main.echo");
         let content = format!(
-            "hello_world = task(
-                kind = \"hello_world\",
-                action_name = \"hello_world\",
-                input_arguments = [
-                    argument(
-                        name=\"name\",
-                        input_type = String,
-                        default_value = \"World\"
-                    ),
-                ],
-            )
-            
-            workflows(
-                name = {},
-                version = \"0.0.1\",
-                tasks = [hello_world]
-            )",
+            "\
+hello_world = task(
+    kind = \"hello_world\",
+    action_name = \"hello_world\",
+    input_arguments = [
+        argument(
+            name=\"name\",
+            input_type = String,
+            default_value = \"World\"
+        ),
+    ],
+)
+
+workflows(
+    name = \"{}\",
+    version = \"0.0.1\",
+    tasks = [hello_world]
+)",
             self.package_name
         );
 

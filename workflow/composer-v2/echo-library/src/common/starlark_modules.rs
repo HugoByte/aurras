@@ -24,14 +24,19 @@ pub fn starlark_workflow_module(builder: &mut GlobalsBuilder) {
         kind: String,
         action_name: String,
         input_arguments: Value,
-        attributes: Value,
+        attributes: Option<Value>,
         operation: Option<Value>,
         depend_on: Option<Value>,
     ) -> anyhow::Result<Task> {
         let mut input_arguments: Vec<Input> = serde_json::from_str(&input_arguments.to_json()?)
             .map_err(|err| anyhow!("Failed to parse input arguments: {}", err))?;
-        let attributes: HashMap<String, String> = serde_json::from_str(&attributes.to_json()?)
-            .map_err(|err| anyhow!("Failed to parse attributes: {}", err))?;
+
+        let attributes: HashMap<String, String> = match attributes {
+            Some(attributes) => serde_json::from_str(&attributes.to_json()?)
+                .map_err(|err| anyhow!("Failed to parse the attributes: {}", err))?,
+            _ => HashMap::default(),
+        };
+
         let depend_on: Vec<Depend> = match depend_on {
             Some(val) => serde_json::from_str(&val.to_json()?)
                 .map_err(|err| anyhow!("Failed to parse depend-on: {}", err))?,
@@ -49,7 +54,7 @@ pub fn starlark_workflow_module(builder: &mut GlobalsBuilder) {
 
         let operation: Operation = match operation {
             Some(op) => serde_json::from_str(&op.to_json()?)
-                .map_err(|err| anyhow!("Failed to parse the value: {}", err))?,
+                .map_err(|err| anyhow!("Failed to parse the task operation value: {}", err))?,
             _ => Operation::Normal,
         };
 
