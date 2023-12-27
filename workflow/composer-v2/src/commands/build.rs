@@ -22,12 +22,6 @@ pub struct Build {
     )]
     pub output: Option<PathBuf>,
 
-    #[structopt(
-        short,
-        long,
-        help = "Optional path to config files",
-        parse(from_os_str)
-    )]
     pub source: Option<PathBuf>,
 }
 
