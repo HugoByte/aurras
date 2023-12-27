@@ -9,5 +9,5 @@ pub struct Input {
     #[serde(default)]
     pub default_value: Option<String>,
     #[serde(default)]
-    pub is_depend: bool
+    pub is_depend: bool,
 }

@@ -30,7 +30,9 @@ impl Default for Operation {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Eq, Allocative, ProvidesStaticType, Clone, Deserialize, Serialize)]
+#[derive(
+    Debug, Default, PartialEq, Eq, Allocative, ProvidesStaticType, Clone, Deserialize, Serialize,
+)]
 pub struct Depend {
     pub task_name: String,
     pub cur_field: String,

@@ -7,7 +7,7 @@ pub struct Workflow {
     pub tasks: HashMap<String, Task>,
 }
 
-impl Workflow{
+impl Workflow {
     /// Finds the list of dependencies that the given task depends on.
     ///
     /// # Arguments
@@ -43,12 +43,7 @@ impl Workflow{
     /// * `workflow_index` - An integer that holds the index of the workflow where the given
     ///   task is located
     ///
-    fn dfs(
-        &self,
-        task_name: &str,
-        visited: &mut HashMap<String, bool>,
-        flow: &mut Vec<String>,
-    ) {
+    fn dfs(&self, task_name: &str, visited: &mut HashMap<String, bool>, flow: &mut Vec<String>) {
         visited.insert(task_name.to_string(), true);
 
         for depend_task in self.get_dependencies(task_name).unwrap().iter() {

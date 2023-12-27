@@ -38,7 +38,9 @@ impl Display for RustType {
             RustType::Value => write!(f, "Value"),
             RustType::List(item_type) => write!(f, "Vec<{item_type}>"),
             RustType::Tuple(key_type, value_type) => write!(f, "({key_type},{value_type})"),
-            RustType::HashMap(key_type, value_type) => write!(f, "HashMap<{key_type},{value_type}>"),
+            RustType::HashMap(key_type, value_type) => {
+                write!(f, "HashMap<{key_type},{value_type}>")
+            }
             RustType::Struct(name) => write!(f, "{name}"),
         }
     }

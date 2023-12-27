@@ -6,5 +6,5 @@ mod parser;
 pub use parser::*;
 
 mod echo;
-pub use echo::*;
 use composer_primitives::Result;
+pub use echo::*;

@@ -50,7 +50,9 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            composer.workflows.borrow()[0].get_dependencies("get_salaries").unwrap(),
+            composer.workflows.borrow()[0]
+                .get_dependencies("get_salaries")
+                .unwrap(),
             vec!["dependent_task"]
         );
     }

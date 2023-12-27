@@ -1,6 +1,5 @@
 use std::fmt::Display;
 
-
 use anyhow::Error;
 use composer_primitives::Exception;
 use thiserror::Error;
@@ -9,7 +8,7 @@ use thiserror::Error;
 pub enum IOError {
     PathNotFound,
     Anyhow(Error),
-    Other(String)
+    Other(String),
 }
 
 pub fn io_error(err: std::io::Error) -> Box<dyn Exception> {
@@ -28,7 +27,7 @@ impl Exception for IOError {
 
 impl From<std::io::Error> for IOError {
     fn from(value: std::io::Error) -> Self {
-        match value.kind(){
+        match value.kind() {
             std::io::ErrorKind::NotFound => IOError::PathNotFound,
             std::io::ErrorKind::PermissionDenied => todo!(),
             std::io::ErrorKind::ConnectionRefused => todo!(),
