@@ -3,7 +3,11 @@ use clap::StructOpt;
 
 /// CLI Arguments entry point - includes global parameters and subcommands
 #[derive(StructOpt, Debug)]
-#[structopt(name = "composer", author = "The HugoByte Team <hello@hugobyte.com>")]
+#[structopt(
+    name = "composer",
+    author = "The HugoByte Team <hello@hugobyte.com>",
+    version = "0.0.1"
+)]
 pub struct CLI {
     #[structopt(
         short,
