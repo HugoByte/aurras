@@ -1,18 +1,13 @@
-use std::{
-    env::current_dir,
-    ffi::OsStr,
-    fs,
-    path::PathBuf,
-};
 use anyhow::Error;
+use std::{env::current_dir, ffi::OsStr, fs, path::PathBuf};
 
 use itertools::Either;
-use walkdir::WalkDir;
 use std::collections::HashSet;
+use walkdir::WalkDir;
 
 use crate::constant::FILE_EXTENSION;
 
-#[derive(Clone, Debug  )]
+#[derive(Clone, Debug)]
 pub struct SourceFiles {
     base: PathBuf,
     files: HashSet<PathBuf>,
@@ -35,7 +30,6 @@ impl SourceFiles {
 
         let file_paths = fs::read_dir(&base)
             .unwrap()
-            .into_iter()
             .flat_map(|item| {
                 let item = item.unwrap();
 
@@ -72,5 +66,4 @@ impl SourceFiles {
     pub fn base(&self) -> &PathBuf {
         &self.base
     }
-    
 }

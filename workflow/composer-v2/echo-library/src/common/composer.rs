@@ -1,10 +1,10 @@
-use std::fs::OpenOptions;
-use std::io::Write;
-
 use anyhow::Ok;
 use composer_primitives::types::SourceFiles;
 use starlark::environment::FrozenModule;
 use starlark::eval::ReturnFileLoader;
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::path::Path;
 
 use super::*;
 
@@ -79,7 +79,7 @@ impl Composer {
         }
     }
 
-    pub fn build(&self, verbose: bool, temp_dir: &PathBuf) -> Result<(), Error> {
+    pub fn build(&self, verbose: bool, temp_dir: &Path) -> Result<(), Error> {
         if verbose {
             Command::new("rustup")
                 .current_dir(temp_dir.join("boilerplate"))
@@ -101,12 +101,12 @@ impl Composer {
 
     fn copy_boilerplate(
         &self,
-        temp_dir: &PathBuf,
+        temp_dir: &Path,
         types_rs: &str,
         workflow_name: String,
         workflow: &Workflow,
     ) -> Result<PathBuf, Error> {
-        let temp_dir = temp_dir.join(&workflow_name);
+        let temp_dir = temp_dir.join(workflow_name);
         let curr = temp_dir.join("boilerplate");
 
         std::fs::create_dir_all(curr.clone().join("src"))?;
@@ -114,10 +114,10 @@ impl Composer {
         let src_curr = temp_dir.join("boilerplate/src");
         let temp_path = src_curr.as_path().join("common.rs");
 
-        std::fs::write(temp_path, &COMMON[..])?;
+        std::fs::write(temp_path, COMMON)?;
 
         let temp_path = src_curr.as_path().join("lib.rs");
-        std::fs::write(temp_path.clone(), &LIB[..])?;
+        std::fs::write(temp_path.clone(), LIB)?;
 
         let mut lib = OpenOptions::new()
             .write(true)
@@ -131,13 +131,13 @@ impl Composer {
         std::fs::write(temp_path, types_rs)?;
 
         let temp_path = src_curr.as_path().join("traits.rs");
-        std::fs::write(temp_path, &TRAIT[..])?;
+        std::fs::write(temp_path, TRAIT)?;
 
         let temp_path = src_curr.as_path().join("macros.rs");
-        std::fs::write(temp_path, &MACROS[..])?;
+        std::fs::write(temp_path, MACROS)?;
 
         let cargo_path = curr.join("Cargo.toml");
-        std::fs::write(cargo_path.clone(), &CARGO[..])?;
+        std::fs::write(cargo_path.clone(), CARGO)?;
 
         let mut cargo_toml = OpenOptions::new()
             .write(true)
@@ -177,12 +177,12 @@ impl Composer {
         for load in ast.loads() {
             loads.push((
                 load.module_id.to_owned(),
-                Self::compile(&self, load.module_id, files)?,
+                Self::compile(self, load.module_id, files)?,
             ));
         }
 
         let modules = loads.iter().map(|(a, b)| (a.as_str(), b)).collect();
-        let mut loader = ReturnFileLoader { modules: &modules };
+        let loader = ReturnFileLoader { modules: &modules };
 
         // We build our globals by adding some functions we wrote
         let globals = GlobalsBuilder::extended_by(&[
@@ -223,7 +223,7 @@ impl Composer {
         {
             let mut eval = Evaluator::new(&module);
             // We add a reference to our store
-            eval.set_loader(&mut loader);
+            eval.set_loader(&loader);
             eval.extra = Some(self);
             eval.eval_module(ast, &globals)?;
         }
@@ -233,8 +233,8 @@ impl Composer {
 
     pub fn build_directory(
         &self,
-        build_path: &PathBuf,
-        out_path: &PathBuf,
+        build_path: &Path,
+        out_path: &Path,
         quiet: bool,
     ) -> Result<(), Error> {
         let composer_custom_types = self.custom_types.borrow();
@@ -250,7 +250,7 @@ impl Composer {
                 &composer_custom_types,
             )?;
             let temp_dir =
-                self.copy_boilerplate(build_path, &types_rs, workflow_name.clone(), &workflow)?;
+                self.copy_boilerplate(build_path, &types_rs, workflow_name.clone(), workflow)?;
 
             self.build(quiet, &temp_dir)?;
 

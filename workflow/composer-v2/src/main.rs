@@ -5,7 +5,7 @@ pub(crate) use lib::*;
 use clap::Parser;
 use cli::*;
 use commands::*;
-use composer_primitives::{Result, Execute};
+use composer_primitives::{Execute, Result};
 use std::process::exit;
 use types::Context;
 
@@ -35,7 +35,7 @@ fn set_panic_hook() {
                 "note: composer args: {}\n",
                 std::env::args().collect::<Vec<_>>().join(" ")
             );
-            eprintln!("note: composer flags: {:?}\n", CLI::parse());
+            eprintln!("note: composer flags: {:?}\n", Cli::parse());
         })
     });
 }
@@ -51,7 +51,7 @@ pub fn handle_error<T>(res: Result<T>) -> T {
     }
 }
 
-pub fn run_with_args(cli: CLI) -> Result<()> {
+pub fn run_with_args(cli: Cli) -> Result<()> {
     let mut context = handle_error(Context::new());
     if !cli.quiet() {
         context.quiet();
@@ -68,5 +68,5 @@ pub fn run_with_args(cli: CLI) -> Result<()> {
 
 fn main() {
     set_panic_hook();
-    handle_error(run_with_args(CLI::parse()));
+    handle_error(run_with_args(Cli::parse()));
 }

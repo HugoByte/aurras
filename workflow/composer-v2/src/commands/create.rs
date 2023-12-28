@@ -39,6 +39,6 @@ workflows(
             self.package_name
         );
 
-        fs::write(&temp_path, content.as_bytes()).map_err(io_error)
+        fs::write(temp_path, content.as_bytes()).map_err(io_error)
     }
 }

@@ -1,6 +1,6 @@
 use super::*;
 use anyhow::anyhow;
-
+#[allow(clippy::type_complexity)]
 #[starlark_module]
 pub fn starlark_workflow_module(builder: &mut GlobalsBuilder) {
     /// Creates a new task of the workflow and returns a task object of `Task` type

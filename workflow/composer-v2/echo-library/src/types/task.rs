@@ -10,17 +10,11 @@ pub enum Operation {
 
 impl Operation {
     pub fn is_map(&self) -> bool {
-        match self {
-            Self::Map(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Map(_))
     }
 
     pub fn is_combine(&self) -> bool {
-        match self {
-            Self::Combine => true,
-            _ => false,
-        }
+        matches!(self, Self::Combine)
     }
 }
 

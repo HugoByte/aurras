@@ -1,14 +1,14 @@
 use crate::commands::Commands;
 use clap::StructOpt;
 
-/// CLI Arguments entry point - includes global parameters and subcommands
+/// Cli Arguments entry point - includes global parameters and subcommands
 #[derive(StructOpt, Debug)]
 #[structopt(
     name = "composer",
     author = "The HugoByte Team <hello@hugobyte.com>",
     version = "0.0.1"
 )]
-pub struct CLI {
+pub struct Cli {
     #[structopt(
         short,
         global = true,
@@ -23,7 +23,7 @@ pub struct CLI {
     pub command: Commands,
 }
 
-impl CLI {
+impl Cli {
     pub fn quiet(&self) -> bool {
         self.quiet
     }
