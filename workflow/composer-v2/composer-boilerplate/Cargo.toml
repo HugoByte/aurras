@@ -1,0 +1,32 @@
+
+[package]
+name = "boilerplate"
+version = "0.0.1"
+edition = "2018"
+
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+overflow-checks = true
+# Tell `rustc` to optimize for small code size.
+opt-level = "z"
+debug = false
+
+[workspace]
+
+[dependencies]
+derive-enum-from-into = "0.1.1"
+serde_derive = "1.0.192"
+paste = "1.0.7"
+dyn-clone = "1.0.7"
+workflow_macro = "0.0.3"
+openwhisk-rust = "0.1.2"
+serde_json = { version = "1.0", features = ["raw_value"] }
+serde = { version = "1.0.192", features = ["derive"] }
+codec = { package = "parity-scale-codec", features = [
+    "derive",
+], version = "3.1.5" }

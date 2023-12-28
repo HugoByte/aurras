@@ -15,10 +15,11 @@ members = [
     "workflow/openwhisk_macro",
     "workflow/workflow_macro",
     "workflow/polkadot_macro",
-    # "workflow/composer-v2",
+    "workflow/hello_world_macro",
+    "workflow/composer-v2",
     "primitives",
     # "workflow/workflow_apis",
-    "workflow/test_util"
+    "workflow/test_util",
 ]
 
 [workspace.package]

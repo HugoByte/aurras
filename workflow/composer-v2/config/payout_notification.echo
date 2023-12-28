@@ -1,0 +1,64 @@
+attributes = {
+    "api_host": "https://65.20.70.146:31001",
+    "auth_key": "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",
+    "insecure": "true",
+    "namespace": "guest",
+}
+
+stakingpayout = task(
+    kind = "Polkadot",
+    action_name = "stakingpayout",
+    input_arguments = [
+        argument(
+            name="url",
+            input_type= String
+        ),
+        argument(
+            name="owner_key",
+            input_type= String
+        ),
+        argument(
+            name="address",
+            input_type= String
+        ),
+        argument(
+            name="era",
+            input_type= Uint
+        ),
+    ],
+    attributes = {
+        "chain" : "westend",
+        "operation" : "stakingpayout"
+    },
+    depend_on = [],
+)
+
+push_notification = task(
+    kind = "Openwhisk",
+    action_name = "push_notification",
+    input_arguments = [
+        argument(
+            name = "token",
+            input_type = String,
+        ),
+        argument(
+            name = "message",
+            input_type = Value,
+        ),
+        argument(
+            name = "result",
+            input_type = Uint,
+        ),
+    ],
+    attributes = attributes,
+    depend_on = [
+        depend(task_name = "stakingpayout", cur_field = "result", prev_field = "result" )
+    ]
+
+)
+
+workflows(
+    name = "payout_notification",
+    version = "0.0.1",
+    tasks = [stakingpayout, push_notification]
+)

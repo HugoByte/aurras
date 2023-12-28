@@ -1,23 +1,28 @@
-use std::{
-    env::current_dir,
-    path::{Path, PathBuf},
-};
-
 use crate::{
-    errors,
-    types::{BuildDirectory, OutputDirectory, Result, SourceFiles, Parser, Echo},
+    errors::IOError,
+    types::{Parser, Result},
 };
+use composer_primitives::{types::BuildDirectory, Exception, OutputDirectory, SourceFiles};
+use echo_library::Composer;
+use std::path::PathBuf;
 
 pub(crate) struct Context {
     build_directory: Option<BuildDirectory>,
-    output_directory: Option<OutputDirectory>,
+    pub output_directory: Option<OutputDirectory>,
     source_files: Option<SourceFiles>,
-    parser: Box<dyn Parser>
+    parser: Box<dyn Parser>,
+    quiet: bool,
 }
 
 impl Default for Context {
     fn default() -> Self {
-        Context { build_directory: None, output_directory: None, source_files: None, parser: Box::new(Echo{}) }
+        Context {
+            build_directory: None,
+            output_directory: None,
+            source_files: None,
+            parser: Box::<Composer>::default(),
+            quiet: false,
+        }
     }
 }
 
@@ -26,20 +31,33 @@ impl Context {
         Ok(Context::default())
     }
 
+    pub fn quiet(&mut self) {
+        self.quiet = true;
+    }
+
     pub fn init(
         &mut self,
         source: Option<PathBuf>,
         build_directory: Option<PathBuf>,
         output_directory: Option<PathBuf>,
     ) -> Result<()> {
-        self.build_directory = Some(BuildDirectory::new(build_directory)?);
-        self.source_files = Some(SourceFiles::new(source)?);
-        self.output_directory = Some(OutputDirectory::default());
-        
+        self.build_directory = Some(BuildDirectory::new(build_directory).map_err(|x| Box::new(IOError::Anyhow(x)) as  Box<dyn Exception>)?);
+        self.source_files = Some(SourceFiles::new(source).map_err(|err| Box::new(IOError::Anyhow(err)) as Box<dyn Exception>)?);
+        self.output_directory = Some(OutputDirectory::new(output_directory).map_err(|err| Box::new(IOError::Anyhow(err)) as Box<dyn Exception>)?);
+
         Ok(())
     }
 
-    pub fn parse(&self) {
-        &self.parser.parse(&self.source_files.as_ref().unwrap());
+    pub fn parse(&self) -> Result<()> {
+        self.parser.parse(self.source_files.as_ref().ok_or_else(|| Box::new(IOError::Other("Build file is not initialised".to_string())) as  Box<dyn Exception>)?)?;
+        Ok(())
+    }
+
+    pub fn build(&self) -> Result<()>{
+        self.parser.build(
+            self.build_directory.as_ref().ok_or_else(|| Box::new(IOError::Other("Build file is not initialised".to_string())) as  Box<dyn Exception>)?,
+            self.output_directory.as_ref().ok_or_else(|| Box::new(IOError::Other("output file is not initialised".to_string())) as  Box<dyn Exception>)?,
+            self.quiet,
+        )
     }
 }
