@@ -356,11 +356,11 @@ fn get_impl_execute_trait_code(workflow: &Workflow) -> String {
 fn get_add_nodes_code(flow: &Vec<String>) -> String {
     let mut add_nodes_code = String::new();
 
-    for i in 0..flow.len() {
+    for i in flow {
         add_nodes_code.push_str(&format!(
             "let {}_index = workflow.add_node(Box::new({}));\n",
-            flow[i].to_case(Case::Snake),
-            flow[i].to_case(Case::Snake)
+            i.to_case(Case::Snake),
+            i.to_case(Case::Snake)
         ));
     }
 
@@ -574,11 +574,11 @@ pub fn add_polkadot_openwhisk(workflow: &Workflow) -> String {
     let mut toml_dependencies = String::new();
 
     if kinds.contains("openwhisk") {
-        toml_dependencies = format!("{}", get_openwhisk());
+        toml_dependencies =  get_openwhisk();
     }
 
     if kinds.contains("polkadot") {
-        toml_dependencies = format!("{}", get_polkadot());
+        toml_dependencies = get_polkadot();
     }
 
     if kinds.contains("openwhisk") && kinds.contains("polkadot") {
@@ -616,7 +616,7 @@ pub fn get_struct_stake_ledger(workflow: &Workflow) -> String {
     let mut toml_dependencies = String::new();
 
     if kinds.contains("polkadot") {
-        toml_dependencies = format!("{}", staking_ledger());
+        toml_dependencies = staking_ledger();
     }
 
     toml_dependencies

@@ -20,7 +20,7 @@ impl Default for Context {
             build_directory: None,
             output_directory: None,
             source_files: None,
-            parser: Box::new(Composer::default()),
+            parser: Box::<Composer>::default(),
             quiet: false,
         }
     }

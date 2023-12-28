@@ -12,9 +12,9 @@ pub struct Create {
 
 impl Create {
     pub fn execute(self) -> result::Result<()> {
-        let current = std::env::current_dir().map_err(|error| io_error(error))?;
+        let current = std::env::current_dir().map_err(io_error)?;
         let package = current.join(&self.package_name);
-        fs::create_dir_all(&package).map_err(|error| io_error(error))?;
+        fs::create_dir_all(&package).map_err(io_error)?;
 
         let temp_path = package.join("main.echo");
         let content = format!(
@@ -39,6 +39,6 @@ workflows(
             self.package_name
         );
 
-        fs::write(&temp_path, content.as_bytes()).map_err(|error| io_error(error))
+        fs::write(&temp_path, content.as_bytes()).map_err(io_error)
     }
 }

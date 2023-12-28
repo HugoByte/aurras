@@ -55,6 +55,10 @@ impl From<std::io::Error> for IOError {
 
 impl Display for IOError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
+        match self {
+            IOError::PathNotFound => write!(f, "PathNotFound"),
+            IOError::Anyhow(error) => write!(f, "ErrorInComposer: {}", error),
+            IOError::Other(error) => write!(f, "Error: {}", error),
+        }
     }
 }

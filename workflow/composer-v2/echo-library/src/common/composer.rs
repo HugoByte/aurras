@@ -256,7 +256,7 @@ impl Composer {
 
             let wasm_path = format!(
                 "{}/boilerplate/target/wasm32-wasi/release/boilerplate.wasm",
-                temp_dir.display().to_string()
+                temp_dir.display()
             );
 
             fs::create_dir_all(out_path.join("output"))?;
