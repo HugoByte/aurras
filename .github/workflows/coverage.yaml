@@ -1,0 +1,42 @@
+name: Code Coverage with Codecov
+
+on:
+  push:
+    branches:
+      - next
+  pull_request:
+    branches:
+      - next
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Rust
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+    
+      - name: Install Rust
+        run: |
+            rustup install "$RUSTC_VERSION"
+            rustup default "$RUSTC_TOOLCHAIN"
+            rustup component add clippy
+            rustup component add rustfmt
+  
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+      - name: Install tarpaulin
+        uses: taiki-e/install-action@cargo-tarpaulin
+      - name: Generate code coverage
+        run: cargo tarpaulin --all-features -o Lcov
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+            token: ${{ secrets.CODECOV_TOKEN }}
+            files: lcov.info
+            flags: rust
+            fail_ci_if_error: true
