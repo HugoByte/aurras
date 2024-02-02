@@ -1,12 +1,8 @@
 name: Code Coverage with Codecov
 
 on:
-  push:
-    branches:
-      - next
-  pull_request:
-    branches:
-      - next
+  workflow_dispatch:
+
 jobs:
   coverage:
     runs-on: ubuntu-latest
