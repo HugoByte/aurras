@@ -19,7 +19,7 @@ members = [
     "primitives",
     # "workflow/workflow_apis",
     "workflow/test_util"
-]
+, "workflow/hello_world_macro"]
 
 [workspace.package]
 authors = ["The HugoByte Team <hello@hugobyte.com>"]
