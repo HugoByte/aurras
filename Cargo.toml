@@ -18,7 +18,8 @@ members = [
     # "workflow/composer-v2",
     "primitives",
     # "workflow/workflow_apis",
-    "workflow/test_util"
+    "workflow/test_util",
+    "workflow/hello_world_macro",
 ]
 
 [workspace.package]
