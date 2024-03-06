@@ -18,8 +18,9 @@ members = [
     # "workflow/composer-v2",
     "primitives",
     # "workflow/workflow_apis",
-    "workflow/test_util"
-, "runtime/lite/modules/wasm"]
+    "workflow/test_util",
+    "runtime/lite/modules/wasm",
+]
 
 [workspace.package]
 authors = ["The HugoByte Team <hello@hugobyte.com>"]
