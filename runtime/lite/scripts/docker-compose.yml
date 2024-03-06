@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  # Define multiple pub services with unique names and ports
+  pubs:
+    image: docker.io/ahdinosaur/ssb-pub:latest
+    
+    ports:
+      - "8013:8008" # Map container port 8088 to host port 8081
+    # Mount a volume named pub-1-data to container's /data
+    volumes:
+      - type: bind
+        source: ./test
+        target: /home/node/.ssb
+    # command: >
+    #   cp /tmp/config /home/node/.ssb
+    # entrypoint: ["ssb-server", "start"]
+    command: "start"
+    restart: unless-stopped
+
+  consumer:
+    image: kkshanith/ssb-server
+    ports:
+      - "8014:8008" # Map container port 8088 to host port 
+    restart: unless-stopped
+    
+  producer:
+    image: kkshanith/ssb-server
+    ports:
+      - "8015:8008" # Map container port 8088 to host port 8082
+    
