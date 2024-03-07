@@ -10,7 +10,7 @@ services:
     # Mount a volume named pub-1-data to container's /data
     volumes:
       - type: bind
-        source: ./test
+        source: ./ssb-test
         target: /home/node/.ssb
     # command: >
     #   cp /tmp/config /home/node/.ssb

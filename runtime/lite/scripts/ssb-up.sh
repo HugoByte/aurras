@@ -43,10 +43,10 @@ stop_service() {
 }
 
 initialize() {
-  mkdir test
+  mkdir ssb-test
   
 
-cat > ./test/config <<EOF
+cat > ./ssb-test/config <<EOF
 {
   "connections": {
     "incoming": {
@@ -97,16 +97,15 @@ accept_invite(){
 
 case "$1" in
   start)
+    initialize
     start_service 
     ;;
   stop)
     stop_service
+    rm -rf ssb-test
     ;;
   copy)
     copy-files 
-    ;;
-  init)
-    initialize
     ;;
   create-invite)
     create_invite
@@ -115,6 +114,6 @@ case "$1" in
     accept_invite $2
     ;;
   *)
-    echo "Invalid command. Please enter init, start, copy or stop."
+    echo "Invalid command. Please enter start, copy or stop."
     ;;
 esac
