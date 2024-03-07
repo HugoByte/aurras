@@ -1,5 +1,5 @@
 [package]
-name = "wasm"
+name = "wasmtime-wasi-module"
 authors.workspace = true
 edition.workspace = true
 repository.workspace = true

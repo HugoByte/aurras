@@ -10,7 +10,7 @@ async fn create_server(add: &str) -> MockServer {
     MockServer::builder().listener(listener).start().await
 }
 
-pub async fn post(address:&str) -> MockServer {
+pub async fn post(address: &str) -> MockServer {
     let server = create_server(address).await;
 
     let mut r = HashMap::new();
@@ -76,51 +76,6 @@ pub async fn post(address:&str) -> MockServer {
         .mount(&server)
         .await;
 
-    let res = EmplyeeIds {
-        ids: vec![1, 2, 3, 4, 5],
-    };
-    Mock::given(method("POST"))
-        .and(path("/api/v1/namespaces/guest/actions/employee_ids"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .insert_header("Content-Type", "application/json")
-                .set_body_json(res),
-        )
-        .mount(&server)
-        .await;
-    let res = GetSalary { salary: 10000000 };
-    Mock::given(method("POST"))
-        .and(path("/api/v1/namespaces/guest/actions/getsalaries"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .insert_header("Content-Type", "application/json")
-                .set_body_json(res),
-        )
-        .mount(&server)
-        .await;
-    let res = GetAddress {
-        address: "HugoByte".to_string(),
-    };
-    Mock::given(method("POST"))
-        .and(path("/api/v1/namespaces/guest/actions/getaddress"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .insert_header("Content-Type", "application/json")
-                .set_body_json(res),
-        )
-        .mount(&server)
-        .await;
-    let res = vec!["Salary creditted for emp id 1 from Hugobyte "];
-    Mock::given(method("POST"))
-        .and(path("/api/v1/namespaces/guest/actions/salary"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .insert_header("Content-Type", "application/json")
-                .set_body_json(res),
-        )
-        .mount(&server)
-        .await;
-
     server
 }
 
@@ -142,19 +97,4 @@ pub struct ModelPrice {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Purchase {
     message: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct EmplyeeIds {
-    ids: Vec<i32>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct GetSalary {
-    salary: i32,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct GetAddress {
-    address: String,
 }

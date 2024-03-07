@@ -19,7 +19,6 @@ members = [
     "primitives",
     # "workflow/workflow_apis",
     "workflow/test_util",
-    "runtime/lite/modules/wasm",
 ]
 
 [workspace.package]
