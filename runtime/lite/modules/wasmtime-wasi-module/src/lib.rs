@@ -137,28 +137,20 @@ mod tests {
     }
 
     #[async_std::test]
-    async fn test_car_market_place() {
-        let path = std::env::var("WORKFLOW_WASM").unwrap_or(
-            "/Users/prathiksha/Downloads/Hugobyte/composer/test/output/car_market_place_0.0.1.wasm"
-                .to_string(),
-        );
+    async fn test_hello_world() {
+        let path = std::env::var("WORKFLOW_WASM")
+            .unwrap_or("../../../../workflow/examples/hello_world.wasm".to_string());
+
         let server = post("127.0.0.1:8080").await;
         let input = serde_json::json!({
             "allowed_hosts": [
                 server.uri()
             ],
             "data": {
-                "car_type":"hatchback",
-                "company_name":"maruthi",
-                "model_name":"alto",
-                "price":1200000
+               "hello" : "world"
                 }
         });
         let result = run_workflow(input, path);
-
-        assert!(result
-            .result
-            .to_string()
-            .contains("Thank you for the purchase"))
+        assert!(result.result.to_string().contains("Hello"));
     }
 }
