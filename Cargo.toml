@@ -19,7 +19,7 @@ members = [
     "primitives",
     # "workflow/workflow_apis",
     "workflow/test_util",
-    "runtime/lite/modules/storage"
+    "workflow/hello_world_macro",
 ]
 
 [workspace.package]
