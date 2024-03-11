@@ -1,4 +1,4 @@
-use sled::Error;
+use rocksdb::Error;
 
 pub trait Storage {
     fn get_data(&self, key: &str) -> Result<Vec<u8>, Error>;
