@@ -1,3 +1,5 @@
+/// This Rust code snippet is defining a module structure for a project. Here's a breakdown of what it
+/// does:
 pub mod traits;
 pub use traits::*;
 pub mod storage;
@@ -12,6 +14,8 @@ mod tests {
     use std::thread;
     use std::time::Duration;
 
+    /// The test function `test_get_data` removes a lock file, opens a database, stores a key-value pair,
+    /// retrieves the value, and asserts the equality of the retrieved value.
     #[test]
     fn test_get_data() {
         let lock_file_path = "my_db.db/LOCK";
@@ -21,7 +25,9 @@ mod tests {
             if let Err(_) = std::fs::remove_file(lock_file_path) {
                 println!("Failed to remove lock file: {}", lock_file_path);
                 retries += 1;
-                thread::sleep(Duration::from_secs(1)); // Wait for 1 second before retrying
+
+                // Wait for 1 second before retrying
+                thread::sleep(Duration::from_secs(1));
             } else {
                 break;
             }
@@ -34,6 +40,8 @@ mod tests {
         assert_eq!(result, b"test_value");
     }
 
+    /// The test_set_data function removes a lock file, opens a database, sets and retrieves data, and
+    /// performs assertions in Rust.
     #[test]
     fn test_set_data() {
         let lock_file_path = "my_db1.db/LOCK";
@@ -43,7 +51,9 @@ mod tests {
             if let Err(_) = std::fs::remove_file(lock_file_path) {
                 println!("Failed to remove lock file: {}", lock_file_path);
                 retries += 1;
-                thread::sleep(Duration::from_secs(1)); // Wait for 1 second before retrying
+
+                // Wait for 1 second before retrying
+                thread::sleep(Duration::from_secs(1));
             } else {
                 break;
             }
@@ -60,6 +70,8 @@ mod tests {
         assert_eq!(deserialized_value, b"test_value");
     }
 
+    /// The test_modify_data function in Rust removes a lock file, creates a CoreStorage instance, sets
+    /// and modifies data, and asserts the modified data.
     #[test]
     fn test_modify_data() {
         let lock_file_path = "my_db2.db/LOCK";
@@ -69,7 +81,9 @@ mod tests {
             if let Err(_) = std::fs::remove_file(lock_file_path) {
                 println!("Failed to remove lock file: {}", lock_file_path);
                 retries += 1;
-                thread::sleep(Duration::from_secs(1)); // Wait for 1 second before retrying
+
+                // Wait for 1 second before retrying
+                thread::sleep(Duration::from_secs(1));
             } else {
                 break;
             }
@@ -89,6 +103,8 @@ mod tests {
         assert_eq!(modified_data, vec![4, 5, 6]);
     }
 
+    /// The test function `test_delete_data` in Rust creates a CoreStorage instance, sets data with a
+    /// key and value, deletes the data, and then checks that the data was successfully deleted.
     #[test]
     fn test_delete_data() {
         let core_storage = CoreStorage::new(
@@ -109,6 +125,8 @@ mod tests {
         assert_eq!(deleted_data, Vec::new());
     }
 
+    /// The test_with_different_key function tests that an error is returned when trying to retrieve data
+    /// with a different key than the one stored in the CoreStorage.
     #[test]
     #[should_panic]
     fn test_with_different_key() {
@@ -122,6 +140,8 @@ mod tests {
         assert!(result.is_err());
     }
 
+    /// The test function stores a WebAssembly file in a database and then retrieves it to compare with
+    /// the original file.
     #[test]
     fn test_store_and_get_wasm() {
         let core_storage = CoreStorage::new(
@@ -138,6 +158,8 @@ mod tests {
         assert_eq!(retrieved_wasm, fs::read(wasm_path).unwrap());
     }
 
+    /// The test function is checking if an error is raised when trying to retrieve a WebAssembly module
+    /// with a different key than the one it was stored with.
     #[test]
     #[should_panic]
     fn test_get_wasm_with_different_key() {
@@ -151,6 +173,5 @@ mod tests {
         core_storage.store_wasm(key, wasm_path).unwrap();
 
         core_storage.get_wasm("hello").unwrap();
-
     }
 }
