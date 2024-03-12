@@ -36,11 +36,20 @@ impl GlobalStateManager for GlobalState<WorkflowState> {
         }
     }
 
-    fn update_execution(&mut self, workflow_index: usize) -> Result<()> {
+    fn update_running(&mut self, workflow_index: usize) -> Result<()> {
         if self.workflows.len() <= workflow_index {
             Err(anyhow!("index out of bound"))
         } else {
             self.workflows[workflow_index].update_running()?;
+            Ok(())
+        }
+    }
+
+    fn update_paused(&mut self, workflow_index: usize, output: Option<Value>) -> Result<()> {
+        if self.workflows.len() <= workflow_index {
+            Err(anyhow!("index out of bound"))
+        } else {
+            self.workflows[workflow_index].update_paused(output)?;
             Ok(())
         }
     }

@@ -5,6 +5,7 @@ pub enum ExecutionState {
     #[default]
     Init,
     Running,
+    Paused,
     Failed,
     Success,
 }
@@ -38,7 +39,7 @@ impl WorkflowStateManager for WorkflowState {
 
             ExecutionState::Running => Err(anyhow!("workflow execution already in progress!")),
 
-            ExecutionState::Init => {
+            ExecutionState::Init | ExecutionState::Paused => {
                 self.execution_state = ExecutionState::Running;
                 Ok(())
             }
@@ -54,7 +55,11 @@ impl WorkflowStateManager for WorkflowState {
 
             ExecutionState::Init => {
                 Err(anyhow!("workflow does not executed! execution_state: Init"))
-            }
+            },
+
+            ExecutionState::Paused => {
+                Err(anyhow!("execution is paused! workflow should be resumed"))
+            },
 
             ExecutionState::Running => {
                 match result {
@@ -69,6 +74,28 @@ impl WorkflowStateManager for WorkflowState {
                 }
                 Ok(())
             }
+        }
+    }
+
+    fn update_paused(&mut self, output: Option<Value>) -> Result<()>{
+        match self.execution_state {
+            ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
+                "workflow already executed! result: {:?}",
+                self.get_result()
+            )),
+
+            ExecutionState::Paused => Err(anyhow!("workflow already paused")),
+
+            ExecutionState::Init | ExecutionState::Running => {
+                self.execution_state = ExecutionState::Paused;
+
+                if output.is_some(){
+                    self.result = output
+                }
+
+                Ok(())
+            }
+        
         }
     }
 
@@ -88,6 +115,7 @@ impl WorkflowStateManager for WorkflowState {
         match self.execution_state {
             ExecutionState::Init => Err(anyhow!("execution not started")),
             ExecutionState::Running => Err(anyhow!("execution in-progress")),
+            ExecutionState::Paused => Err(anyhow!("execution paused")),
             ExecutionState::Failed => Ok(false),
             ExecutionState::Success => Ok(true),
         }
@@ -97,7 +125,16 @@ impl WorkflowStateManager for WorkflowState {
         match self.execution_state {
             ExecutionState::Init => Err(anyhow!("execution not started")),
             ExecutionState::Running => Err(anyhow!("execution in-progress")),
+            ExecutionState::Paused => {
+                match &self.result {
+                    Some(value) => {
+                        Ok(value.clone())
+                    },
+                    None => Err(anyhow!("no result is stored!"))
+                }
+            }
             ExecutionState::Failed | ExecutionState::Success => Ok(self.result.clone().unwrap()),
         }
     }
+
 }
