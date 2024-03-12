@@ -8,6 +8,7 @@ mod tests {
     use crate::storage::CoreStorage;
     use crate::Storage;
     pub use rocksdb::{ErrorKind, DB};
+    use std::fs;
     use std::thread;
     use std::time::Duration;
 
@@ -119,5 +120,37 @@ mod tests {
 
         let result = core_storage.get_data("test_key");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_store_and_get_wasm() {
+        let core_storage = CoreStorage::new(
+            "test_id".to_string(),
+            DB::open_default("store_Wasm.db").unwrap(),
+        );
+        let wasm_path = "/Users/prathiksha/Downloads/Hugobyte/Learning/wasm-time/target/wasm32-wasi/debug/wasm-time.wasm";
+
+        let key = "boilerplate";
+        core_storage.store_wasm(key, wasm_path).unwrap();
+
+        let retrieved_wasm = core_storage.get_wasm(key).unwrap();
+
+        assert_eq!(retrieved_wasm, fs::read(wasm_path).unwrap());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_wasm_with_different_key() {
+        let core_storage = CoreStorage::new(
+            "test_id".to_string(),
+            DB::open_default("store_Wasm.db").unwrap(),
+        );
+        let wasm_path = "/Users/prathiksha/Downloads/Hugobyte/Learning/wasm-time/target/wasm32-wasi/debug/wasm-time.wasm";
+
+        let key = "boilerplate";
+        core_storage.store_wasm(key, wasm_path).unwrap();
+
+        core_storage.get_wasm("hello").unwrap();
+
     }
 }

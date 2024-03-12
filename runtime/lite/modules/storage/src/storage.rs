@@ -1,5 +1,6 @@
 use crate::traits::Storage;
-use rocksdb::{Error, DB};
+use rocksdb::{Error, Options, DB};
+use std::fs;
 
 pub struct CoreStorage {
     pub id: String,
@@ -41,5 +42,31 @@ impl Storage for CoreStorage {
     fn delete_data(&self, key: &str) -> Result<(), Error> {
         self.db.delete(key).unwrap();
         Ok(())
+    }
+
+    fn store_wasm(&self, key: &str, wasm_path: &str) -> Result<(), Error> {
+        let db = DB::open_default("wasm-db.db").unwrap();
+
+        let wasm_bytes: Vec<u8> = fs::read(wasm_path).unwrap();
+
+        db.put(key, &wasm_bytes).unwrap();
+
+        drop(db);
+
+        Ok(())
+    }
+
+    fn get_wasm(&self, key: &str) -> Result<Vec<u8>, Error> {
+        let db = DB::open_default("wasm-db.db").unwrap();
+
+        let retrieved_wasm_bytes = match db.get(key) {
+            Ok(Some(value)) => value,
+            Ok(None) => panic!("WASM module not found with key: {:?}", key),
+            Err(err) => return Err(err),
+        };
+
+        drop(db);
+
+        Ok(retrieved_wasm_bytes)
     }
 }
