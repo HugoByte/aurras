@@ -1,9 +1,9 @@
 [package]
 name = "wasmtime-wasi-module"
-authors.workspace = true
-edition.workspace = true
-repository.workspace = true
-version.workspace = true
+authors = ["The HugoByte Team <hello@hugobyte.com>"]
+edition = "2021"
+repository = "https://github.com/hugobyte/aurras.git"
+version = "0.0.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
