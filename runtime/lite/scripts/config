@@ -1,0 +1,19 @@
+{
+  "allowPrivate": "true",
+  "incoming": {
+    "net": [
+      {
+        "port": 8008,
+        "scope": "public",
+        "transform": "shs"
+      }
+    ]
+  },
+  "outgoing": {
+    "onion": [
+      {
+        "transform": "shs"
+      }
+    ]
+  }
+}
