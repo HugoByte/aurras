@@ -14,7 +14,7 @@ find_container() {
   return 1
 }
 
-copy-files() {
+copy_files() {
 # Get the container name or pattern to search for
 # read -p "Enter container name (or part of the name): " container_name
 
@@ -95,6 +95,11 @@ accept_invite(){
     echo $producer_accept
 }
 
+start_specific_service() {
+  service=$1
+  docker-compose --project-name ssb up -d $service
+}
+
 case "$1" in
   start)
     initialize
@@ -105,13 +110,16 @@ case "$1" in
     rm -rf ssb-test
     ;;
   copy)
-    copy-files 
+    copy_files 
     ;;
   create-invite)
     create_invite
     ;;
   accept-invite)
     accept_invite $2
+    ;;
+  start-service)
+    start_specific_service $2
     ;;
   *)
     echo "Invalid command. Please enter start, copy or stop."

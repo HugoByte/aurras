@@ -19,3 +19,11 @@ This is a sample network for ssb for testing purpose.
 
         ./ssb-up stop
 
+- Start a specifi service like consumer or producer
+
+        ./ssb-up start-service consumer
+        or 
+        ./ssb-up start-service producer
+
+>[!NOTE]
+> If you need more than one consumer or producer, you may need to change the port number in docker compose file
