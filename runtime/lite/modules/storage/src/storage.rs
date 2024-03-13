@@ -23,6 +23,10 @@ impl CoreStorage {
     pub fn new(id: String, db: rocksdb::DB) -> Self {
         Self { id, db }
     }
+
+    fn open_database(&self) -> Result<rocksdb::DB, Error> {
+        DB::open_default("my-db.db")
+    }
 }
 
 impl Storage for CoreStorage {
@@ -30,13 +34,12 @@ impl Storage for CoreStorage {
     /// struct is implementing the `get_data` method defined in the `Storage` trait.
     fn get_data(&self, key: &str) -> Result<Vec<u8>, Error> {
         //create and open a database
-        let _db = DB::open_default("my_database.db").unwrap();
+        let _db = self.open_database()?;
         let datastore = self.db.get(key).unwrap();
         let data: Vec<u8> = match datastore {
             Some(ivec) => ivec.iter().map(|x| *x as u8).collect(),
             None => Vec::new(), // Handle the empty case
         };
-
         Ok(data)
     }
 
@@ -95,7 +98,7 @@ impl Storage for CoreStorage {
     /// `Result` enum where the success case contains an empty tuple `()` and the error case contains an
     /// `Error`.
     fn delete_data(&self, key: &str) -> Result<(), Error> {
-        self.db.delete(key).unwrap();
+        self.db.delete(key)?;
         Ok(())
     }
 
@@ -113,13 +116,11 @@ impl Storage for CoreStorage {
     ///
     /// The `store_wasm` function is returning a `Result<(), Error>`.
     fn store_wasm(&self, key: &str, wasm_path: &str) -> Result<(), Error> {
-        let db = DB::open_default("wasm-db.db").unwrap();
+        let db = self.open_database()?;
 
         let wasm_bytes: Vec<u8> = fs::read(wasm_path).unwrap();
 
-        db.put(key, &wasm_bytes).unwrap();
-
-        drop(db);
+        db.put(key, &wasm_bytes)?;
 
         Ok(())
     }
@@ -135,16 +136,13 @@ impl Storage for CoreStorage {
     ///
     /// The `get_wasm` function returns a `Result` containing either a vector of `u8` bytes or an
     /// `Error`.
+
     fn get_wasm(&self, key: &str) -> Result<Vec<u8>, Error> {
-        let db = DB::open_default("wasm-db.db").unwrap();
+        let db = self.open_database()?;
 
-        let retrieved_wasm_bytes = match db.get(key) {
-            Ok(Some(value)) => value,
-            Ok(None) => panic!("WASM module not found with key: {:?}", key),
-            Err(err) => return Err(err),
-        };
-
-        drop(db);
+        let retrieved_wasm_bytes = db.get(key).map(|result| {
+            result.unwrap_or_else(|| panic!("WASM module not found with key: {:?}", key))
+        })?;
 
         Ok(retrieved_wasm_bytes)
     }
