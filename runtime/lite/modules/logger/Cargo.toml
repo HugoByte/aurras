@@ -1,0 +1,11 @@
+[package]
+name = "logger"
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+slog = "2.7.0"
+slog-async = "2.8.0"
+slog-term = "2.9.1"
