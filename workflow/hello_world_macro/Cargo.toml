@@ -1,0 +1,15 @@
+[package]
+name = "hello_world_macro"
+version = "0.0.1"
+edition = "2018"
+authors = ["HugoByte <hello@hugobyte.com>"]
+repository = "https://github.com/HugoByte/aurras/workflow/hello_world_macro"
+license = "Apache-2.0"
+description = "Derive macro for hello world action"
+
+[dependencies]
+quote = "1.0.33"
+syn = "2.0.29"
+
+[lib]
+proc-macro = true

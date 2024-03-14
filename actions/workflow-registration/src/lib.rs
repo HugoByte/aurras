@@ -80,12 +80,9 @@ impl Action {
             let _data = context.get_document(&uuid)?;
         }
         let auth = self.params.openwhisk_auth.clone();
-        let client_props = WskProperties::new(
-            auth.to_string(),
-            self.params.endpoint.clone(),
-            "guest".to_string(),
-        )
-        .set_bypass_cerificate_check(true);
+        let client_props =
+            WskProperties::new(auth, self.params.endpoint.clone(), "guest".to_string())
+                .set_bypass_cerificate_check(true);
         let client = OpenwhiskClient::<NativeClient>::new(Some(&client_props));
 
         let action = openwhisk_client_rust::Action {
@@ -137,7 +134,7 @@ impl Action {
 
                 Ok(serde_json::json!({"action_name" : x.name}))
             }
-            Err(e) => return Err(e).map_err(serde::de::Error::custom),
+            Err(e) => Err(e).map_err(serde::de::Error::custom),
         }
     }
 }
