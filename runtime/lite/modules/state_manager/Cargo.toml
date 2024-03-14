@@ -1,8 +1,11 @@
-[workspace.package]
+[package]
+name = "state_manager"
 authors = ["The HugoByte Team <hello@hugobyte.com>"]
 edition = "2021"
 repository = "https://github.com/hugobyte/aurras.git"
 version = "0.0.1"
 
-[workspace]
-members = ["wasmtime-wasi-module", "state_manager"]
+[dependencies]
+anyhow = "1.0.80"
+serde = { version = "1.0.197", features = ["derive"]}
+serde_json = "1.0.114"
