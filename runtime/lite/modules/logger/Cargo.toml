@@ -1,10 +1,11 @@
 [package]
 name = "logger"
-authors = ["The HugoByte Team <hello@hugobyte.com>"]
-edition = "2021"
-repository = "https://github.com/hugobyte/aurras.git"
-version = "0.0.1"
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+version.workspace = true
 
 [dependencies]
-log = "0.4.21"
-env_logger =  "0.11.3"
+slog = "2.7.0"
+slog-async = "2.8.0"
+slog-term = "2.9.1"
