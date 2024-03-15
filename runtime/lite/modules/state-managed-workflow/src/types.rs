@@ -109,7 +109,7 @@ pub fn main(args: Value) -> Result<Value, String> {
         let mut node = workflow.get_task_as_mut(i);
         node.set_result_output(val.clone());
         let action_name = node.get_action_name();
-        workflow.state_manger.update_restore_sucess(&action_name, i as isize, val.clone())
+        workflow.state_manger.update_restore_success(&action_name, i as isize, val.clone())
     }
 
     for i in prev_output.len()..workflow.node_count() {

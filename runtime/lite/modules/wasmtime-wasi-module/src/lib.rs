@@ -7,7 +7,7 @@ mod tests;
 mod types;
 
 pub use types::*;
-use state_manager::{GlobalState, GlobalStateManager, WorkflowState};
+use state_manager::{GlobalState, GlobalStateManager, WorkflowState, CoreLogger};
 
 use cached::proc_macro::cached;
 use cached::stores::RedisCache;
@@ -35,7 +35,7 @@ fn run_workflow_helper(
     data: Value,
     path: String,
     hash_key: String,
-    state_manager: &mut GlobalState<WorkflowState>,
+    state_manager: &mut GlobalState<WorkflowState, CoreLogger>,
     workflow_index: usize,
 ) -> Result<Output, String> {
     use cached::IOCached;
@@ -175,6 +175,7 @@ fn run_workflow_helper(
         .add_to_linker(&mut linker, move |_store| http_ctx.clone())
         .unwrap();
 
+
     let linking = linker.instantiate(&mut store, &module).unwrap();
 
     let malloc = linking
@@ -193,6 +194,7 @@ fn run_workflow_helper(
         .unwrap();
 
     state_manager.update_running(workflow_index).unwrap();
+
     let _result_from_wasm = run.call(&mut store, (data_ptr, len));
 
     let malloc = linking
@@ -223,7 +225,7 @@ fn run_workflow_helper(
 }
 
 pub fn run_workflow(data: Value, path: String) -> Result<Output, String> {
-    let mut state_manager = GlobalState::new();
+    let mut state_manager = GlobalState::new("./workflows.log");
 
     state_manager.new_workflow(0, &path);
 

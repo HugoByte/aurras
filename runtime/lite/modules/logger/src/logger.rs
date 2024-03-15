@@ -11,15 +11,27 @@ pub struct CoreLogger {
 }
 
 impl CoreLogger {
-    pub fn new() -> CoreLogger {
+    pub fn new(log_file: Option<&str>) -> CoreLogger {
         use std::fs::OpenOptions;
 
-        let file = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .append(true)
-            .open("./workflows.log")
-            .unwrap();
+       let file =  match log_file {
+            Some(file) => {
+                OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .append(true)
+                    .open(file)
+                    .unwrap()
+            }
+            None => {
+                OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .append(true)
+                    .open("./workflows.log")
+                    .unwrap()
+            }
+        };
 
         let decorator = slog_term::PlainDecorator::new(file);
         let file_drain = slog_term::FullFormat::new(decorator).build().fuse();
@@ -29,7 +41,10 @@ impl CoreLogger {
 
         let drain = slog::Duplicate::new(file_drain, terminal_drain).fuse();
 
-        let drain = slog_async::Async::new(drain).overflow_strategy(slog_async::OverflowStrategy::Block).build().fuse();
+        let drain = slog_async::Async::new(drain)
+            .overflow_strategy(slog_async::OverflowStrategy::Block)
+            .build()
+            .fuse();
         let logger = slog::Logger::root(drain, slog::o!());
 
         CoreLogger { logger }

@@ -7,6 +7,7 @@ pub struct WorkflowGraph {
     edges: Vec<(usize, usize)>,
     nodes: Vec<Box<dyn Execute>>,
     pub workflow_id: String,
+    // pub state_manger: StateManager<CoreLogger>,
     pub state_manger: StateManager,
 }
 
@@ -59,9 +60,6 @@ impl WorkflowGraph {
 
         let task = self.get_task(task_index);
         let action_name = task.get_action_name();
-
-        println!("executing task {}", action_name);
-
         self.state_manger.update_running(&action_name, task_index as isize);
 
 
@@ -114,12 +112,6 @@ impl WorkflowGraph {
                 }
             }
         };
-
-        // let result = if let 3 = task_index {
-        //     Err("error in task".to_string())
-        // }else{
-        //     result
-        // };
 
         match result {
             Ok(output) => {
