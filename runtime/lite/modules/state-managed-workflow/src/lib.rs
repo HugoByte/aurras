@@ -32,9 +32,6 @@ use workflow_macro::Flow;
 extern crate alloc;
 use codec::{Decode, Encode};
 use core::alloc::Layout;
-// use cached::RedisCache;
-// use cached::IOCached;
-// use sha256::digest;
 
 #[no_mangle]
 pub fn _start(ptr: *mut u8, length: i32) {

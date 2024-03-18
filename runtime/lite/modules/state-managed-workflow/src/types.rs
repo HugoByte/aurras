@@ -120,7 +120,5 @@ pub fn main(args: Value) -> Result<Value, String> {
     let output = workflow.get_task(len - 1).get_task_output();
     let result = serde_json::to_value(output).unwrap();
 
-    // std::thread::sleep(std::time::Duration::from_secs(5));
-
     Ok(result)
 }

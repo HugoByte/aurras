@@ -1,10 +1,13 @@
 use super::*;
-use crate::traits::Logger;
-use env_logger::*;
-use log::*;
+extern crate slog;
+extern crate slog_async;
+extern crate slog_term;
 
+use slog::Drain;
+
+#[derive(Clone, Debug)]
 pub struct CoreLogger {
-    logger: env_logger::Logger,
+    logger: slog::Logger,
 }
 
 impl CoreLogger {
@@ -50,18 +53,18 @@ impl CoreLogger {
 
 impl Logger for CoreLogger {
     fn info(&self, msg: &str) {
-        log::info!("{msg:?}");
+        slog::info!(self.logger, "{msg:?}");
     }
 
     fn warn(&self, msg: &str) {
-        log::warn!("{msg:?}");
+        slog::warn!(self.logger, "{msg:?}");
     }
 
     fn error(&self, msg: &str) {
-        log::error!("{msg:?}");
+        slog::error!(self.logger, "{msg:?}");
     }
 
     fn debug(&self, msg: &str) {
-        log::debug!("{msg:?}");
+        slog::debug!(self.logger, "{msg:?}");
     }
 }

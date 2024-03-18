@@ -1,7 +1,6 @@
 use super::*;
 use crate::WorkflowGraph;
 use core::default;
-// pub use logger::{Logger, CoreLogger};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 enum ExecutionState {
@@ -19,18 +18,14 @@ impl Default for ExecutionState {
 }
 
 #[derive(Default, Debug)]
-// pub struct StateManager<T: Logger> {
 pub struct StateManager{
-    // execution_state: ExecutionState, // to represent the task life cycle
-    action_name: String,   // task name
-    task_index: isize,     // n'th task out of m tasks
+    action_name: String,
+    task_index: isize,
     execution_state: ExecutionState,
     output: Option<Value>,
-    error: Option<String>, // to define the error kind
-    // logger: T,
+    error: Option<String>,
 }
 
-// impl StateManager<CoreLogger> {
 impl StateManager {
 
     fn update_state_data(&self) {
@@ -62,7 +57,6 @@ impl StateManager {
             output: None,
             task_index: -1,
             error: None,
-            // logger: CoreLogger::new(None),
         };
 
         state_data.update_state_data();
@@ -81,20 +75,17 @@ impl StateManager {
         self.task_index = task_index;
         self.execution_state = ExecutionState::Running;
         self.output = None;
-        // self.logger.info(&format!("[task index:{}, action:{} running]", task_index, action_name));
         self.update_state_data();
     }
 
     pub fn update_pause(&mut self) {
         self.execution_state = ExecutionState::Paused;
-        // self.logger.info(&format!("[task index:{}, action:{} paused]", self.task_index, self.action_name));
         self.update_state_data();
     }
 
     pub fn update_success(&mut self, output: Value) {
         self.output = Some(output);
         self.execution_state = ExecutionState::Success;
-        // self.logger.info(&format!("[task index:{}, action:{} success]", self.task_index, self.action_name));
         self.update_state_data();
     }
 
@@ -103,14 +94,12 @@ impl StateManager {
         self.task_index = task_index;
         self.execution_state = ExecutionState::Success;
         self.output = Some(output);
-        // self.logger.info(&format!("[task index:{}, action:{} success(cached)]", task_index, action_name));
         self.update_state_data();
     }
 
     pub fn update_err(&mut self, error: &str) {
         self.execution_state = ExecutionState::Aborted;
         self.error = Some(error.to_string());
-        // self.logger.error(&format!("[task index:{}, action:{} aborted]", self.task_index, self.action_name));
         self.update_state_data();
     }
 

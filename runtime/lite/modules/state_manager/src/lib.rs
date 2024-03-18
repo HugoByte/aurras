@@ -14,16 +14,16 @@ pub struct GlobalState<T: WorkflowStateManager, U: Logger> {
     logger: U,
 }
 
-impl GlobalState<WorkflowState, CoreLogger> {
-    pub fn new(logger_path: &str) -> Self {
+impl<U: Logger> GlobalState<WorkflowState, U> {
+    pub fn new(logger: U) -> Self {
         Self {
             workflows: Vec::<WorkflowState>::new(),
-            logger: CoreLogger::new(Some(logger_path)),
+            logger,
         }
     }
 }
 
-impl GlobalStateManager for GlobalState<WorkflowState, CoreLogger> {
+impl<U: Logger> GlobalStateManager for GlobalState<WorkflowState, U> {
     fn new_workflow(&mut self, workflow_id: usize, workflow_name: &str) {
         self.workflows
             .push(WorkflowState::new(workflow_id, workflow_name));

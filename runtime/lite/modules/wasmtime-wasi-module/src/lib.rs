@@ -15,6 +15,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use logger::{CoreLogger, Logger};
 use rocksdb::DB;
 use wasi_common::WasiCtx;
 use wasi_experimental_http_wasmtime::{HttpCtx, HttpState};
@@ -27,13 +28,15 @@ fn run_workflow_helper(
     data: Value,
     path: String,
     hash_key: String,
-    state_manager: &mut GlobalState<WorkflowState>,
-    workflow_index: usize, 
+    state_manager: &mut GlobalState<WorkflowState, CoreLogger>,
+    workflow_index: usize,
     restart: bool, // ignores the cache
 ) -> Result<Output, String> {
-
-    let id = state_manager.get_state_data(workflow_index).unwrap().get_id();
-    let cache = DB::open_default(format!("./.cache/{:?}",id)).unwrap();
+    let id = state_manager
+        .get_state_data(workflow_index)
+        .unwrap()
+        .get_id();
+    let cache = DB::open_default(format!("./.cache/{:?}", id)).unwrap();
 
     let prev_internal_state_data = if !restart {
         let prev_internal_state_data: Value = match cache.get(&hash_key.as_bytes()).unwrap() {
@@ -42,10 +45,12 @@ fn run_workflow_helper(
         };
 
         // returns the main output without passing the state data to the workflow
-        if prev_internal_state_data.get("success").is_some() {
-            return Ok(Output {
-                result: prev_internal_state_data,
-            });
+        if let Some(output) = prev_internal_state_data.get("success") {
+            state_manager.update_running(workflow_index).unwrap();
+            state_manager
+                .update_result(workflow_index, output.clone(), true)
+                .unwrap();
+            return Ok(serde_json::from_value(output.clone()).unwrap());
         }
 
         Some(prev_internal_state_data)
@@ -179,7 +184,6 @@ fn run_workflow_helper(
         .add_to_linker(&mut linker, move |_store| http_ctx.clone())
         .unwrap();
 
-
     let linking = linker.instantiate(&mut store, &module).unwrap();
 
     let malloc = linking
@@ -233,8 +237,9 @@ fn run_workflow_helper(
     Ok(res)
 }
 
-pub fn run_workflow(data: Value, path: String, workflow_id:usize) -> Result<Output, String> {
-    let mut state_manager = GlobalState::new();
+pub fn run_workflow(data: Value, path: String, workflow_id: usize) -> Result<Output, String> {
+    let logger = CoreLogger::new(Some("./workflow.log"));
+    let mut state_manager = GlobalState::new(logger);
 
     state_manager.new_workflow(workflow_id, &path);
 
