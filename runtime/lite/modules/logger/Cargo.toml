@@ -1,8 +1,10 @@
-[workspace.package]
+[package]
+name = "logger"
 authors = ["The HugoByte Team <hello@hugobyte.com>"]
 edition = "2021"
 repository = "https://github.com/hugobyte/aurras.git"
 version = "0.0.1"
 
-[workspace]
-members = ["wasmtime-wasi-module", "kuska_ssb_client", "logger", "state_manager"]
+[dependencies]
+log = "0.4.21"
+env_logger =  "0.11.3"
