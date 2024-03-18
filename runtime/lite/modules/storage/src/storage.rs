@@ -51,8 +51,9 @@ pub struct CoreStorage {
 }
 
 impl CoreStorage {
-    pub fn new(db: rocksdb::DB) -> Self {
-        Self { db }
+    pub fn new(db_name: &str) -> Result<Self, CustomError> {
+        let db = DB::open_default(db_name).map_err(CustomError::RocksDB)?;
+        Ok(Self { db })
     }
 
     fn open_database(&self) -> Result<rocksdb::DB, RocksDBError> {

@@ -2,10 +2,11 @@
 mod tests {
     use crate::storage::CoreStorage;
     use crate::Storage;
-    pub use rocksdb::{DB};
+    pub use rocksdb::DB;
     use std::fs;
     use std::thread;
     use std::time::Duration;
+    use tempfile::TempDir;
 
     /// The test function `test_get_data` removes a lock file, opens a database, stores a key-value pair,
     /// retrieves the value, and asserts the equality of the retrieved value.
@@ -26,8 +27,9 @@ mod tests {
             }
         }
 
-        let db = DB::open_default("my_db.db").unwrap();
-        let core_storage = CoreStorage::new( db);
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().to_str().unwrap();
+        let core_storage = CoreStorage::new(db_path).unwrap();
         core_storage.db.put("test_key", b"test_value").unwrap();
         let result = core_storage.get_data("test_key").unwrap();
         assert_eq!(result, b"test_value");
@@ -52,8 +54,9 @@ mod tests {
             }
         }
 
-        let db = DB::open_default("my_db1.db").unwrap();
-        let core_storage = CoreStorage::new( db);
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().to_str().unwrap();
+        let core_storage = CoreStorage::new(db_path).unwrap();
         core_storage
             .set_data("test_key", b"test_value".to_vec())
             .unwrap();
@@ -82,9 +85,10 @@ mod tests {
             }
         }
 
-        let core_storage = CoreStorage::new(
-            DB::open_default("my_db2.db").unwrap(),
-        );
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().to_str().unwrap();
+
+        let core_storage = CoreStorage::new(db_path).unwrap();
         let key = "test_key";
         let value = vec![1, 2, 3];
 
@@ -119,10 +123,10 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_with_different_key() {
-        let core_storage = CoreStorage::new(
-            
-            DB::open_default("test_db.db").unwrap(),
-        );
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().to_str().unwrap();
+
+        let core_storage = CoreStorage::new(db_path).unwrap();
         let _key = "key";
 
         let result = core_storage.get_data("test_key");
@@ -133,10 +137,10 @@ mod tests {
     /// the original file.
     #[test]
     fn test_store_and_get_wasm() {
-        let core_storage = CoreStorage::new(
-            
-            DB::open_default("store_Wasm.db").unwrap(),
-        );
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().to_str().unwrap();
+
+        let core_storage = CoreStorage::new(db_path).unwrap();
         let wasm_path = "/Users/prathiksha/Downloads/Hugobyte/Learning/wasm-time/target/wasm32-wasi/debug/wasm-time.wasm";
 
         let key = "boilerplate";
@@ -152,10 +156,10 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_get_wasm_with_different_key() {
-        let core_storage = CoreStorage::new(
-            
-            DB::open_default("store_Wasm.db").unwrap(),
-        );
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().to_str().unwrap();
+
+        let core_storage = CoreStorage::new(db_path).unwrap();
         let wasm_path = "/Users/prathiksha/Downloads/Hugobyte/Learning/wasm-time/target/wasm32-wasi/debug/wasm-time.wasm";
 
         let key = "boilerplate";
@@ -163,6 +167,4 @@ mod tests {
 
         core_storage.get_wasm("hello").unwrap();
     }
-
-    
 }
