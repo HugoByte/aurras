@@ -129,5 +129,8 @@ package-lock.json
 ##rust builds
 **/target/**
 
+##rust lock files
+Cargo.lock
+
 ##python
 __pycache__
