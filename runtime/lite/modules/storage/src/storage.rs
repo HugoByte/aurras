@@ -11,20 +11,51 @@
 /// which represents a connection to a RocksDB database. This property is used to interact with the
 /// underlying database for storing and retrieving data as defined in the `Storage` trait implementation
 use crate::traits::Storage;
-use rocksdb::{Error, Options, DB};
+use rocksdb::Error as RocksDBError;
+use rocksdb::DB;
+use std::{fmt, io};
+
 use std::fs;
 
+#[derive(Debug)]
+pub enum CustomError {
+    RocksDB(RocksDBError),
+    Io(io::Error),
+    Custom(String),
+}
+
+impl From<RocksDBError> for CustomError {
+    fn from(error: RocksDBError) -> Self {
+        CustomError::RocksDB(error)
+    }
+}
+
+impl From<io::Error> for CustomError {
+    fn from(error: io::Error) -> Self {
+        CustomError::Io(error)
+    }
+}
+
+impl fmt::Display for CustomError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CustomError::RocksDB(e) => write!(f, "RocksDBError: {}", e),
+            CustomError::Io(e) => write!(f, "IoError: {}", e),
+            CustomError::Custom(msg) => write!(f, "Custom error: {}", msg),
+        }
+    }
+}
+
 pub struct CoreStorage {
-    pub id: String,
     pub db: rocksdb::DB,
 }
 
 impl CoreStorage {
-    pub fn new(id: String, db: rocksdb::DB) -> Self {
-        Self { id, db }
+    pub fn new(db: rocksdb::DB) -> Self {
+        Self { db }
     }
 
-    fn open_database(&self) -> Result<rocksdb::DB, Error> {
+    fn open_database(&self) -> Result<rocksdb::DB, RocksDBError> {
         DB::open_default("my-db.db")
     }
 }
@@ -32,10 +63,10 @@ impl CoreStorage {
 impl Storage for CoreStorage {
     /// The `fn get_data(&self, key: &str) -> Result<Vec<u8>, Error>` function in the `CoreStorage`
     /// struct is implementing the `get_data` method defined in the `Storage` trait.
-    fn get_data(&self, key: &str) -> Result<Vec<u8>, Error> {
+    fn get_data(&self, key: &str) -> Result<Vec<u8>, CustomError> {
         //create and open a database
         let _db = self.open_database()?;
-        let datastore = self.db.get(key).unwrap();
+        let datastore = self.db.get(key)?;
         let data: Vec<u8> = match datastore {
             Some(ivec) => ivec.iter().map(|x| *x as u8).collect(),
             None => Vec::new(), // Handle the empty case
@@ -58,8 +89,9 @@ impl Storage for CoreStorage {
     /// Returns:
     ///
     /// The `set_data` function returns a `Result<(), Error>`.
-    fn set_data(&self, key: &str, value: Vec<u8>) -> Result<(), Error> {
-        let serialized_value = rmp_serde::to_vec(&value).unwrap();
+    fn set_data(&self, key: &str, value: Vec<u8>) -> Result<(), CustomError> {
+        let serialized_value = rmp_serde::to_vec(&value)
+            .map_err(|e| CustomError::Custom(format!("Serialization error: {}", e)))?;
         self.db.put(key, &serialized_value)?;
         Ok(())
     }
@@ -78,10 +110,10 @@ impl Storage for CoreStorage {
     /// Returns:
     ///
     /// The `modify_data` function is returning a `Result<(), Error>`.
-    fn modify_data(&self, key: &str, value: Vec<u8>) -> Result<(), Error> {
+    fn modify_data(&self, key: &str, value: Vec<u8>) -> Result<(), CustomError> {
         let _existing_data = self.get_data(key)?;
-        let modified_data = value;
-        self.db.put(key, &modified_data).unwrap();
+        self.db.put(key, &value)?;
+
         Ok(())
     }
 
@@ -97,7 +129,7 @@ impl Storage for CoreStorage {
     /// The `delete_data` function is returning a `Result<(), Error>`. This means that it returns a
     /// `Result` enum where the success case contains an empty tuple `()` and the error case contains an
     /// `Error`.
-    fn delete_data(&self, key: &str) -> Result<(), Error> {
+    fn delete_data(&self, key: &str) -> Result<(), CustomError> {
         self.db.delete(key)?;
         Ok(())
     }
@@ -115,10 +147,10 @@ impl Storage for CoreStorage {
     /// Returns:
     ///
     /// The `store_wasm` function is returning a `Result<(), Error>`.
-    fn store_wasm(&self, key: &str, wasm_path: &str) -> Result<(), Error> {
+    fn store_wasm(&self, key: &str, wasm_path: &str) -> Result<(), CustomError> {
         let db = self.open_database()?;
 
-        let wasm_bytes: Vec<u8> = fs::read(wasm_path).unwrap();
+        let wasm_bytes: Vec<u8> = fs::read(wasm_path).map_err(|e| CustomError::Io(e))?;
 
         db.put(key, &wasm_bytes)?;
 
@@ -137,13 +169,15 @@ impl Storage for CoreStorage {
     /// The `get_wasm` function returns a `Result` containing either a vector of `u8` bytes or an
     /// `Error`.
 
-    fn get_wasm(&self, key: &str) -> Result<Vec<u8>, Error> {
+    fn get_wasm(&self, key: &str) -> Result<Vec<u8>, CustomError> {
         let db = self.open_database()?;
-
-        let retrieved_wasm_bytes = db.get(key).map(|result| {
-            result.unwrap_or_else(|| panic!("WASM module not found with key: {:?}", key))
-        })?;
-
-        Ok(retrieved_wasm_bytes)
+        match db.get(key) {
+            Ok(Some(retrieved_wasm_bytes)) => Ok(retrieved_wasm_bytes),
+            Ok(None) => Err(CustomError::Custom(format!(
+                "WASM module not found with key: {:?}",
+                key
+            ))),
+            Err(err) => Err(CustomError::RocksDB(err)),
+        }
     }
 }

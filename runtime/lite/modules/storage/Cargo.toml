@@ -8,6 +8,7 @@ version = "0.0.1"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocksdb = "0.22.0"
+rocksdb = "*"
 rmp-serde = "1.1.2"
+anyhow = "1.0.81"
 
