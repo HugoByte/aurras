@@ -6,18 +6,16 @@ pub use help::*;
 mod tests;
 mod types;
 
-pub use types::*;
 use state_manager::{GlobalState, GlobalStateManager, WorkflowState};
+pub use types::*;
 
-use cached::proc_macro::cached;
-use cached::stores::RedisCache;
-use cached::SizedCache;
 use sha256::digest;
 use std::{
     fs,
     sync::{Arc, Mutex},
 };
 
+use rocksdb::DB;
 use wasi_common::WasiCtx;
 use wasi_experimental_http_wasmtime::{HttpCtx, HttpState};
 use wasmtime::Linker;
@@ -25,38 +23,42 @@ use wasmtime::*;
 use wasmtime_wasi::sync::WasiCtxBuilder;
 
 #[allow(dead_code)]
-#[cached(
-        type = "SizedCache<String, Output>",
-        create = "{ SizedCache::with_size(10) }",
-        convert = r###"{ hash_key.clone() }"###,
-        result = true   // cache only if result is Ok
-    )]
 fn run_workflow_helper(
     data: Value,
     path: String,
     hash_key: String,
     state_manager: &mut GlobalState<WorkflowState>,
     workflow_index: usize,
+    restart: bool, // ignores the cache
 ) -> Result<Output, String> {
-    use cached::IOCached;
+    let cache = DB::open_default("./.cache").unwrap();
 
-    // need a disk storage to store internal state data
-    let redis_cache: RedisCache<String, Value> = RedisCache::new("workflow".to_string(), 10 * 60)
-        .set_connection_string("redis://127.0.0.1:6379")
-        .set_refresh(true)
-        // .set_namespace("workflows")
-        .build()
-        .unwrap();
+    let prev_internal_state_data = if !restart {
+        let prev_internal_state_data: Value = match cache.get(&hash_key.as_bytes()).unwrap() {
+            Some(data) => serde_json::from_slice(&data).unwrap(),
+            None => serde_json::json!([]),
+        };
 
-    let prev_internal_state_data = match redis_cache.cache_get(&hash_key).unwrap() {
-        Some(data) => data,
-        None => serde_json::json!([]),
+        // returns the main output without passing the state data to the workflow
+        if prev_internal_state_data.get("success").is_some() {
+            return Ok(Output {
+                result: prev_internal_state_data,
+            });
+        }
+
+        Some(prev_internal_state_data)
+    } else {
+        None
     };
 
     let wasm_file = fs::read(path).unwrap();
     let mut input: MainInput = serde_json::from_value(data).unwrap();
 
-    input.data = serde_json::json!({"data": input.data, "prev_output": prev_internal_state_data});
+    input.data = if prev_internal_state_data.is_some() {
+        serde_json::json!({"data": input.data, "prev_output": prev_internal_state_data})
+    } else {
+        serde_json::json!({"data": input.data, "prev_output": []})
+    };
 
     let engine = Engine::default();
     let mut linker = Linker::new(&engine);
@@ -124,7 +126,7 @@ fn run_workflow_helper(
                 match mem.read(&caller, offset, &mut buffer) {
                     Ok(()) => match serde_json::from_slice::<Value>(&buffer) {
                         Ok(task_state_data) => {
-                            // execution_state =
+                            // execution_state
                             let execution_state: String = serde_json::from_value(
                                 task_state_data.get("execution_state").unwrap().clone(),
                             )
@@ -203,20 +205,25 @@ fn run_workflow_helper(
         .unwrap();
 
     let res = output.lock().unwrap().clone();
-
     let state_output = output_2.lock().unwrap().clone();
-
-    let state_data_val = serde_json::to_value(state_output).unwrap();
-    redis_cache.cache_set(hash_key, state_data_val).unwrap();
 
     if res.result.get("Err").is_some() {
         state_manager
             .update_result(workflow_index, res.result.clone(), false)
             .unwrap();
+
+        let mut bytes: Vec<u8> = Vec::new();
+        serde_json::to_writer(&mut bytes, &state_output).unwrap();
+        cache.put(&hash_key.as_bytes(), bytes).unwrap();
     } else {
         state_manager
             .update_result(workflow_index, res.result.clone(), true)
             .unwrap();
+
+        let state_result = serde_json::json!({ "success" : res });
+        let mut bytes: Vec<u8> = Vec::new();
+        serde_json::to_writer(&mut bytes, &state_result).unwrap();
+        cache.put(&hash_key.as_bytes(), bytes).unwrap();
     }
 
     Ok(res)
@@ -228,5 +235,5 @@ pub fn run_workflow(data: Value, path: String) -> Result<Output, String> {
     state_manager.new_workflow(0, &path);
 
     let digest = digest(format!("{:?}{:?}", data, path));
-    run_workflow_helper(data, path, digest, &mut state_manager, 0)
+    run_workflow_helper(data, path, digest, &mut state_manager, 0, false)
 }
