@@ -31,5 +31,4 @@ codec = { package = "parity-scale-codec", features = [
     "derive",
 ], version = "3.1.5" }
 openwhisk_macro = "0.1.6"
-# rocksdb = "0.18.0"
-sled = "0.34.7"
+
