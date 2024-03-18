@@ -13,14 +13,13 @@ async fn test_hello_world() {
         }
     });
 
-    let result = super::run_workflow(input, path).unwrap();
+    let result = super::run_workflow(input, path, 1).unwrap();
 
     assert!(result.result.to_string().contains("Hello"));
 }
 
 #[async_std::test]
 async fn test_employee_salary() {
-    use std::time::Instant;
 
     let path = std::env::var("WORKFLOW_WASM").unwrap_or(
         "../state-managed-workflow/target/wasm32-wasi/release/boilerplate.wasm".to_string(),
@@ -36,21 +35,8 @@ async fn test_employee_salary() {
         }
     });
 
-    println!("Initial run...");
-    let now = Instant::now();
-    let result = super::run_workflow(input.clone(), path.clone()).unwrap();
-    println!("Elapsed: {}\n", now.elapsed().as_secs());
-
-    assert!(result
-        .result
-        .to_string()
-        .contains("Salary creditted for emp id 1 from Hugobyte"));
-
-    println!("Cached run...");
-    let now = Instant::now();
-    let result = super::run_workflow(input, path).unwrap();
-    println!("Elapsed: {}\n", now.elapsed().as_secs());
-
+    let result = super::run_workflow(input.clone(), path.clone(), 2).unwrap();
+ 
     assert!(result
         .result
         .to_string()
