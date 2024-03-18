@@ -13,3 +13,7 @@ pub fn feed_res_parse(body: &[u8]) -> Result<Feed> {
 pub fn latest_res_parse(body: &[u8]) -> Result<LatestOut> {
     Ok(serde_json::from_slice(body)?)
 }
+
+pub fn invite_create(body: &[u8]) -> Result<String> {
+    Ok(serde_json::from_slice(body)?)
+}

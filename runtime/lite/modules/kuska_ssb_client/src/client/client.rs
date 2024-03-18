@@ -205,6 +205,24 @@ impl Client {
         Ok(())
     }
 
+    pub async fn create_invite(&mut self) -> Result<()> {
+        let req_id = self
+            .api.invite_create_req_send(1).await?;
+
+            self.print_source_until_eof(req_id, invite_create)
+            .await?;
+            
+        Ok(())
+    }
+    pub async fn accept_invite(&mut self, invite_code: &str) -> Result<()> {
+        let req_id = self
+            .api.invite_use_req_send(invite_code).await?;
+
+        self.print_source_until_eof(req_id, invite_create)
+        .await?;
+        Ok(())
+    }
+
     pub async fn publish(&mut self, msg: &str) -> Result<()> {
         let _req_id = self
             .api
