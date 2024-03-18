@@ -1,24 +1,6 @@
 use super::*;
 use serde::{Deserialize, Serialize};
 
-pub struct Client {
-    api: ApiCaller<TcpStream>,
-    rpc_reader: RpcReader<TcpStream>,
-    sk: SecretKey,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct Event {
-    id: String,
-    body: String,
-}
-
-pub struct UserConfig {
-    pub public_key: String,
-    pub secret_key: String,
-    pub id: String,
-}
-
 impl UserConfig {
     pub fn new(public_key: String, secret_key: String, id: String) -> Self {
         Self {
@@ -59,7 +41,6 @@ impl Client {
         let mut response = vec![];
 
         loop {
-
             let (id, msg) = self.rpc_reader.recv().await?;
 
             if id == req_no {
@@ -241,65 +222,55 @@ impl Client {
         Ok(())
     }
 
-}
+    async fn execute_workflow_by_event(&mut self, req_no: RequestNo) -> Result<()> {
+        // let mut response = vec![];
+        loop {
+            let (id, msg) = self.rpc_reader.recv().await?;
 
-// ssb-server should keep running for testing
-// use `cargo test -- --ignored` command for testing
-#[async_std::test]
-#[ignore]
-async fn test_client() {
-    // passing default ip and port of ssb-server for testing
-    let mut client = Client::new(None, "0.0.0.0".to_string(), "8008".to_string())
-        .await
-        .unwrap();
-    client.user(false, "me").await.unwrap();
-}
+            if id == req_no {
+                match msg {
+                    RecvMsg::RpcResponse(_type, body) => {
+                        let display = feed_res_parse(&body);
 
-#[async_std::test]
-#[ignore]
-async fn test_feed() {
-    let mut client = Client::new(None, "0.0.0.0".to_string(), "8008".to_string())
-        .await
-        .unwrap();
-    client.feed(false).await.unwrap();
-}
+                        match display {
+                            Ok(display) => {
+                                match serde_json::from_value::<Content>(
+                                    display.value.get("content").unwrap().clone(),
+                                ) {
+                                    Ok(x) => match serde_json::from_str::<Event>(&x.text) {
+                                        Ok(event) => {
+                                            println!("{:#?}", event);
 
-#[async_std::test]
-#[ignore]
-async fn test_publish() {
-    let mut client = Client::new(None, "0.0.0.0".to_string(), "8008".to_string())
-        .await
-        .unwrap();
-    let feed = client.feed(false).await.unwrap();
-    let prev_len = feed.len();
+                                            if event.id == "1".to_string() {
+                                                //TODO
+                                                // Setup a mechnism to read the workflow and input
+                                                wasmtime_wasi_module::run_workflow(serde_json::to_value(event.body).unwrap(), vec![]);
+                                            }
+                                        }
+                                        Err(e) => println!("{:#?}", e),
+                                    },
+                                    Err(e) => println!("{:#?}", e),
+                                }
+                            }
+                            Err(err) => {
+                                let body = std::str::from_utf8(&body).unwrap();
 
-    let old_event = Event {
-        id: "1".to_string(),
-        body: "hello_world_event".to_string(),
-    };
+                                if body == "{\"sync\":true}" {
+                                    println!("Syncing Successful");
+                                } else {
+                                    return std::result::Result::Err(err);
+                                }
+                            }
+                        }
+                    }
+                    RecvMsg::ErrorResponse(message) => {
+                        return std::result::Result::Err(Box::new(AppError::new(message)));
+                    }
+                    RecvMsg::CancelStreamRespose() => {},
+                    _ => {}
+                }
+            }
+        }
 
-    let value = serde_json::to_value(old_event.clone()).unwrap();
-
-    let result = client.publish(&value.to_string()).await;
-    assert!(result.is_ok());
-
-    // wait for server to publish
-    async_std::task::sleep(std::time::Duration::from_secs(1)).await;
-    let feed = client.feed(false).await.unwrap();
-    assert!(feed.len() > prev_len);
-
-    let event = feed.last().unwrap().value.clone();
-    let message = event.get("content").unwrap();
-
-    let feed_type = message.get("type").unwrap();
-    let feed_type: String = serde_json::from_value(feed_type.clone()).unwrap();
-
-    assert_eq!(&feed_type, "post");
-
-    let feed_text = message.get("text").unwrap();
-    let feed_text: String = serde_json::from_value(feed_text.clone()).unwrap();
-
-    let new_event: Event = serde_json::from_str(&feed_text).unwrap();
-    // let event = serde_json::from_value(event).unwrap();
-    assert_eq!(old_event, new_event);
+    }
 }
