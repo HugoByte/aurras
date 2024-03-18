@@ -28,12 +28,14 @@ fn run_workflow_helper(
     path: String,
     hash_key: String,
     state_manager: &mut GlobalState<WorkflowState>,
-    workflow_index: usize, 
+    workflow_index: usize,
     restart: bool, // ignores the cache
 ) -> Result<Output, String> {
-
-    let id = state_manager.get_state_data(workflow_index).unwrap().get_id();
-    let cache = DB::open_default(format!("./.cache/{:?}",id)).unwrap();
+    let id = state_manager
+        .get_state_data(workflow_index)
+        .unwrap()
+        .get_id();
+    let cache = DB::open_default(format!("./.cache/{:?}", id)).unwrap();
 
     let prev_internal_state_data = if !restart {
         let prev_internal_state_data: Value = match cache.get(&hash_key.as_bytes()).unwrap() {
@@ -42,10 +44,12 @@ fn run_workflow_helper(
         };
 
         // returns the main output without passing the state data to the workflow
-        if prev_internal_state_data.get("success").is_some() {
-            return Ok(Output {
-                result: prev_internal_state_data,
-            });
+        if let Some(output) = prev_internal_state_data.get("success") {
+            state_manager.update_running(workflow_index).unwrap();
+            state_manager
+                .update_result(workflow_index, output.clone(), true)
+                .unwrap();
+            return Ok(serde_json::from_value(output.clone()).unwrap());
         }
 
         Some(prev_internal_state_data)
@@ -231,7 +235,7 @@ fn run_workflow_helper(
     Ok(res)
 }
 
-pub fn run_workflow(data: Value, path: String, workflow_id:usize) -> Result<Output, String> {
+pub fn run_workflow(data: Value, path: String, workflow_id: usize) -> Result<Output, String> {
     let mut state_manager = GlobalState::new();
 
     state_manager.new_workflow(workflow_id, &path);
