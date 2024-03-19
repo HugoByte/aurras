@@ -1,5 +1,5 @@
 [package]
-name = "wasmtime-wasi-module"
+name = "wasm_module"
 authors = ["The HugoByte Team <hello@hugobyte.com>"]
 edition = "2021"
 repository = "https://github.com/hugobyte/aurras.git"
@@ -20,3 +20,7 @@ async-std = { version = "1.12.0", features = ["attributes"] }
 http = "0.2"
 bytes = "1"
 wasi-experimental-http-wasmtime = "0.10.0"
+sha256 = "1.5.0"
+test_util = { path = "../../../../workflow/test_util" }
+state_manager = { path="../state_manager" }
+rocksdb = "0.18.0"

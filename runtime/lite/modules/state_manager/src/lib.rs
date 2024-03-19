@@ -57,12 +57,13 @@ impl GlobalStateManager for GlobalState<WorkflowState> {
     fn update_result(
         &mut self,
         workflow_index: usize,
-        result: Result<Value, String>,
+        result: Value,
+        is_success: bool
     ) -> Result<()> {
         if self.workflows.len() <= workflow_index {
             Err(anyhow!("index out of bound"))
         } else {
-            self.workflows[workflow_index].update_result(result)?;
+            self.workflows[workflow_index].update_result(result, is_success)?;
             Ok(())
         }
     }
