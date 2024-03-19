@@ -85,33 +85,24 @@ pub fn handle_event(event_name: &str, action: Action) -> Result<String, String> 
 
     match workflow {
         Some(workflow) => {
-            if action == Action::Polkadot {
-                let wasm_code = workflow.get_wasm_code()?;
-                println!("Loaded WASM code for {} with size: {}", workflow.get_name(), wasm_code.len());
-                workflow.handle_event(event_name)
-            } else {
-                Err(format!("Action '{:?}' does not match the event", action))
+            match action {
+                Action::Polkadot => {
+                    let wasm_code = workflow.get_wasm_code()?;
+                    println!("Loaded WASM code for {} with size: {}", workflow.get_name(), wasm_code.len());
+                    workflow.handle_event(event_name)
+                },
+                Action::OpenWhisk => {
+                    let wasm_code = workflow.get_wasm_code()?;
+                    println!("Loaded WASM code for {} with size: {}", workflow.get_name(), wasm_code.len());
+                    workflow.handle_event(event_name)
+                },
+                Action::HelloWorld => {
+                    // Handle HelloWorld event here (assuming your workflow handles it)
+                    // You can call workflow.handle_event(event_name) or implement your specific logic
+                    Ok(format!("Handling HelloWorld event: {}", event_name))
+                },
             }
         }
         None => Err(format!("Event '{}' not found in workflow map", event_name)),
     }
-}
-
-#[wasm_bindgen]
-pub fn start() {
-    // Example usage
-    if let Err(err) = store_workflow(Box::new(PolkadotWorkflow {
-        wasm_path: "/Users/prathiksha/Downloads/Hugobyte/Learning/wasm-time/target/wasm32-wasi/debug/wasm-time.wasm".to_string(),
-    })) {
-        println!("Error storing Polkadot workflow: {}", err);
-    }
-
-    if let Err(err) = store_workflow(Box::new(OpenWhiskWorkflow {
-        wasm_path: "/Users/prathiksha/Downloads/Hugobyte/Learning/wasm-time/target/wasm32-wasi/debug/wasm-time.wasm".to_string(),
-    })) {
-        println!("Error storing OpenWhisk workflow: {}", err);
-    }
-
-    let result = handle_event("polkadot_event", Action::Polkadot);
-    println!("Result: {:?}", result);
 }
