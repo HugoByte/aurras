@@ -1,40 +1,38 @@
 use super::*;
 use crate::traits::Logger;
-use env_logger::*;
 use log::*;
+use std::fs::File;
 
-pub struct CoreLogger {
-    logger: env_logger::Logger,
-}
+pub struct CoreLogger;
 
 impl CoreLogger {
     pub fn new() -> CoreLogger {
-        Builder::from_default_env()
-            .filter_module("logger::logger", LevelFilter::Info)
-            .filter_module("logger::logger", LevelFilter::Debug)
-            .target(Target::Stdout)
+        let target = Box::new(File::create("./log.log").expect("Can't create file"));
+
+        env_logger::Builder::new()
+            .target(env_logger::Target::Pipe(target))
+            .filter(None, LevelFilter::Info)
+            .filter(None, LevelFilter::Debug)
             .init();
 
-        let logger = Builder::from_default_env().build();
-
-        CoreLogger { logger }
+        CoreLogger
     }
 }
 
 impl Logger for CoreLogger {
     fn info(&self, msg: &str) {
-        log::info!("{msg:?}");
+        log::info!("{}", msg);
     }
 
     fn warn(&self, msg: &str) {
-        log::warn!("{msg:?}");
+        log::warn!("{}", msg);
     }
 
     fn error(&self, msg: &str) {
-        log::error!("{msg:?}");
+        log::error!("{}", msg);
     }
 
     fn debug(&self, msg: &str) {
-        log::debug!("{msg:?}");
+        log::debug!("{}", msg);
     }
 }
