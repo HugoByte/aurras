@@ -3,10 +3,8 @@ mod tests {
     use crate::storage::CoreStorage;
     use crate::Storage;
     pub use rocksdb::DB;
-    use std::fs;
     use std::thread;
     use std::time::Duration;
-    use tempfile::TempDir;
 
     /// The test function `test_get_data` removes a lock file, opens a database, stores a key-value pair,
     /// retrieves the value, and asserts the equality of the retrieved value.
@@ -27,9 +25,7 @@ mod tests {
             }
         }
 
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().to_str().unwrap();
-        let core_storage = CoreStorage::new(db_path).unwrap();
+        let core_storage = CoreStorage::new().unwrap();
         core_storage.db.put("test_key", b"test_value").unwrap();
         let result = core_storage.get_data("test_key").unwrap();
         assert_eq!(result, b"test_value");
@@ -54,9 +50,7 @@ mod tests {
             }
         }
 
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().to_str().unwrap();
-        let core_storage = CoreStorage::new(db_path).unwrap();
+        let core_storage = CoreStorage::new().unwrap();
         core_storage
             .set_data("test_key", b"test_value".to_vec())
             .unwrap();
@@ -70,10 +64,7 @@ mod tests {
     /// and modifies data, and asserts the modified data.
     #[test]
     fn test_modify_data() {
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().to_str().unwrap();
-
-        let core_storage = CoreStorage::new(db_path).unwrap();
+        let core_storage = CoreStorage::new().unwrap();
         let key = "test_key";
         let initial_value = vec![1, 2, 3];
         core_storage.set_data(key, initial_value.clone()).unwrap();
@@ -91,8 +82,7 @@ mod tests {
     /// key and value, deletes the data, and then checks that the data was successfully deleted.
     #[test]
     fn test_delete_data() {
-        let db = rocksdb::DB::open_default("test-db").unwrap();
-        let core_storage = CoreStorage { db };
+        let core_storage = CoreStorage::new().unwrap();
 
         // Insert a dummy key-value pair for testing
         let key = "test_key";
@@ -109,10 +99,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_with_different_key() {
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().to_str().unwrap();
-
-        let core_storage = CoreStorage::new(db_path).unwrap();
+        let core_storage = CoreStorage::new().unwrap();
         let _key = "key";
 
         let result = core_storage.get_data("test_key");
@@ -123,10 +110,7 @@ mod tests {
     /// the original file.
     #[test]
     fn test_store_and_get_wasm() {
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().to_str().unwrap();
-
-        let core_storage = CoreStorage::new(db_path).unwrap();
+        let core_storage = CoreStorage::new().unwrap();
         let wasm_bytes = vec![0x00, 0x61, 0x01];
 
         let key = "boilerplate";
@@ -142,10 +126,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_get_wasm_with_different_key() {
-        let temp_dir = TempDir::new().unwrap();
-        let db_path = temp_dir.path().to_str().unwrap();
-
-        let core_storage = CoreStorage::new(db_path).unwrap();
+        let core_storage = CoreStorage::new().unwrap();
         let wasm_bytes = vec![0x00, 0x61, 0x01];
 
         let key = "boilerplate";

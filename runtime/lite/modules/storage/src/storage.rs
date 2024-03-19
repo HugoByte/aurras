@@ -51,13 +51,9 @@ pub struct CoreStorage {
 }
 
 impl CoreStorage {
-    pub fn new(db_name: &str) -> Result<Self, CustomError> {
-        let db = DB::open_default(db_name).map_err(CustomError::RocksDB)?;
+    pub fn new() -> Result<Self, CustomError> {
+        let db = DB::open_default("my-db.db").map_err(CustomError::RocksDB)?;
         Ok(Self { db })
-    }
-
-    fn open_database(&self) -> Result<rocksdb::DB, RocksDBError> {
-        DB::open_default("my-db.db")
     }
 }
 
@@ -65,8 +61,6 @@ impl Storage for CoreStorage {
     /// The `fn get_data(&self, key: &str) -> Result<Vec<u8>, Error>` function in the `CoreStorage`
     /// struct is implementing the `get_data` method defined in the `Storage` trait.
     fn get_data(&self, key: &str) -> Result<Vec<u8>, CustomError> {
-        //create and open a database
-        self.open_database()?;
         let datastore = self.db.get(key)?;
         let data = match datastore {
             Some(ivec) => ivec.to_vec(),
