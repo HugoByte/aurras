@@ -13,8 +13,6 @@ pub struct MainInput {
     data: Value,
 }
 
-fn main() {}
-
 #[cfg(test)]
 mod tests {
     use super::*;
