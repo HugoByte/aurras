@@ -4,10 +4,10 @@ use core::default;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 enum ExecutionState {
-    // Init,
+    Init,
     Running,
     Paused,
-    Aborted,
+    Failed,
     Success,
 }
 
@@ -53,7 +53,7 @@ impl StateManager {
     pub fn init() -> Self {
         let state_data = StateManager {
             action_name: "Initializing Workflow".to_string(),
-            execution_state: ExecutionState::Running,
+            execution_state: ExecutionState::Init,
             output: None,
             task_index: -1,
             error: None,
@@ -98,7 +98,7 @@ impl StateManager {
     }
 
     pub fn update_err(&mut self, error: &str) {
-        self.execution_state = ExecutionState::Aborted;
+        self.execution_state = ExecutionState::Failed;
         self.error = Some(error.to_string());
         self.update_state_data();
     }

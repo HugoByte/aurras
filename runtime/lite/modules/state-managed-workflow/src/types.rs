@@ -79,8 +79,8 @@ impl_execute_trait!(EmployeeIds, Getsalaries, Salary, Getaddress);
 #[allow(dead_code, unused)]
 pub fn main(args: Value) -> Result<Value, String> {
     const LIMIT: usize = 4;
-    let mut workflow = WorkflowGraph::new(LIMIT, "employee_salary_id");
-    workflow.state_manger.update_workflow_initialized();
+    let mut workflow = WorkflowGraph::new(LIMIT);
+    workflow.state_manager.update_workflow_initialized();
 
     let input: Input =
         serde_json::from_value(args.get("data").unwrap().clone()).map_err(|e| e.to_string())?;
@@ -109,7 +109,7 @@ pub fn main(args: Value) -> Result<Value, String> {
         let mut node = workflow.get_task_as_mut(i);
         node.set_result_output(val.clone());
         let action_name = node.get_action_name();
-        workflow.state_manger.update_restore_success(&action_name, i as isize, val.clone())
+        workflow.state_manager.update_restore_success(&action_name, i as isize, val.clone())
     }
 
     for i in prev_output.len()..workflow.node_count() {

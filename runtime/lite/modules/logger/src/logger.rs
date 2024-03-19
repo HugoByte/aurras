@@ -17,11 +17,11 @@ impl CoreLogger {
        let file =  match log_file {
             Some(file) => {
                 OpenOptions::new()
-                    .create(true)
-                    .write(true)
-                    .append(true)
-                    .open(file)
-                    .unwrap()
+                .write(true)
+                .append(true)
+                .create(true)
+                .open(file)
+                .unwrap()
             }
             None => {
                 OpenOptions::new()

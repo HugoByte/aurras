@@ -6,17 +6,15 @@ use paste::paste;
 pub struct WorkflowGraph {
     edges: Vec<(usize, usize)>,
     nodes: Vec<Box<dyn Execute>>,
-    pub workflow_id: String,
-    pub state_manger: StateManager,
+    pub state_manager: StateManager,
 }
 
 impl WorkflowGraph {
-    pub fn new(size: usize, workflow_id: &str) -> Self {
+    pub fn new(size: usize) -> Self {
         WorkflowGraph {
             nodes: Vec::with_capacity(size),
             edges: Vec::new(),
-            workflow_id: workflow_id.to_string(),
-            state_manger: StateManager::init(),
+            state_manager: StateManager::init(),
         }
     }
 }
@@ -59,7 +57,7 @@ impl WorkflowGraph {
 
         let task = self.get_task(task_index);
         let action_name = task.get_action_name();
-        self.state_manger.update_running(&action_name, task_index as isize);
+        self.state_manager.update_running(&action_name, task_index as isize);
 
         let result = {
 
@@ -111,13 +109,18 @@ impl WorkflowGraph {
             }
         };
 
+        // if task_index == 3{
+        //     self.state_manager.update_err("error in task");
+        //     return Err("error in task".to_string());
+        // }
+
         match result {
             Ok(output) => {
-                self.state_manger.update_success(output);
+                self.state_manager.update_success(output);
                 Ok(self)
             }
             Err(err) => {
-                self.state_manger.update_err(&err);
+                self.state_manager.update_err(&err);
                 Err(err)
             }
         }
