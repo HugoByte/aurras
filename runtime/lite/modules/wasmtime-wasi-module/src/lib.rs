@@ -253,7 +253,6 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
         .unwrap();
 
     state_manager.update_running(workflow_index).unwrap();
-
     let _result_from_wasm = run.call(&mut store, (data_ptr, len));
 
     let malloc = linking

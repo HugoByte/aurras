@@ -16,7 +16,6 @@ pub struct MainInput {
     pub data: Value,
 }
 
-
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct InternalState{
    pub action_name: String,

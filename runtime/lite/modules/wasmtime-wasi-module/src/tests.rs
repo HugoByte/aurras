@@ -36,7 +36,6 @@ async fn test_employee_salary() {
     });
 
     let result = super::run_workflow(input.clone(), path.clone(), 2).unwrap();
-
     assert!(result
         .result
         .to_string()
