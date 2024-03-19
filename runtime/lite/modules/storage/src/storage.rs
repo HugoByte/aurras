@@ -66,11 +66,11 @@ impl Storage for CoreStorage {
     /// struct is implementing the `get_data` method defined in the `Storage` trait.
     fn get_data(&self, key: &str) -> Result<Vec<u8>, CustomError> {
         //create and open a database
-        let _db = self.open_database()?;
+        self.open_database()?;
         let datastore = self.db.get(key)?;
-        let data: Vec<u8> = match datastore {
-            Some(ivec) => ivec.iter().map(|x| *x as u8).collect(),
-            None => Vec::new(), // Handle the empty case
+        let data = match datastore {
+            Some(ivec) => ivec.to_vec(),
+            None => Vec::new(),
         };
         Ok(data)
     }
@@ -148,12 +148,8 @@ impl Storage for CoreStorage {
     /// Returns:
     ///
     /// The `store_wasm` function is returning a `Result<(), Error>`.
-    fn store_wasm(&self, key: &str, wasm_path: &str) -> Result<(), CustomError> {
-        let db = self.open_database()?;
-
-        let wasm_bytes: Vec<u8> = fs::read(wasm_path).map_err(|e| CustomError::Io(e))?;
-
-        db.put(key, &wasm_bytes)?;
+    fn store_wasm(&self, key: &str, wasm: &[u8]) -> Result<(), CustomError> {
+        self.db.put(key, &wasm)?;
 
         Ok(())
     }
@@ -171,8 +167,7 @@ impl Storage for CoreStorage {
     /// `Error`.
 
     fn get_wasm(&self, key: &str) -> Result<Vec<u8>, CustomError> {
-        let db = self.open_database()?;
-        match db.get(key) {
+        match self.db.get(key) {
             Ok(Some(retrieved_wasm_bytes)) => Ok(retrieved_wasm_bytes),
             Ok(None) => Err(CustomError::Custom(format!(
                 "WASM module not found with key: {:?}",

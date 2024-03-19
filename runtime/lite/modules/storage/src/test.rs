@@ -70,33 +70,21 @@ mod tests {
     /// and modifies data, and asserts the modified data.
     #[test]
     fn test_modify_data() {
-        let lock_file_path = "my_db2.db/LOCK";
-        let mut retries = 0;
-
-        while retries < 3 {
-            if let Err(_) = std::fs::remove_file(lock_file_path) {
-                println!("Failed to remove lock file: {}", lock_file_path);
-                retries += 1;
-
-                // Wait for 1 second before retrying
-                thread::sleep(Duration::from_secs(1));
-            } else {
-                break;
-            }
-        }
-
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().to_str().unwrap();
 
         let core_storage = CoreStorage::new(db_path).unwrap();
         let key = "test_key";
-        let value = vec![1, 2, 3];
+        let initial_value = vec![1, 2, 3];
+        core_storage.set_data(key, initial_value.clone()).unwrap();
 
-        core_storage.set_data(key, value.clone()).unwrap();
-        core_storage.modify_data(key, vec![4, 5, 6]).unwrap();
+        let new_value = vec![4, 5, 6];
+        let result = core_storage.modify_data(key, new_value.clone());
 
-        let modified_data = core_storage.get_data(key).unwrap();
-        assert_eq!(modified_data, vec![4, 5, 6]);
+        assert!(result.is_ok());
+
+        let retrieved_data = core_storage.get_data(key).unwrap();
+        assert_eq!(retrieved_data, new_value);
     }
 
     /// The test function `test_delete_data` in Rust creates a CoreStorage instance, sets data with a
@@ -111,10 +99,8 @@ mod tests {
         let value = vec![1, 2, 3];
         core_storage.set_data(key, value).unwrap();
 
-        // Delete the data using the delete_data function
         let result = core_storage.delete_data(key);
 
-        // Assert that the deletion was successful
         assert!(result.is_ok());
     }
 
@@ -141,14 +127,14 @@ mod tests {
         let db_path = temp_dir.path().to_str().unwrap();
 
         let core_storage = CoreStorage::new(db_path).unwrap();
-        let wasm_path = "/Users/prathiksha/Downloads/Hugobyte/Learning/wasm-time/target/wasm32-wasi/debug/wasm-time.wasm";
+        let wasm_bytes = vec![0x00, 0x61, 0x01];
 
         let key = "boilerplate";
-        core_storage.store_wasm(key, wasm_path).unwrap();
+        core_storage.store_wasm(key, &wasm_bytes).unwrap();
 
         let retrieved_wasm = core_storage.get_wasm(key).unwrap();
 
-        assert_eq!(retrieved_wasm, fs::read(wasm_path).unwrap());
+        assert_eq!(retrieved_wasm, wasm_bytes)
     }
 
     /// The test function is checking if an error is raised when trying to retrieve a WebAssembly module
@@ -160,10 +146,10 @@ mod tests {
         let db_path = temp_dir.path().to_str().unwrap();
 
         let core_storage = CoreStorage::new(db_path).unwrap();
-        let wasm_path = "/Users/prathiksha/Downloads/Hugobyte/Learning/wasm-time/target/wasm32-wasi/debug/wasm-time.wasm";
+        let wasm_bytes = vec![0x00, 0x61, 0x01];
 
         let key = "boilerplate";
-        core_storage.store_wasm(key, wasm_path).unwrap();
+        core_storage.store_wasm(key, &wasm_bytes).unwrap();
 
         core_storage.get_wasm("hello").unwrap();
     }
