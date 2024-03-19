@@ -26,3 +26,13 @@ pub struct Content {
     types: String,
     pub text: String,
 }
+
+impl UserConfig {
+    pub fn new(public_key: &str, secret_key: &str, id: &str) -> Self {
+        Self {
+            public_key: public_key.to_string(),
+            secret_key: secret_key.to_string(),
+            id: id.to_string(),
+        }
+    }
+}

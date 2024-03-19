@@ -1,15 +1,6 @@
 use super::*;
+use kuska_ssb::api::dto::content::Mention;
 use serde::{Deserialize, Serialize};
-
-impl UserConfig {
-    pub fn new(public_key: String, secret_key: String, id: String) -> Self {
-        Self {
-            public_key,
-            secret_key,
-            id,
-        }
-    }
-}
 
 impl Client {
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
@@ -171,6 +162,15 @@ impl Client {
         Ok(feed)
     }
 
+    pub async fn live_feed_with_execution_of_workflow(&mut self, live: bool) -> Result<()> {
+        let args = CreateStreamIn::default().live(live);
+        let req_id = self.api.create_feed_stream_req_send(&args).await?;
+
+        let _feed = self.execute_workflow_by_event(req_id).await?;
+
+        Ok(())
+    }
+
     pub async fn latest(&mut self) -> Result<()> {
         let req_id = self.api.latest_req_send().await?;
         self.print_source_until_eof(req_id, latest_res_parse)
@@ -206,29 +206,25 @@ impl Client {
     }
 
     pub async fn create_invite(&mut self) -> Result<()> {
-        let req_id = self
-            .api.invite_create_req_send(1).await?;
+        let req_id = self.api.invite_create_req_send(1).await?;
 
-            self.print_source_until_eof(req_id, invite_create)
-            .await?;
-            
+        self.print_source_until_eof(req_id, invite_create).await?;
+
         Ok(())
     }
     pub async fn accept_invite(&mut self, invite_code: &str) -> Result<()> {
-        let req_id = self
-            .api.invite_use_req_send(invite_code).await?;
+        let req_id = self.api.invite_use_req_send(invite_code).await?;
 
-        self.print_source_until_eof(req_id, invite_create)
-        .await?;
+        self.print_source_until_eof(req_id, invite_create).await?;
         Ok(())
     }
 
-    pub async fn publish(&mut self, msg: &str) -> Result<()> {
+    pub async fn publish(&mut self, msg: &str, mention: Option<Vec<Mention>>) -> Result<()> {
         let _req_id = self
             .api
             .publish_req_send(TypedMessage::Post {
                 text: msg.to_string(),
-                mentions: None,
+                mentions: mention,
             })
             .await?;
 
@@ -241,7 +237,7 @@ impl Client {
     }
 
     async fn execute_workflow_by_event(&mut self, req_no: RequestNo) -> Result<()> {
-        // let mut response = vec![];
+        let mut response = vec![];
         loop {
             let (id, msg) = self.rpc_reader.recv().await?;
 
@@ -257,12 +253,16 @@ impl Client {
                                 ) {
                                     Ok(x) => match serde_json::from_str::<Event>(&x.text) {
                                         Ok(event) => {
+                                            response.push(display);
                                             println!("{:#?}", event);
 
                                             if event.id == "1".to_string() {
                                                 //TODO
                                                 // Setup a mechnism to read the workflow and input
-                                                wasmtime_wasi_module::run_workflow(serde_json::to_value(event.body).unwrap(), vec![]);
+                                                wasmtime_wasi_module::run_workflow(
+                                                    serde_json::to_value(event.body).unwrap(),
+                                                    vec![],
+                                                );
                                             }
                                         }
                                         Err(e) => println!("{:#?}", e),
@@ -284,11 +284,10 @@ impl Client {
                     RecvMsg::ErrorResponse(message) => {
                         return std::result::Result::Err(Box::new(AppError::new(message)));
                     }
-                    RecvMsg::CancelStreamRespose() => {},
+                    RecvMsg::CancelStreamRespose() => {}
                     _ => {}
                 }
             }
         }
-
     }
 }
