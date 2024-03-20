@@ -5,4 +5,4 @@ repository = "https://github.com/hugobyte/aurras.git"
 version = "0.0.1"
 
 [workspace]
-members = ["modules/wasmtime-wasi-module", "modules/kuska_ssb_client", "module/logger", "module/state_manager"]
+members = ["modules/wasmtime-wasi-module", "modules/kuska_ssb_client", "module/logger", "module/state_manager", "module/storage"]

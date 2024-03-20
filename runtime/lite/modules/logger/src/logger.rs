@@ -1,21 +1,51 @@
 use super::*;
-use crate::traits::Logger;
-use env_logger::*;
-use log::*;
+extern crate slog;
+extern crate slog_async;
+extern crate slog_term;
 
+use slog::Drain;
+
+#[derive(Clone, Debug)]
 pub struct CoreLogger {
-    logger: env_logger::Logger,
+    logger: slog::Logger,
 }
 
 impl CoreLogger {
-    pub fn new() -> CoreLogger {
-        Builder::from_default_env()
-            .filter_module("logger::logger", LevelFilter::Info)
-            .filter_module("logger::logger", LevelFilter::Debug)
-            .target(Target::Stdout)
-            .init();
+    pub fn new(log_file: Option<&str>) -> CoreLogger {
+        use std::fs::OpenOptions;
 
-        let logger = Builder::from_default_env().build();
+       let file =  match log_file {
+            Some(file) => {
+                OpenOptions::new()
+                .write(true)
+                .append(true)
+                .create(true)
+                .open(file)
+                .unwrap()
+            }
+            None => {
+                OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .append(true)
+                    .open("./workflows.log")
+                    .unwrap()
+            }
+        };
+
+        let decorator = slog_term::PlainDecorator::new(file);
+        let file_drain = slog_term::FullFormat::new(decorator).build().fuse();
+
+        let decorator = slog_term::TermDecorator::new().build();
+        let terminal_drain = slog_term::FullFormat::new(decorator).build().fuse();
+
+        let drain = slog::Duplicate::new(file_drain, terminal_drain).fuse();
+
+        let drain = slog_async::Async::new(drain)
+            .overflow_strategy(slog_async::OverflowStrategy::Block)
+            .build()
+            .fuse();
+        let logger = slog::Logger::root(drain, slog::o!());
 
         CoreLogger { logger }
     }
@@ -23,18 +53,18 @@ impl CoreLogger {
 
 impl Logger for CoreLogger {
     fn info(&self, msg: &str) {
-        log::info!("{msg:?}");
+        slog::info!(self.logger, "{msg:?}");
     }
 
     fn warn(&self, msg: &str) {
-        log::warn!("{msg:?}");
+        slog::warn!(self.logger, "{msg:?}");
     }
 
     fn error(&self, msg: &str) {
-        log::error!("{msg:?}");
+        slog::error!(self.logger, "{msg:?}");
     }
 
     fn debug(&self, msg: &str) {
-        log::debug!("{msg:?}");
+        slog::debug!(self.logger, "{msg:?}");
     }
 }
