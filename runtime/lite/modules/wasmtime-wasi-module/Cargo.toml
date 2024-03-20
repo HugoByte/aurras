@@ -1,5 +1,5 @@
 [package]
-name = "wasm_module"
+name = "wasmtime-wasi-module"
 authors = ["The HugoByte Team <hello@hugobyte.com>"]
 edition = "2021"
 repository = "https://github.com/hugobyte/aurras.git"

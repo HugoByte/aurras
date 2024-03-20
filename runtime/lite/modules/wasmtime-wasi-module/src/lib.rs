@@ -22,7 +22,7 @@ use wasmtime_wasi::sync::WasiCtxBuilder;
 #[allow(dead_code)]
 fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
     data: Value,
-    path: String,
+    wasm_file: Vec<u8>,
     hash_key: String,
     state_manager: &mut GlobalState<WorkflowState, U>,
     workflow_index: usize,
@@ -56,7 +56,7 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
         None
     };
 
-    let wasm_file = fs::read(path).unwrap();
+    // let wasm_file = fs::read(path).unwrap();
     let mut input: MainInput = serde_json::from_value(data).unwrap();
 
     input.data = if prev_internal_state_data.is_some() {
@@ -286,12 +286,12 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
     Ok(res)
 }
 
-pub fn run_workflow(data: Value, path: String, workflow_id: usize) -> Result<Output, String> {
+pub fn run_workflow(data: Value, wasm_file: Vec<u8>, workflow_id: usize, workflow_name: &str) -> Result<Output, String> {
     let logger = CoreLogger::new(Some("./workflow.log"));
     let mut state_manager = GlobalState::new(logger.clone());
 
-    state_manager.new_workflow(workflow_id, &path);
+    state_manager.new_workflow(workflow_id, workflow_name);
 
-    let digest = digest(format!("{:?}{:?}", data, path));
-    run_workflow_helper(data, path, digest, &mut state_manager, 0, false, logger)
+    let digest = digest(format!("{:?}{:?}", data, workflow_name));
+    run_workflow_helper(data, wasm_file, digest, &mut state_manager, 0, false, logger)
 }

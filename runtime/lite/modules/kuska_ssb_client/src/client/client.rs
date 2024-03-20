@@ -262,6 +262,8 @@ impl Client {
                                                 wasmtime_wasi_module::run_workflow(
                                                     serde_json::to_value(event.body).unwrap(),
                                                     vec![],
+                                                    0,
+                                                    "hello"
                                                 );
                                             }
                                         }
