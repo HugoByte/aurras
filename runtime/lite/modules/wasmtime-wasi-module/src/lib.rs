@@ -240,7 +240,6 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
     let malloc = linking
         .get_typed_func::<(i32, i32), i32, _>(&mut store, "memory_alloc")
         .unwrap();
-
     let data = serde_json::to_vec(&input.data).unwrap();
     let data_ptr = malloc.call(&mut store, (data.len() as i32, 2)).unwrap();
 
