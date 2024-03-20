@@ -22,7 +22,7 @@ async fn test_hello_world() {
 async fn test_employee_salary() {
 
     let path = std::env::var("WORKFLOW_WASM").unwrap_or(
-        "../state-managed-workflow/target/wasm32-wasi/release/boilerplate.wasm".to_string(),
+        "../../../../workflow/examples/employee_salary_state_managed.wasm".to_string(),
     );
 
     let server = test_util::post("127.0.0.1:1234").await;
@@ -36,7 +36,6 @@ async fn test_employee_salary() {
     });
 
     let result = super::run_workflow(input.clone(), path.clone(), 2).unwrap();
- 
     assert!(result
         .result
         .to_string()

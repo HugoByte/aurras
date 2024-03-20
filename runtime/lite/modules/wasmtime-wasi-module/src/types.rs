@@ -15,3 +15,12 @@ pub struct MainInput {
     pub allowed_hosts: Option<Vec<String>>,
     pub data: Value,
 }
+
+#[derive(Default, Debug, Serialize, Deserialize)]
+pub struct InternalState{
+   pub action_name: String,
+   pub task_index: isize,
+   pub execution_state: state_manager::ExecutionState,
+   pub output: Option<Value>,
+   pub error: Option<String>,
+}
