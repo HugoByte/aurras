@@ -31,4 +31,10 @@ pub use client::*;
 pub use errors::*;
 pub use response_parser::*;
 
+pub mod types;
+pub use types::*;
+
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+
+#[cfg(test)]
+pub mod tests;
