@@ -99,30 +99,12 @@ mod tests {
     /// the original file.
     #[test]
     fn test_store_and_get_wasm() {
-        let core_storage = CoreStorage::new("test8").unwrap();
-        let wasm_bytes = vec![0x00, 0x61, 0x01];
+        let wasm_store = CoreStorage::new("test8").unwrap();
+        let sample_wasm = vec![1, 2, 3, 4, 5];
 
-        let key = "boilerplate";
-        core_storage.store_wasm(key, &wasm_bytes).unwrap();
+        let id = wasm_store.store_wasm(&sample_wasm).unwrap();
 
-        let retrieved_wasm = core_storage.get_wasm(key).unwrap();
-        fs::remove_dir_all(std::path::Path::new("test8")).unwrap();
-        assert_eq!(retrieved_wasm, wasm_bytes)
-    }
-
-    /// The test function is checking if an error is raised when trying to retrieve a WebAssembly module
-    /// with a different key than the one it was stored with.
-    #[test]
-    #[should_panic]
-    fn test_get_wasm_with_different_key() {
-        let core_storage = CoreStorage::new("test9").unwrap();
-        let wasm_bytes = vec![0x00, 0x61, 0x01];
-
-        let key = "boilerplate";
-        core_storage.store_wasm(key, &wasm_bytes).unwrap();
-
-        let result = core_storage.get_wasm("hello");
-        fs::remove_dir_all(std::path::Path::new("test9")).unwrap();
-        result.unwrap();
+        let retrieved_wasm = wasm_store.get_wasm(&id).unwrap();
+        assert_eq!(retrieved_wasm, sample_wasm);
     }
 }

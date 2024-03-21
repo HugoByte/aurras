@@ -40,3 +40,7 @@ wasmtime-wasi-module = { path = "../wasmtime-wasi-module" }
 subxt = "0.34.0"
 tokio = { version = "1.36.0", features = ["macros", "time", "rt-multi-thread"] }
 subxt-signer = "0.34.0"
+corestorage = {path = "../storage"}
+rmp-serde = "1.1.2"
+rocksdb = "0.18.0"
+uuid = { version = "0.8", features = ["serde", "v4"] }
