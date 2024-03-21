@@ -95,6 +95,17 @@ accept_invite(){
     echo $producer_accept
 }
 
+copy_secrets_to(){
+    consumer_container=$(find_container "ssb-consumer")
+    producer_container=$(find_container "ssb-producer")
+    pubs_container=$(find_container "ssb-pubs")
+    
+    mkdir -p ./secret
+
+    docker cp  $consumer_container:/root/.ssb/secret ./secret/consumer_secret
+    docker cp  $producer_container:/root/.ssb/secret ./secret/producer_secret
+    docker cp  $pubs_container:/home/node/.ssb/secret ./secret/pubs_secret
+}
 start_specific_service() {
   service=$1
   docker-compose --project-name ssb up -d $service
@@ -108,6 +119,7 @@ case "$1" in
   stop)
     stop_service
     rm -rf ssb-test
+    rm -rf secret
     ;;
   copy)
     copy_files 
@@ -120,6 +132,9 @@ case "$1" in
     ;;
   start-service)
     start_specific_service $2
+    ;;
+  copy-secret)
+    copy_secrets_to
     ;;
   *)
     echo "Invalid command. Please enter start, copy or stop."
