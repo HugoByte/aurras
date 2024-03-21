@@ -51,8 +51,8 @@ pub struct CoreStorage {
 }
 
 impl CoreStorage {
-    pub fn new() -> Result<Self, CustomError> {
-        let db = DB::open_default("my-db.db").map_err(CustomError::RocksDB)?;
+    pub fn new(db_name: &str) -> Result<Self, CustomError> {
+        let db = DB::open_default(db_name).map_err(CustomError::RocksDB)?;
         Ok(Self { db })
     }
 }
@@ -64,7 +64,7 @@ impl Storage for CoreStorage {
         let datastore = self.db.get(key)?;
         let data = match datastore {
             Some(ivec) => ivec.to_vec(),
-            None => Vec::new(),
+            None => return Err(CustomError::Custom("Data not found".to_string())),
         };
         Ok(data)
     }
