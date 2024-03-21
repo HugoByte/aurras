@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{Client, Event};
+    // use super::*;
+    use crate::{Client, Event, UserConfig};
 
     // ssb-server should keep running for testing
     // use `cargo test -- --ignored` command for testing
@@ -9,10 +9,194 @@ mod tests {
     #[ignore]
     async fn test_client() {
         // passing default ip and port of ssb-server for testing
-        let mut client = Client::new(None, "0.0.0.0".to_string(), "8008".to_string())
+        Client::new(None, "0.0.0.0".to_string(), "8008".to_string())
             .await
             .unwrap();
-        client.user(false, "me").await.unwrap();
+    }
+
+    #[async_std::test]
+    #[ignore]
+    async fn test_client_with_config() {
+        let config = UserConfig::new(
+            "sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=",
+            "gvpeKlDwnVSG0rjVZpeE5R4fhVFuMSdOUyivYJP1VwKxLEUMsvOe3V+2wKdF2nY7adJWWLp4jfF059K9tbqPCg==",
+            "@sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=.ed25519"
+        );
+
+        // passing default ip and port of ssb-server for testing
+        Client::new(Some(config), "0.0.0.0".to_string(), "8008".to_string())
+            .await
+            .unwrap();
+    }
+
+    #[async_std::test]
+    #[should_panic = "fail to create client"]
+    #[ignore]
+    async fn test_client_with_config_fail() {
+        let config = UserConfig::new("public key", "private key", "address");
+
+        // passing default ip and port of ssb-server for testing
+        Client::new(Some(config), "".to_string(), "".to_string())
+            .await
+            .expect("fail to create client");
+    }
+
+    #[async_std::test]
+    #[ignore]
+    async fn test_get_secret_key() {
+        use kuska_ssb::crypto::ed25519::SecretKey;
+
+        let key =  "gvpeKlDwnVSG0rjVZpeE5R4fhVFuMSdOUyivYJP1VwKxLEUMsvOe3V+2wKdF2nY7adJWWLp4jfF059K9tbqPCg==";
+
+        let config = UserConfig::new(
+            "sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=",
+            key,
+            "@sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=.ed25519",
+        );
+
+        let client = Client::new(Some(config), "0.0.0.0".to_string(), "8008".to_string())
+            .await
+            .unwrap();
+        let secret_key = client.get_secret_key();
+
+        let secret_key_config = SecretKey::from_slice(&base64::decode(key).unwrap()).unwrap();
+        assert_eq!(secret_key, secret_key_config);
+    }
+
+    #[async_std::test]
+    #[ignore]
+    async fn test_whoami() {
+        let config = UserConfig::new(
+            "sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=",
+            "gvpeKlDwnVSG0rjVZpeE5R4fhVFuMSdOUyivYJP1VwKxLEUMsvOe3V+2wKdF2nY7adJWWLp4jfF059K9tbqPCg==",
+            "@sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=.ed25519"
+        );
+
+        // passing default ip and port of ssb-server for testing
+        let mut client = Client::new(Some(config), "0.0.0.0".to_string(), "8008".to_string())
+            .await
+            .unwrap();
+
+        let whoami = client.whoami().await.unwrap();
+        assert_eq!(
+            whoami,
+            "@sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=.ed25519"
+        );
+    }
+
+    #[async_std::test]
+    #[ignore]
+    // returns list of feeds posted by particular user
+    async fn test_user_method() {
+        let config = UserConfig::new(
+            "sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=",
+            "gvpeKlDwnVSG0rjVZpeE5R4fhVFuMSdOUyivYJP1VwKxLEUMsvOe3V+2wKdF2nY7adJWWLp4jfF059K9tbqPCg==",
+            "@sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=.ed25519"
+        );
+
+        // passing default ip and port of ssb-server for testing
+        let mut client = Client::new(Some(config), "0.0.0.0".to_string(), "8008".to_string())
+            .await
+            .unwrap();
+
+        let old_event = Event {
+            id: "1".to_string(),
+            body: "hello_world_event".to_string(),
+        };
+
+        let value = serde_json::to_value(old_event.clone()).unwrap();
+
+        client.publish(&value.to_string(), None).await.unwrap();
+
+        // wait for server to publish
+        async_std::task::sleep(std::time::Duration::from_secs(1)).await;
+
+        let feed = client
+            .user(
+                false,
+                "@sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=.ed25519",
+            )
+            .await
+            .unwrap();
+
+        let event = feed.last().unwrap().value.clone();
+        let message = event.get("content").unwrap();
+
+        let feed_type = message.get("type").unwrap();
+        let feed_type: String = serde_json::from_value(feed_type.clone()).unwrap();
+
+        assert_eq!(&feed_type, "post");
+
+        let feed_text = message.get("text").unwrap();
+        let feed_text: String = serde_json::from_value(feed_text.clone()).unwrap();
+
+        let new_event: Event = serde_json::from_str(&feed_text).unwrap();
+        // let event = serde_json::from_value(event).unwrap();
+        assert_eq!(old_event, new_event);
+    }
+
+    #[async_std::test]
+    #[ignore]
+    // returns list of feeds posted by particular user
+    async fn test_user_me() {
+        let config = UserConfig::new(
+            "sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=",
+            "gvpeKlDwnVSG0rjVZpeE5R4fhVFuMSdOUyivYJP1VwKxLEUMsvOe3V+2wKdF2nY7adJWWLp4jfF059K9tbqPCg==",
+            "@sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=.ed25519"
+        );
+
+        // passing default ip and port of ssb-server for testing
+        let mut client = Client::new(Some(config), "0.0.0.0".to_string(), "8008".to_string())
+            .await
+            .unwrap();
+
+        let old_event = Event {
+            id: "1".to_string(),
+            body: "hello_world_event".to_string(),
+        };
+
+        let value = serde_json::to_value(old_event.clone()).unwrap();
+
+        client.publish(&value.to_string(), None).await.unwrap();
+
+        // wait for server to publish
+        async_std::task::sleep(std::time::Duration::from_secs(1)).await;
+
+        let feed = client.user(false, "me").await.unwrap();
+
+        let event = feed.last().unwrap().value.clone();
+        let message = event.get("content").unwrap();
+
+        let feed_type = message.get("type").unwrap();
+        let feed_type: String = serde_json::from_value(feed_type.clone()).unwrap();
+
+        assert_eq!(&feed_type, "post");
+
+        let feed_text = message.get("text").unwrap();
+        let feed_text: String = serde_json::from_value(feed_text.clone()).unwrap();
+
+        let new_event: Event = serde_json::from_str(&feed_text).unwrap();
+        // let event = serde_json::from_value(event).unwrap();
+        assert_eq!(old_event, new_event);
+    }
+
+    #[async_std::test]
+    #[ignore]
+    #[should_panic = "Already closed"]
+    async fn test_close() {
+        let config = UserConfig::new(
+            "sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=",
+            "gvpeKlDwnVSG0rjVZpeE5R4fhVFuMSdOUyivYJP1VwKxLEUMsvOe3V+2wKdF2nY7adJWWLp4jfF059K9tbqPCg==",
+            "@sSxFDLLznt1ftsCnRdp2O2nSVli6eI3xdOfSvbW6jwo=.ed25519"
+        );
+
+        // passing default ip and port of ssb-server for testing
+        let mut client = Client::new(Some(config), "0.0.0.0".to_string(), "8008".to_string())
+            .await
+            .unwrap();
+
+        client.close().await.unwrap();
+        client.whoami().await.unwrap();
     }
 
     #[async_std::test]
@@ -76,7 +260,7 @@ mod tests {
 
         // Tranfer the amount manually after starting this function
 
-        //Todo 
+        //Todo
         // Change user configuration
         let user = UserConfig::new("PV5BFUk8N6DN1lEmnaS6ssZ9HvUc5WqLZP0lHN++CME=", 
             "iwmBTO3wfIqvOa8aodBJSdmcqhY4IByy9THlWNalL7E9XkEVSTw3oM3WUSadpLqyxn0e9Rzlaotk/SUc374IwQ=", 

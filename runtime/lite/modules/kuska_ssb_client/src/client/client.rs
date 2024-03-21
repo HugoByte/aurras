@@ -1,6 +1,5 @@
 use super::*;
 use kuska_ssb::api::dto::content::Mention;
-use serde::{Deserialize, Serialize};
 
 impl Client {
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
@@ -139,7 +138,7 @@ impl Client {
         Ok(msg)
     }
 
-    pub async fn user(&mut self, live: bool, user_id: &str) -> Result<()> {
+    pub async fn user(&mut self, live: bool, user_id: &str) -> Result<Vec<Feed>> {
         let user_id = match user_id {
             "me" => self.whoami().await?,
             _ => user_id.to_string(),
@@ -148,9 +147,9 @@ impl Client {
         let args = CreateHistoryStreamIn::new(user_id).live(live);
 
         let req_id = self.api.create_history_stream_req_send(&args).await?;
-        self.print_source_until_eof(req_id, feed_res_parse).await?;
+        let feed = self.print_source_until_eof(req_id, feed_res_parse).await?;
 
-        Ok(())
+        Ok(feed)
     }
 
     pub async fn feed(&mut self, live: bool) -> Result<Vec<Feed>> {
@@ -259,7 +258,7 @@ impl Client {
                                             if event.id == "1".to_string() {
                                                 //TODO
                                                 // Setup a mechnism to read the workflow and input
-                                                wasmtime_wasi_module::run_workflow(
+                                               let _ = wasmtime_wasi_module::run_workflow(
                                                     serde_json::to_value(event.body).unwrap(),
                                                     vec![],
                                                     0,
