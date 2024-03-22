@@ -1,6 +1,8 @@
-use std::{ sync::{Arc, Mutex}};
+use std::sync::{Arc, Mutex};
 
-use crate::{modules::wasmtime_wasi_module, Ctx, modules::storage::Storage, modules::logger::Logger};
+use crate::{
+    modules::logger::Logger, modules::storage::Storage, modules::wasmtime_wasi_module, Ctx,
+};
 
 use super::*;
 use kuska_ssb::api::dto::content::Mention;
@@ -165,7 +167,11 @@ impl Client {
         Ok(feed)
     }
 
-    pub async fn live_feed_with_execution_of_workflow(&mut self, live: bool, ctx: Arc<Mutex<dyn Ctx>>) -> Result<()> {
+    pub async fn live_feed_with_execution_of_workflow(
+        &mut self,
+        live: bool,
+        ctx: Arc<Mutex<dyn Ctx>>,
+    ) -> Result<()> {
         let args = CreateStreamIn::default().live(live);
         let req_id = self.api.create_feed_stream_req_send(&args).await?;
 
@@ -234,7 +240,7 @@ impl Client {
         Ok(())
     }
 
-    pub async fn publish_event(&mut self, msg: &str, mention : Option<Vec<Mention>>) -> Result<()> {
+    pub async fn publish_event(&mut self, msg: &str, mention: Option<Vec<Mention>>) -> Result<()> {
         let _req_id = self
             .api
             .publish_req_send(TypedMessage::Event {
@@ -242,18 +248,24 @@ impl Client {
                 mentions: mention,
             })
             .await?;
-            
+
         Ok(())
     }
-
 
     pub async fn close(&mut self) -> Result<()> {
         self.api.rpc().close().await?;
         Ok(())
     }
 
-    async fn execute_workflow_by_event(&mut self, req_no: RequestNo, ctx: Arc<Mutex<dyn Ctx>>) -> Result<()> {
+    async fn execute_workflow_by_event(
+        &mut self,
+        req_no: RequestNo,
+        ctx: Arc<Mutex<dyn Ctx>>,
+    ) -> Result<()> {
         let mut response = vec![];
+
+        let mut is_synced = false;
+
         loop {
             let (id, msg) = self.rpc_reader.recv().await?;
 
@@ -264,41 +276,42 @@ impl Client {
 
                         match display {
                             Ok(display) => {
-                                match serde_json::from_value::<kuska_ssb::api::dto::content::Post>(
-                                    display.value.get("content").unwrap().clone(),
-                                ) {
-                                    Ok(x) => match serde_json::from_str::<serde_json::Value>(&x.text) {
-                                        Ok(mut event) => {
-                                            response.push(display);
-                                            println!("{:#?}", event);
+                                if is_synced {
+                                    match serde_json::from_value::<kuska_ssb::api::dto::content::Post>(
+                                        display.value.get("content").unwrap().clone(),
+                                    ) {
+                                        Ok(x) => {
+                                            match serde_json::from_str::<serde_json::Value>(&x.text)
+                                            {
+                                                Ok(mut event) => {
+                                                    response.push(display);
+                                                    println!("{:#?}", event);
 
-                                            let ctx = ctx.lock().unwrap();
-                                            let db = ctx.get_db();
-                                            let logger = ctx.get_logger();
+                                                    let ctx = ctx.lock().unwrap();
+                                                    let db = ctx.get_db();
+                                                    let logger = ctx.get_logger();
 
-                                            
-
-                                            match db.get(&x.mentions.unwrap()[0].link){
-                                                Ok(body) => {
-                                                    let data = serde_json::json!({
-                                                        "data" : crate::common::combine_values(&mut event, &body.input),
-                                                        "allowed_hosts": body.allowed_hosts
-                                                    });
-                                                    wasmtime_wasi_module::run_workflow(
-                                                        serde_json::to_value(data).unwrap(),
-                                                        body.wasm,
-                                                        0,
-                                                        "hello"
-                                                    );
-                                                },
-                                                Err(e) => logger.error(&e.to_string()) ,
+                                                    match db.get(&x.mentions.unwrap()[0].link) {
+                                                        Ok(body) => {
+                                                            let data = serde_json::json!({
+                                                                "data" : crate::common::combine_values(&mut event, &body.input),
+                                                                "allowed_hosts": body.allowed_hosts
+                                                            });
+                                                            wasmtime_wasi_module::run_workflow(
+                                                                serde_json::to_value(data).unwrap(),
+                                                                body.wasm,
+                                                                0,
+                                                                "hello",
+                                                            );
+                                                        }
+                                                        Err(e) => logger.error(&e.to_string()),
+                                                    }
+                                                }
+                                                Err(e) => println!("{:#?}", e),
                                             }
-
-                                            
                                         }
                                         Err(e) => println!("{:#?}", e),
-                                    },
-                                    Err(e) => println!("{:#?}", e),
+                                    }
                                 }
                             }
                             Err(err) => {
@@ -306,6 +319,7 @@ impl Client {
 
                                 if body == "{\"sync\":true}" {
                                     println!("Syncing Successful");
+                                    is_synced = true;
                                 } else {
                                     return std::result::Result::Err(err);
                                 }
