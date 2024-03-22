@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
+    use crate::modules::kuska_ssb_client::client::{types, Client, UserConfig};
     use dotenv::dotenv;
-
-    // use super::*;
-    use crate::{Client, Event, UserConfig};
+    use super::*;
+    // use crate::{Client, Event};
 
     // ssb-server should keep running for testing
     /* configure the env variables such as SSB_IP, SSB_PORT, SSB_PUBLIC_KEY,
@@ -242,6 +242,17 @@ mod tests {
 
     #[async_std::test]
     #[ignore]
+    async fn test_feed_test() {
+        use crate::modules::kuska_ssb_client::client::UserConfig;
+        let user = UserConfig::new("vhuaeBySHfMTeBpTseKP/ksOVtyLGaqZ+Ae4SyQk7wY=", 
+    "MywOEUUCk9rUcWq6OFsfbzZABDc+sItJHJoN+RJrwMK+G5p4HJId8xN4GlOx4o/+Sw5W3IsZqpn4B7hLJCTvBg=", 
+    "@vhuaeBySHfMTeBpTseKP/ksOVtyLGaqZ+Ae4SyQk7wY=.ed25519");
+    let mut client = Client::new(None, "0.0.0.0".to_string(), "8015".to_string()).await.unwrap();
+        client.feed(true).await.unwrap();
+    }
+
+    #[async_std::test]
+    #[ignore]
     async fn test_publish() {
         dotenv().ok();
         let ssb_ip = std::env::var("SSB_IP").unwrap();
@@ -256,7 +267,7 @@ mod tests {
         let feed = client.feed(false).await.unwrap();
         let prev_len = feed.len();
 
-        let old_event = Event {
+        let old_event = types::Event {
             id: "1".to_string(),
             body: "hello_world_event".to_string(),
         };
@@ -282,7 +293,7 @@ mod tests {
         let feed_text = message.get("text").unwrap();
         let feed_text: String = serde_json::from_value(feed_text.clone()).unwrap();
 
-        let new_event: Event = serde_json::from_str(&feed_text).unwrap();
+        let new_event: types::Event = serde_json::from_str(&feed_text).unwrap();
         // let event = serde_json::from_value(event).unwrap();
         assert_eq!(old_event, new_event);
     }
@@ -316,7 +327,7 @@ mod tests {
         use subxt::{OnlineClient, PolkadotConfig};
         use subxt_signer::sr25519::dev;
 
-        #[subxt::subxt(runtime_metadata_path = "../utils/polkadot_metadata_small.scale")]
+        #[subxt::subxt(runtime_metadata_path = "./src/modules/utils/polkadot_metadata_small.scale")]
         pub mod polkadot {}
 
         let api = OnlineClient::<PolkadotConfig>::new().await.unwrap();

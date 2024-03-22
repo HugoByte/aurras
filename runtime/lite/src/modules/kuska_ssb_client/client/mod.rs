@@ -2,9 +2,7 @@ extern crate kuska_handshake;
 extern crate kuska_ssb;
 
 extern crate base64;
-extern crate crossbeam;
-extern crate regex;
-extern crate structopt;
+
 
 use std::fmt::Debug;
 

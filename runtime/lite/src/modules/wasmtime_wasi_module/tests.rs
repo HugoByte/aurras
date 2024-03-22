@@ -5,7 +5,7 @@ async fn test_hello_world() {
 
     let wasm = std::fs::read(&path).unwrap();
 
-    let server = super::post("127.0.0.1:8080").await;
+    let server = test_util::post("127.0.0.1:8080").await;
     let input = serde_json::json!({
         "allowed_hosts": [
             server.uri()

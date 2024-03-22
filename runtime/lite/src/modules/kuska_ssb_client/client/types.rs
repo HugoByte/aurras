@@ -1,3 +1,4 @@
+use kuska_ssb::api::dto::content::Mention;
 use serde::{Deserialize, Serialize};
 
 use super::*;
@@ -23,8 +24,9 @@ pub struct UserConfig {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Content {
     #[serde(rename = "type")]
-    types: String,
+    pub types: String,
     pub text: String,
+    // mentions: Option<Vec<Mention>>,
 }
 
 impl UserConfig {
