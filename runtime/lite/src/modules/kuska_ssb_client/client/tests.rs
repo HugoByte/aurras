@@ -2,12 +2,13 @@
 mod tests {
     use crate::modules::kuska_ssb_client::client::{types, Client, UserConfig};
     use dotenv::dotenv;
-    use super::*;
+    use kuska_ssb::keystore::read_patchwork_config;
+
     // use crate::{Client, Event};
 
     // ssb-server should keep running for testing
-    /* configure the env variables such as SSB_IP, SSB_PORT, SSB_PUBLIC_KEY,
-    SSB_SECRET_KEY and SSB_ID in .env file */
+    /* configure the env variables such as ssb-sercret file path, ip and port where
+    ssb-server is running in .env file */
     // use `cargo test -- --ignored` command for testing
 
     #[async_std::test]
@@ -15,119 +16,126 @@ mod tests {
     async fn test_client() {
         dotenv().ok();
 
-        let ssb_ip = std::env::var("SSB_IP").unwrap();
-        let ssb_port = std::env::var("SSB_PORT").unwrap();
+        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let config = read_patchwork_config(&mut file).await.unwrap();
 
-        Client::new(None, ssb_ip, ssb_port).await.unwrap();
+        Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
     }
 
     #[async_std::test]
     #[ignore]
     async fn test_client_with_config() {
         dotenv().ok();
-        let ssb_ip = std::env::var("SSB_IP").unwrap();
-        let ssb_port = std::env::var("SSB_PORT").unwrap();
-        let ssb_public_key = std::env::var("SSB_PUBLIC_KEY").unwrap();
-        let ssb_secret_key = std::env::var("SSB_SECRET_KEY").unwrap();
-        let ssb_id = std::env::var("SSB_ID").unwrap();
 
-        let config = UserConfig::new(&ssb_public_key, &ssb_secret_key, &ssb_id);
+        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let config = read_patchwork_config(&mut file).await.unwrap();
 
         // passing default ip and port of ssb-server for testing
         Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
     }
 
     #[async_std::test]
-    #[should_panic = "fail to create client"]
-    #[ignore]
-    async fn test_client_with_config_fail() {
-        let config = UserConfig::new("public key", "private key", "address");
-
-        // passing default ip and port of ssb-server for testing
-        Client::new(Some(config), "".to_string(), "".to_string())
-            .await
-            .expect("fail to create client");
-    }
-
-    #[async_std::test]
     #[ignore]
     async fn test_get_secret_key() {
-        use kuska_ssb::crypto::ed25519::SecretKey;
-
         dotenv().ok();
-        let ssb_ip = std::env::var("SSB_IP").unwrap();
-        let ssb_port = std::env::var("SSB_PORT").unwrap();
-        let ssb_public_key = std::env::var("SSB_PUBLIC_KEY").unwrap();
-        let ssb_secret_key = std::env::var("SSB_SECRET_KEY").unwrap();
-        let ssb_id = std::env::var("SSB_ID").unwrap();
 
-        let config = UserConfig::new(&ssb_public_key, &ssb_secret_key, &ssb_id);
+        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let config = read_patchwork_config(&mut file).await.unwrap();
 
-        let client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
+        let client = Client::new(Some(config.clone()), ssb_ip, ssb_port)
+            .await
+            .unwrap();
 
         let secret_key = client.get_secret_key();
 
-        let secret_key_config =
-            SecretKey::from_slice(&base64::decode(&ssb_secret_key).unwrap()).unwrap();
-        assert_eq!(secret_key, secret_key_config);
+        assert_eq!(secret_key, config.sk);
     }
 
     #[async_std::test]
     #[ignore]
     async fn test_whoami() {
         dotenv().ok();
-        let ssb_ip = std::env::var("SSB_IP").unwrap();
-        let ssb_port = std::env::var("SSB_PORT").unwrap();
-        let ssb_public_key = std::env::var("SSB_PUBLIC_KEY").unwrap();
-        let ssb_secret_key = std::env::var("SSB_SECRET_KEY").unwrap();
-        let ssb_id = std::env::var("SSB_ID").unwrap();
 
-        let config = UserConfig::new(&ssb_public_key, &ssb_secret_key, &ssb_id);
+        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let config = read_patchwork_config(&mut file).await.unwrap();
 
-        let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
+        let mut client = Client::new(Some(config.clone()), ssb_ip, ssb_port)
+            .await
+            .unwrap();
 
         let whoami = client.whoami().await.unwrap();
-        assert_eq!(whoami, ssb_id);
+        assert_eq!(whoami, config.id);
     }
 
     #[async_std::test]
     #[ignore]
-    async fn test_get_method(){
+    async fn test_get_method() {
         dotenv().ok();
-        let ssb_ip = std::env::var("SSB_IP").unwrap();
-        let ssb_port = std::env::var("SSB_PORT").unwrap();
-        let ssb_public_key = std::env::var("SSB_PUBLIC_KEY").unwrap();
-        let ssb_secret_key = std::env::var("SSB_SECRET_KEY").unwrap();
-        let ssb_id = std::env::var("SSB_ID").unwrap();
 
-        let config = UserConfig::new(&ssb_public_key, &ssb_secret_key, &ssb_id);
+        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let config = read_patchwork_config(&mut file).await.unwrap();
         let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
         // make sure the feed is not empty
         client.publish("hello world", None).await.unwrap();
         // wait for server to publish
         async_std::task::sleep(std::time::Duration::from_secs(1)).await;
 
-        let feed = client.user(false , "me").await.unwrap();
-        let feed_by_id = client.get(&feed[feed.len()-1].key).await.unwrap().value;
+        let feed = client.user(false, "me").await.unwrap();
+        let feed_by_id = client.get(&feed[feed.len() - 1].key).await.unwrap().value;
         let feed = serde_json::to_value(&feed.last().unwrap().value).unwrap();
 
-        assert_eq!(feed, feed_by_id);        
+        assert_eq!(feed, feed_by_id);
     }
 
     #[async_std::test]
     #[ignore]
     // returns list of feeds posted by particular user
     async fn test_user_method() {
+        use types::Event;
         dotenv().ok();
-        let ssb_ip = std::env::var("SSB_IP").unwrap();
-        let ssb_port = std::env::var("SSB_PORT").unwrap();
-        let ssb_public_key = std::env::var("SSB_PUBLIC_KEY").unwrap();
-        let ssb_secret_key = std::env::var("SSB_SECRET_KEY").unwrap();
-        let ssb_id = std::env::var("SSB_ID").unwrap();
 
-        let config = UserConfig::new(&ssb_public_key, &ssb_secret_key, &ssb_id);
+        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let config = read_patchwork_config(&mut file).await.unwrap();
 
-        let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
+        let mut client = Client::new(Some(config.clone()), ssb_ip, ssb_port)
+            .await
+            .unwrap();
 
         let old_event = Event {
             id: "1".to_string(),
@@ -141,7 +149,7 @@ mod tests {
         // wait for server to publish
         async_std::task::sleep(std::time::Duration::from_secs(1)).await;
 
-        let feed = client.user(false, &ssb_id).await.unwrap();
+        let feed = client.user(false, &config.id).await.unwrap();
 
         let event = feed.last().unwrap().value.clone();
         let message = event.get("content").unwrap();
@@ -163,14 +171,17 @@ mod tests {
     #[ignore]
     // returns list of feeds posted by particular user
     async fn test_user_me() {
+        use types::Event;
         dotenv().ok();
-        let ssb_ip = std::env::var("SSB_IP").unwrap();
-        let ssb_port = std::env::var("SSB_PORT").unwrap();
-        let ssb_public_key = std::env::var("SSB_PUBLIC_KEY").unwrap();
-        let ssb_secret_key = std::env::var("SSB_SECRET_KEY").unwrap();
-        let ssb_id = std::env::var("SSB_ID").unwrap();
 
-        let config = UserConfig::new(&ssb_public_key, &ssb_secret_key, &ssb_id);
+        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let config = read_patchwork_config(&mut file).await.unwrap();
 
         let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
 
@@ -209,13 +220,15 @@ mod tests {
     #[should_panic = "Already closed"]
     async fn test_close() {
         dotenv().ok();
-        let ssb_ip = std::env::var("SSB_IP").unwrap();
-        let ssb_port = std::env::var("SSB_PORT").unwrap();
-        let ssb_public_key = std::env::var("SSB_PUBLIC_KEY").unwrap();
-        let ssb_secret_key = std::env::var("SSB_SECRET_KEY").unwrap();
-        let ssb_id = std::env::var("SSB_ID").unwrap();
 
-        let config = UserConfig::new(&ssb_public_key, &ssb_secret_key, &ssb_id);
+        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let config = read_patchwork_config(&mut file).await.unwrap();
 
         let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
 
@@ -227,13 +240,15 @@ mod tests {
     #[ignore]
     async fn test_feed() {
         dotenv().ok();
-        let ssb_ip = std::env::var("SSB_IP").unwrap();
-        let ssb_port = std::env::var("SSB_PORT").unwrap();
-        let ssb_public_key = std::env::var("SSB_PUBLIC_KEY").unwrap();
-        let ssb_secret_key = std::env::var("SSB_SECRET_KEY").unwrap();
-        let ssb_id = std::env::var("SSB_ID").unwrap();
 
-        let config = UserConfig::new(&ssb_public_key, &ssb_secret_key, &ssb_id);
+        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let config = read_patchwork_config(&mut file).await.unwrap();
 
         let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
 
@@ -247,7 +262,10 @@ mod tests {
         let user = UserConfig::new("vhuaeBySHfMTeBpTseKP/ksOVtyLGaqZ+Ae4SyQk7wY=", 
     "MywOEUUCk9rUcWq6OFsfbzZABDc+sItJHJoN+RJrwMK+G5p4HJId8xN4GlOx4o/+Sw5W3IsZqpn4B7hLJCTvBg=", 
     "@vhuaeBySHfMTeBpTseKP/ksOVtyLGaqZ+Ae4SyQk7wY=.ed25519");
-    let mut client = Client::new(None, "0.0.0.0".to_string(), "8015".to_string()).await.unwrap();
+
+        let mut client = Client::new(None, "0.0.0.0".to_string(), "8015".to_string())
+            .await
+            .unwrap();
         client.feed(true).await.unwrap();
     }
 
@@ -255,13 +273,15 @@ mod tests {
     #[ignore]
     async fn test_publish() {
         dotenv().ok();
-        let ssb_ip = std::env::var("SSB_IP").unwrap();
-        let ssb_port = std::env::var("SSB_PORT").unwrap();
-        let ssb_public_key = std::env::var("SSB_PUBLIC_KEY").unwrap();
-        let ssb_secret_key = std::env::var("SSB_SECRET_KEY").unwrap();
-        let ssb_id = std::env::var("SSB_ID").unwrap();
 
-        let config = UserConfig::new(&ssb_public_key, &ssb_secret_key, &ssb_id);
+        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let config = read_patchwork_config(&mut file).await.unwrap();
 
         let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
         let feed = client.feed(false).await.unwrap();
@@ -301,17 +321,18 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_event_subscription() {
-        use crate::{Client, UserConfig};
+        use super::*;
 
         dotenv().ok();
-        let ssb_ip = std::env::var("SSB_IP").unwrap();
-        let ssb_port = std::env::var("SSB_PORT").unwrap();
-        let ssb_public_key = std::env::var("SSB_PUBLIC_KEY").unwrap();
-        let ssb_secret_key = std::env::var("SSB_SECRET_KEY").unwrap();
-        let ssb_id = std::env::var("SSB_ID").unwrap();
 
-        let config = UserConfig::new(&ssb_public_key, &ssb_secret_key, &ssb_id);
-
+        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let config = read_patchwork_config(&mut file).await.unwrap();
         //TODO
         // Must start a local dev polkadot Node
         // Must start and setup a ssb-server

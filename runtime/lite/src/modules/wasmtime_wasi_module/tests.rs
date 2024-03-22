@@ -1,7 +1,7 @@
 #[async_std::test]
 async fn test_hello_world() {
     let path = std::env::var("WORKFLOW_WASM")
-        .unwrap_or("../../../../workflow/examples/hello_world.wasm".to_string());
+        .unwrap_or("../../workflow/examples/hello_world.wasm".to_string());
 
     let wasm = std::fs::read(&path).unwrap();
 
@@ -24,7 +24,7 @@ async fn test_hello_world() {
 async fn test_employee_salary() {
 
     let path = std::env::var("WORKFLOW_WASM").unwrap_or(
-        "../../../../workflow/examples/employee_salary_state_managed.wasm".to_string(),
+        "../../workflow/examples/employee_salary_state_managed.wasm".to_string(),
     );
     let wasm = std::fs::read(&path).unwrap();
 
