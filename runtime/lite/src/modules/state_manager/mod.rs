@@ -3,11 +3,13 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-mod traits;
-mod types;
+pub mod traits;
+pub mod types;
 pub use traits::*;
 pub use types::*;
 pub use logger::{CoreLogger, Logger};
+
+use super::logger;
 
 pub struct GlobalState<T: WorkflowStateManager, U: Logger> {
     workflows: Vec<T>,

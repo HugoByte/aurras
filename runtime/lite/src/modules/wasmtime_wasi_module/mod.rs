@@ -3,12 +3,14 @@ use serde_json::Value;
 pub mod help;
 pub use help::*;
 mod tests;
-mod types;
-use sha256::digest;
-use state_manager::{ExecutionState, GlobalState, GlobalStateManager, WorkflowState};
-use std::{
-    fs, sync::{Arc, Mutex}
+
+use crate::modules::state_manager::{
+    ExecutionState, GlobalState, GlobalStateManager, WorkflowState,
 };
+use sha256::digest;
+use std::sync::{Arc, Mutex};
+
+mod types;
 pub use types::*;
 
 use logger::{CoreLogger, Logger};
@@ -18,6 +20,8 @@ use wasi_experimental_http_wasmtime::{HttpCtx, HttpState};
 use wasmtime::Linker;
 use wasmtime::*;
 use wasmtime_wasi::sync::WasiCtxBuilder;
+
+use super::logger;
 
 #[allow(dead_code)]
 fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
@@ -134,44 +138,36 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
                 match mem.read(&caller, offset, &mut buffer) {
                     Ok(()) => match serde_json::from_slice::<InternalState>(&buffer) {
                         Ok(task_state_data) => {
-
                             match task_state_data.execution_state {
                                 ExecutionState::Init => {
                                     logger_cln.lock().unwrap().info(&format!(
                                         "[workflow:{:?} task[{}...] ]",
-                                        id,
-                                        task_state_data.action_name
+                                        id, task_state_data.action_name
                                     ));
                                 }
 
                                 ExecutionState::Running => {
                                     logger_cln.lock().unwrap().info(&format!(
                                         "[workflow:{:?} task[{}:{}] running]",
-                                        id,
-                                        task_state_data.task_index,
-                                        task_state_data.action_name
+                                        id, task_state_data.task_index, task_state_data.action_name
                                     ));
                                 }
 
                                 ExecutionState::Paused => {
                                     logger_cln.lock().unwrap().warn(&format!(
                                         "[workflow:{:?} task[{}:{}] paused]",
-                                        id,
-                                        task_state_data.task_index,
-                                        task_state_data.action_name
+                                        id, task_state_data.task_index, task_state_data.action_name
                                     ));
                                 }
 
                                 ExecutionState::Success => {
                                     let mut output_2 = output_2.lock().unwrap();
 
-
-                                    match task_state_data.task_index{
+                                    match task_state_data.task_index {
                                         -1 => {
                                             logger_cln.lock().unwrap().info(&format!(
                                                 "[workflow:{:?} task[{}] success]",
-                                                id,
-                                                task_state_data.action_name
+                                                id, task_state_data.action_name
                                             ));
                                         }
 
@@ -184,7 +180,7 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
                                             ));
 
                                             let output_data = task_state_data.output;
-                                                output_2.push(output_data.unwrap());
+                                            output_2.push(output_data.unwrap());
                                         }
                                     }
                                 }
@@ -286,12 +282,25 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
     Ok(res)
 }
 
-pub fn run_workflow(data: Value, wasm_file: Vec<u8>, workflow_id: usize, workflow_name: &str) -> Result<Output, String> {
+pub fn run_workflow(
+    data: Value,
+    wasm_file: Vec<u8>,
+    workflow_id: usize,
+    workflow_name: &str,
+) -> Result<Output, String> {
     let logger = CoreLogger::new(Some("./workflow.log"));
     let mut state_manager = GlobalState::new(logger.clone());
 
     state_manager.new_workflow(workflow_id, workflow_name);
 
     let digest = digest(format!("{:?}{:?}", data, workflow_name));
-    run_workflow_helper(data, wasm_file, digest, &mut state_manager, 0, false, logger)
+    run_workflow_helper(
+        data,
+        wasm_file,
+        digest,
+        &mut state_manager,
+        0,
+        false,
+        logger,
+    )
 }

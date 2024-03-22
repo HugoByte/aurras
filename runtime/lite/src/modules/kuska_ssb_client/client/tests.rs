@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod tests {
+    use crate::modules::kuska_ssb_client::client::{types, Client, UserConfig};
+
     use super::*;
-    use crate::{Client, Event};
+    // use crate::{Client, Event};
 
     // ssb-server should keep running for testing
     // use `cargo test -- --ignored` command for testing
@@ -26,6 +28,17 @@ mod tests {
 
     #[async_std::test]
     #[ignore]
+    async fn test_feed_test() {
+        use crate::modules::kuska_ssb_client::client::UserConfig;
+        let user = UserConfig::new("vhuaeBySHfMTeBpTseKP/ksOVtyLGaqZ+Ae4SyQk7wY=", 
+    "MywOEUUCk9rUcWq6OFsfbzZABDc+sItJHJoN+RJrwMK+G5p4HJId8xN4GlOx4o/+Sw5W3IsZqpn4B7hLJCTvBg=", 
+    "@vhuaeBySHfMTeBpTseKP/ksOVtyLGaqZ+Ae4SyQk7wY=.ed25519");
+    let mut client = Client::new(None, "0.0.0.0".to_string(), "8015".to_string()).await.unwrap();
+        client.feed(true).await.unwrap();
+    }
+
+    #[async_std::test]
+    #[ignore]
     async fn test_publish() {
         let mut client = Client::new(None, "0.0.0.0".to_string(), "8008".to_string())
             .await
@@ -33,7 +46,7 @@ mod tests {
         let feed = client.feed(false).await.unwrap();
         let prev_len = feed.len();
 
-        let old_event = Event {
+        let old_event = types::Event {
             id: "1".to_string(),
             body: "hello_world_event".to_string(),
         };
@@ -59,7 +72,7 @@ mod tests {
         let feed_text = message.get("text").unwrap();
         let feed_text: String = serde_json::from_value(feed_text.clone()).unwrap();
 
-        let new_event: Event = serde_json::from_str(&feed_text).unwrap();
+        let new_event: types::Event = serde_json::from_str(&feed_text).unwrap();
         // let event = serde_json::from_value(event).unwrap();
         assert_eq!(old_event, new_event);
     }
@@ -67,7 +80,6 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_event_subscription() {
-        use crate::{Client, UserConfig};
         //TODO
         // Must start a local dev polkadot Node
         // Must start and setup a ssb-server
@@ -81,14 +93,14 @@ mod tests {
         let user = UserConfig::new("PV5BFUk8N6DN1lEmnaS6ssZ9HvUc5WqLZP0lHN++CME=", 
             "iwmBTO3wfIqvOa8aodBJSdmcqhY4IByy9THlWNalL7E9XkEVSTw3oM3WUSadpLqyxn0e9Rzlaotk/SUc374IwQ=", 
             "@PV5BFUk8N6DN1lEmnaS6ssZ9HvUc5WqLZP0lHN++CME=.ed25519");
-        let mut client = Client::new(Some(user), "0.0.0.0".to_string(), "8014".to_string())
+        let mut client = Client::new(None, "0.0.0.0".to_string(), "8014".to_string())
             .await
             .unwrap();
 
         use subxt::{OnlineClient, PolkadotConfig};
         use subxt_signer::sr25519::dev;
 
-        #[subxt::subxt(runtime_metadata_path = "../utils/polkadot_metadata_small.scale")]
+        #[subxt::subxt(runtime_metadata_path = "./src/modules/utils/polkadot_metadata_small.scale")]
         pub mod polkadot {}
 
         let api = OnlineClient::<PolkadotConfig>::new().await.unwrap();
