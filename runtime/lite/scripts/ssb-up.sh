@@ -73,7 +73,7 @@ EOF
 
 create_invite(){
     container=$(find_container "ssb-pubs")
-    invite=$(docker exec -it "$container" bash -c "ssb-server invite.create 2")
+    invite=$(docker exec -it "$container" bash -c "ssb-server invite.create 10")
     echo $invite
 
     # Get the IP address of the Docker container
