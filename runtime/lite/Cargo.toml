@@ -14,8 +14,10 @@ path = "src/consumer.rs"
 path = "src/lib.rs"
 
 [dependencies]
-kuska-ssb = {git = "https://github.com/shanithkk/ssb.git" , branch = "fix-invite-accept-issue"}
-kuska-handshake = { git = "https://github.com/Kuska-ssb/handshake.git", features = ["async_std"] }
+kuska-ssb = { git = "https://github.com/shanithkk/ssb.git", branch = "fix-invite-accept-issue" }
+kuska-handshake = { git = "https://github.com/Kuska-ssb/handshake.git", features = [
+    "async_std",
+] }
 # kuska-handshake = "0.2.0"
 kuska-sodiumoxide = "0.2.5-0"
 base64 = "0.11.0"
@@ -49,7 +51,7 @@ http = "0.2"
 bytes = "1"
 wasi-experimental-http-wasmtime = "0.10.0"
 sha256 = "1.5.0"
-test_util = { path = "/Users/shanithkk/Hugobyte/work/macos/workspace-aurras/2.aurras/workflow/test_util" }
+test_util = { path = "../../workflow/test_util" }
 
 rocksdb = "0.18.0"
 
