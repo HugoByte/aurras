@@ -3,71 +3,7 @@ use kuska_ssb::api::dto::content::Mention;
 use serde::{Deserialize, Serialize};
 use rocksdb::DB;
 use uuid::Uuid;
-use storage::*;
 
-
-pub fn convert_input_to_wasi_format(input_data: &serde_json::Value) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error>> {
-    match input_data {
-        serde_json::Value::Object(map) => {
-            let mut converted_data = Vec::new();
-            for (key, value) in map {
-                // Extract key and value as strings
-                let key_str = key.as_str().ok_or(From::from(format!("Invalid key type for {:?}: {}", input_data, key)))?;
-                let value_str = value.as_str().ok_or(From::from(format!("Invalid value type for key {}: {:?}", key_str, value)))?;
-
-                match value {
-                    serde_json::Value::Number(num) => {
-                        if num.is_i64() {
-                            let converted_value = num.as_i64().unwrap() as i32;
-                            converted_data.extend_from_slice(&converted_value.to_le_bytes());
-                        } else {
-                            let converted_value = num.as_f64().unwrap() as f32;
-                            converted_data.extend_from_slice(&converted_value.to_le_bytes());
-                        }
-                    }
-                    serde_json::Value::String(str_val) => {
-                        // Convert string to byte array (UTF-8 encoding)
-                        let encoded_string = str_val.as_bytes();
-                        let len = encoded_string.len() as u32;
-                        converted_data.extend_from_slice(&len.to_le_bytes());
-                        converted_data.extend_from_slice(encoded_string);
-                    }
-                    _ => return Err(From::from(format!("Unsupported value type for key {}: {:?}", key_str, value))),
-                }
-            }
-            Ok(converted_data)
-        }
-        serde_json::Value::Array(arr) => {
-            let mut converted_data = Vec::new();
-            for value in arr {
-                let value_str = value.as_str().ok_or(From::from(format!("Invalid value type in array: {:?}", value)))?;
-
-                match value {
-                    serde_json::Value::Number(num) => {
-                        if num.is_i64() {
-                            let converted_value = num.as_i64().unwrap() as i32;
-                            converted_data.extend_from_slice(&converted_value.to_le_bytes());
-                        } else {
-                            let converted_value = num.as_f64().unwrap() as f32;
-                            converted_data.extend_from_slice(&converted_value.to_le_bytes());
-                        }
-                    }
-                    serde_json::Value::String(str_val) => {
-                        let encoded_string = str_val.as_bytes();
-                        let len = encoded_string.len() as u32;
-                        converted_data.extend_from_slice(&len.to_le_bytes());
-                        converted_data.extend_from_slice(encoded_string);
-                    }
-                    _ => return Err(From::from(format!("Unsupported value type in array: {:?}", value))),
-                }
-            }
-            Ok(converted_data)
-        }
-        _ => Err(From::from(format!("Invalid input data format: {:?}", input_data))),
-    }
-
-        
-}
 
 impl Client {
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
@@ -303,6 +239,20 @@ impl Client {
         Ok(())
     }
 
+    async fn read_workflow_and_input_data(&self, event_id: &str) -> Result<(Vec<u8>, serde_json::Value)> {
+        let storage = storage::CoreStorage::new("my-db").unwrap(); // Replace with your actual database name
+
+        // Fetch the workflow WASM from the database
+        let workflow_uuid = Uuid::parse_str(event_id)?; 
+        let workflow_wasm = storage.get_wasm(&workflow_uuid)?;
+    
+        let input_data_key = format!("input_data_for_{}", event_id); 
+        let input_data_json = storage.get_data(&input_data_key)?;
+        let input_data: serde_json::Value = serde_json::from_slice(&input_data_json)?;
+    
+        Ok((workflow_wasm, input_data))
+    }
+
     async fn execute_workflow_by_event(&mut self, req_no: RequestNo) -> Result<()> {
         let mut response = vec![];
         loop {
@@ -323,23 +273,16 @@ impl Client {
                                             response.push(display);
                                             println!("{:#?}", event);
 
-                                            if event.id == "1".to_string() {
-                                                let event_id = Uuid::parse_str(&event.id).unwrap(); 
-                                                let store = storage::CoreStorage::new("my_db").unwrap();
-                                                let wasm_bytes = store.get_wasm(&event_id)?;
+                                            let event_id = event.id.clone();
 
-                                                let input_data: serde_json::Value = serde_json::from_str(&event.body)?;
-
-                                                let wasi_input = convert_input_to_wasi_format(&input_data)?;
-                                                //TODO
-                                                // Setup a mechnism to read the workflow and input
-                                                wasmtime_wasi_module::run_workflow(
-                                                    input_data,
-                                                    wasm_bytes,
-                                                    0,
-                                                    "hello"
-                                                );
-                                            }
+                                            let (workflow_wasm, input_data) = self.read_workflow_and_input_data(&event_id).await?;
+    
+                                            wasmtime_wasi_module::run_workflow(
+                                                input_data,
+                                                vec![],
+                                                0,
+                                                "hello" 
+                                            );
                                         }
                                         Err(e) => println!("{:#?}", e),
                                     },

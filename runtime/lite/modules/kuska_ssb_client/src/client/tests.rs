@@ -3,6 +3,59 @@ mod tests {
     use super::*;
     use crate::{Client, Event};
 
+    // struct MockRpcReader {
+    //     expected_calls: Vec<(u32, RecvMsg)>,
+    // }
+    
+    // impl MockRpcReader {
+    //     fn new() -> Self {
+    //         Self {
+    //             expected_calls: Vec::new(),
+    //         }
+    //     }
+    
+    //     fn expect_recv(&mut self, expected_msg: (u32, RecvMsg)) -> &mut Self {
+    //         self.expected_calls.push(expected_msg);
+    //         self
+    //     }
+    
+    //     async fn recv(&mut self) -> Result<(u32, RecvMsg), std::io::Error> {
+    //         match self.expected_calls.pop() {
+    //             Some(msg) => Ok(msg),
+    //             None => panic!("Unexpected call to recv"),
+    //         }
+    //     }
+    // }
+    
+    // struct MockStorage {
+    //     expected_get_wasm_calls: Vec<Uuid>,
+    // }
+    
+    // impl MockStorage {
+    //     fn new() -> Self {
+    //         Self {
+    //             expected_get_wasm_calls: Vec::new(),
+    //         }
+    //     }
+    
+    //     fn expect_get_wasm(&mut self, event_id: &Uuid) -> &mut Self {
+    //         self.expected_get_wasm_calls.push(event_id.clone());
+    //         self
+    //     }
+    
+    //     fn get_wasm(&self, event_id: &Uuid) -> Result<Vec<u8>, storage::Error> {
+    //         if self.expected_get_wasm_calls.contains(event_id) {
+    //             Ok(vec![]) // Replace with actual wasm bytecode
+    //         } else {
+    //             panic!("Unexpected call to get_wasm");
+    //         }
+    //     }
+    
+    //     fn verify(&self) {
+    //         assert!(!self.expected_get_wasm_calls.is_empty());
+    //     }
+    // }
+
     // ssb-server should keep running for testing
     // use `cargo test -- --ignored` command for testing
     #[async_std::test]
@@ -148,4 +201,7 @@ mod tests {
             }
         }
     }
+
 }
+
+
