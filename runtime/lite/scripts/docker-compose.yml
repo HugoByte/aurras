@@ -16,16 +16,17 @@ services:
     #   cp /tmp/config /home/node/.ssb
     # entrypoint: ["ssb-server", "start"]
     command: "start"
-    restart: unless-stopped
+    restart: always
 
   consumer:
     image: kkshanith/ssb-server
     ports:
       - "8014:8008" # Map container port 8088 to host port 
-    restart: unless-stopped
+    restart: on-failure
     
   producer:
     image: kkshanith/ssb-server
     ports:
       - "8015:8008" # Map container port 8088 to host port 8082
+    restart: on-failure
     
