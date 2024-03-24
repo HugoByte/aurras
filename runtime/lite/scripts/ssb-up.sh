@@ -90,6 +90,7 @@ accept_invite(){
     producer_container=$(find_container "ssb-producer")
 
     consumer_accept=$(docker exec -it "$consumer_container" bash -c "ssb-server invite.accept $invite")
+    sleep 3
     producer_accept=$(docker exec -it "$producer_container" bash -c "ssb-server invite.accept $invite")
     echo $consumer_accept
     echo $producer_accept
@@ -102,14 +103,21 @@ copy_secrets_to(){
     
     mkdir -p ./secret
 
-    docker cp  $consumer_container:/root/.ssb/secret ./secret/consumer_secret
-    docker cp  $producer_container:/root/.ssb/secret ./secret/producer_secret
+    docker cp  $consumer_container:/root/.ssb/secret ./secret/producer_secret
+    docker cp  $producer_container:/root/.ssb/secret ./secret/consumer_secret
     docker cp  $pubs_container:/home/node/.ssb/secret ./secret/pubs_secret
 }
 start_specific_service() {
   service=$1
   docker-compose --project-name ssb up -d $service
 }
+
+pub_whoami(){
+    container=$(find_container "ssb-pubs")
+    whoami=$(docker exec -it "$container" bash -c "ssb-server whoami")
+    echo $whoami
+}
+
 
 case "$1" in
   start)
@@ -135,6 +143,9 @@ case "$1" in
     ;;
   copy-secret)
     copy_secrets_to
+    ;;
+  pub-whoami)
+    pub_whoami
     ;;
   *)
     echo "Invalid command. Please enter start, copy or stop."
