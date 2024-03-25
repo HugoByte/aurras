@@ -15,5 +15,11 @@ pub fn latest_res_parse(body: &[u8]) -> Result<LatestOut> {
 }
 
 pub fn invite_create(body: &[u8]) -> Result<String> {
+    Ok(std::str::from_utf8(&body)
+        .map_err(|err| Box::new(err) as Box<dyn std::error::Error>)?
+        .to_string())
+}
+
+pub fn invite_accept_res_parse(body: &[u8]) -> Result<Vec<Feed>> {
     Ok(serde_json::from_slice(body)?)
 }

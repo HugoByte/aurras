@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use kuska_ssb::keystore::read_patchwork_config;
+
     use crate::modules::kuska_ssb_client::client::{types, Client, UserConfig};
 
     use super::*;
@@ -33,7 +35,9 @@ mod tests {
         let user = UserConfig::new("vhuaeBySHfMTeBpTseKP/ksOVtyLGaqZ+Ae4SyQk7wY=", 
     "MywOEUUCk9rUcWq6OFsfbzZABDc+sItJHJoN+RJrwMK+G5p4HJId8xN4GlOx4o/+Sw5W3IsZqpn4B7hLJCTvBg=", 
     "@vhuaeBySHfMTeBpTseKP/ksOVtyLGaqZ+Ae4SyQk7wY=.ed25519");
-    let mut client = Client::new(None, "0.0.0.0".to_string(), "8015".to_string()).await.unwrap();
+        let mut client = Client::new(None, "0.0.0.0".to_string(), "8015".to_string())
+            .await
+            .unwrap();
         client.feed(true).await.unwrap();
     }
 
@@ -88,7 +92,7 @@ mod tests {
 
         // Tranfer the amount manually after starting this function
 
-        //Todo 
+        //Todo
         // Change user configuration
         let user = UserConfig::new("PV5BFUk8N6DN1lEmnaS6ssZ9HvUc5WqLZP0lHN++CME=", 
             "iwmBTO3wfIqvOa8aodBJSdmcqhY4IByy9THlWNalL7E9XkEVSTw3oM3WUSadpLqyxn0e9Rzlaotk/SUc374IwQ=", 
@@ -159,5 +163,41 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[async_std::test]
+    #[ignore]
+    async fn test_create_invite() {
+        dotenv::dotenv().ok();
+        let secret = std::env::var("PUB_SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let port = std::env::var("PUB_PORT").unwrap_or_else(|_| 8013.to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let key = read_patchwork_config(&mut file).await.unwrap();
+        let mut client = Client::new(Some(key), "0.0.0.0".to_string(), port)
+            .await
+            .unwrap();
+        let res = client.create_invite().await;
+        assert!(res.is_ok())
+    }
+
+    #[async_std::test]
+    #[ignore]
+    async fn test_accept_invite() {
+        dotenv::dotenv().ok();
+        let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| 8015.to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let key = read_patchwork_config(&mut file).await.unwrap();
+        let mut client = Client::new(Some(key), "0.0.0.0".to_string(), port)
+            .await
+            .unwrap();
+        let res = client.accept_invite("172.28.0.4:8008:@hkYrVBGtWm5+xeRYDzsL9u6b0cM2rtcYs4NiiZQEVLs=.ed25519~BERengMsq9t2ovXHBZgiFtKDlcvAYQTXSPk/JAw+3zQ=").await;
+        assert!(res.is_ok())
     }
 }
