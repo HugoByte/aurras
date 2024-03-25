@@ -15,7 +15,7 @@ This runtime harnesses the capabilities of Secure Scuttlebutt, a decentralized m
         ssb-server start
 2. Run the client producer or consumer or client
 
-        corgo run --bin consumer
+        cargo run 
 
 ### Integration test setup
 1. Setup a network, got the script folder 
@@ -42,7 +42,7 @@ This runtime harnesses the capabilities of Secure Scuttlebutt, a decentralized m
     
 6. Run the consumer client
 
-        congo run --bin consumer
+        cargo run
 
 7. Run a local polakdot chain for test purpose
 
@@ -55,4 +55,5 @@ This runtime harnesses the capabilities of Secure Scuttlebutt, a decentralized m
         PRODUCER_PORT=8014
     *Note:* Get the pub address using script `./ssb-up.sh pub-whoami`
 
+        cargo run --example basic-producer
 9. Make transfer event on the chain manually.
