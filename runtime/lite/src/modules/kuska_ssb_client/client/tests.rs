@@ -4,8 +4,6 @@ mod tests {
     use dotenv::dotenv;
     use kuska_ssb::keystore::read_patchwork_config;
 
-    // use crate::{Client, Event};
-
     // ssb-server should keep running for testing
     /* configure the env variables such as ssb-sercret file path, ip and port where
     ssb-server is running in .env file */
@@ -93,32 +91,6 @@ mod tests {
 
     #[async_std::test]
     #[ignore]
-    async fn test_get_method() {
-        dotenv().ok();
-
-        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
-            let home_dir = dirs::home_dir().unwrap();
-            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
-        });
-        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
-        let mut file = async_std::fs::File::open(secret).await.unwrap();
-        let config = read_patchwork_config(&mut file).await.unwrap();
-        let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
-        // make sure the feed is not empty
-        client.publish("hello world", None).await.unwrap();
-        // wait for server to publish
-        async_std::task::sleep(std::time::Duration::from_secs(1)).await;
-
-        let feed = client.user(false, "me").await.unwrap();
-        let feed_by_id = client.get(&feed[feed.len() - 1].key).await.unwrap().value;
-        let feed = serde_json::to_value(&feed.last().unwrap().value).unwrap();
-
-        assert_eq!(feed, feed_by_id);
-    }
-
-    #[async_std::test]
-    #[ignore]
     // returns list of feeds posted by particular user
     async fn test_user_method() {
         use types::Event;
@@ -150,54 +122,6 @@ mod tests {
         async_std::task::sleep(std::time::Duration::from_secs(1)).await;
 
         let feed = client.user(false, &config.id).await.unwrap();
-
-        let event = feed.last().unwrap().value.clone();
-        let message = event.get("content").unwrap();
-
-        let feed_type = message.get("type").unwrap();
-        let feed_type: String = serde_json::from_value(feed_type.clone()).unwrap();
-
-        assert_eq!(&feed_type, "post");
-
-        let feed_text = message.get("text").unwrap();
-        let feed_text: String = serde_json::from_value(feed_text.clone()).unwrap();
-
-        let new_event: Event = serde_json::from_str(&feed_text).unwrap();
-        // let event = serde_json::from_value(event).unwrap();
-        assert_eq!(old_event, new_event);
-    }
-
-    #[async_std::test]
-    #[ignore]
-    // returns list of feeds posted by particular user
-    async fn test_user_me() {
-        use types::Event;
-        dotenv().ok();
-
-        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
-            let home_dir = dirs::home_dir().unwrap();
-            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
-        });
-        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
-        let mut file = async_std::fs::File::open(secret).await.unwrap();
-        let config = read_patchwork_config(&mut file).await.unwrap();
-
-        let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
-
-        let old_event = Event {
-            id: "1".to_string(),
-            body: "hello_world_event".to_string(),
-        };
-
-        let value = serde_json::to_value(old_event.clone()).unwrap();
-
-        client.publish(&value.to_string(), None).await.unwrap();
-
-        // wait for server to publish
-        async_std::task::sleep(std::time::Duration::from_secs(1)).await;
-
-        let feed = client.user(false, "me").await.unwrap();
 
         let event = feed.last().unwrap().value.clone();
         let message = event.get("content").unwrap();
@@ -314,7 +238,6 @@ mod tests {
         let feed_text: String = serde_json::from_value(feed_text.clone()).unwrap();
 
         let new_event: types::Event = serde_json::from_str(&feed_text).unwrap();
-        // let event = serde_json::from_value(event).unwrap();
         assert_eq!(old_event, new_event);
     }
 
