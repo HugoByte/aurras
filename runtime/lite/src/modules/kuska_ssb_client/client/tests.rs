@@ -181,20 +181,6 @@ mod tests {
 
     #[async_std::test]
     #[ignore]
-    async fn test_feed_test() {
-        use crate::modules::kuska_ssb_client::client::UserConfig;
-        let user = UserConfig::new("vhuaeBySHfMTeBpTseKP/ksOVtyLGaqZ+Ae4SyQk7wY=", 
-    "MywOEUUCk9rUcWq6OFsfbzZABDc+sItJHJoN+RJrwMK+G5p4HJId8xN4GlOx4o/+Sw5W3IsZqpn4B7hLJCTvBg=", 
-    "@vhuaeBySHfMTeBpTseKP/ksOVtyLGaqZ+Ae4SyQk7wY=.ed25519");
-
-        let mut client = Client::new(None, "0.0.0.0".to_string(), "8015".to_string())
-            .await
-            .unwrap();
-        client.feed(true).await.unwrap();
-    }
-
-    #[async_std::test]
-    #[ignore]
     async fn test_publish() {
         dotenv().ok();
 
