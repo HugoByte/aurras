@@ -14,7 +14,7 @@ use super::traits::Storage;
 use rocksdb::Error as RocksDBError;
 use rocksdb::DB;
 use std::{fmt, io};
-use uuid::Uuid;
+// use uuid::Uuid;
 use serde_derive::{Deserialize, Serialize};
 
 
@@ -23,7 +23,6 @@ pub enum CustomError {
     RocksDB(RocksDBError),
     Io(io::Error),
     Custom(String),
-    Json(serde_json::Error),
 }
 
 impl From<RocksDBError> for CustomError {
@@ -54,7 +53,6 @@ impl fmt::Display for CustomError {
             CustomError::RocksDB(e) => write!(f, "RocksDBError: {}", e),
             CustomError::Io(e) => write!(f, "IoError: {}", e),
             CustomError::Custom(msg) => write!(f, "Custom error: {}", msg),
-            CustomError::Json(e) => write!(f, "JSON error: {}", e),
         }
     }
 }
@@ -64,11 +62,11 @@ pub struct CoreStorage {
     pub db: rocksdb::DB,
 }
 
-#[derive(Serialize, Deserialize)] // Define the WasmData struct for serialization
-struct WasmData {
-    id: Uuid,
-    wasm: Vec<u8>,
-}
+// #[derive(Serialize, Deserialize)] // Define the WasmData struct for serialization
+// struct WasmData {
+//     id: Uuid,
+//     wasm: Vec<u8>,
+// }
 
 impl CoreStorage {
     pub fn new(db_name: &str) -> Result<Self, CustomError> {
@@ -161,17 +159,12 @@ impl Storage for CoreStorage {
     /// Returns:
     ///
     /// The `store_wasm` function is returning a `Result<(), Error>`.
-    fn store_wasm(&self, wasm: &[u8]) -> Result<Uuid, CustomError> {
-        let id = Uuid::new_v4();
-    let data_to_store = WasmData { id, wasm: wasm.to_owned() };
+    fn store_wasm(&self, key: &str, wasm: &[u8]) -> Result<(), CustomError> {
+        self.db.put(key, &wasm)?;
 
-    let serialized_data = serde_json::to_string(&data_to_store)?;
-
-    self.db.put(id.as_bytes(), serialized_data.as_bytes())?;
-
-    Ok(id)
-    
+        Ok(())
     }
+
 
     /// The function `get_wasm` retrieves a WebAssembly module from a database using a given key.
     ///
@@ -185,15 +178,12 @@ impl Storage for CoreStorage {
     /// The `get_wasm` function returns a `Result` containing either a vector of `u8` bytes or an
     /// `Error`.
 
-    fn get_wasm(&self, event_id: &Uuid) -> Result<Vec<u8>, CustomError> {
-        match self.db.get(event_id.as_bytes()) {
-            Ok(Some(retrieved_data)) => {
-                let deserialized_data: WasmData = serde_json::from_slice(&retrieved_data)?;
-                Ok(deserialized_data.wasm)
-            }
+    fn get_wasm(&self, key: &str) -> Result<Vec<u8>, CustomError> {
+        match self.db.get(key) {
+            Ok(Some(retrieved_wasm_bytes)) => Ok(retrieved_wasm_bytes),
             Ok(None) => Err(CustomError::Custom(format!(
-                "WASM module not found for event ID: {:?}",
-                event_id
+                "WASM module not found with key: {:?}",
+                key
             ))),
             Err(err) => Err(CustomError::RocksDB(err)),
         }

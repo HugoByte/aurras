@@ -272,6 +272,8 @@ impl Client {
             if id == req_no {
                 match msg {
                     RecvMsg::RpcResponse(_type, body) => {
+                        // let (workflow, input) = self.get_workflow_and_input(/* source details */);
+
                         let display = feed_res_parse(&body);
 
                         match display {
