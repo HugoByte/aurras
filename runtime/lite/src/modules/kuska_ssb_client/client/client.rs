@@ -214,18 +214,18 @@ impl Client {
         Ok(())
     }
 
-    pub async fn create_invite(&mut self) -> Result<()> {
+    pub async fn create_invite(&mut self) -> Result<String> {
         let req_id = self.api.invite_create_req_send(1).await?;
 
-        self.print_source_until_eof(req_id, invite_create).await?;
+        let res = self.get_async(req_id, invite_create).await?;
 
-        Ok(())
+        Ok(res)
     }
-    pub async fn accept_invite(&mut self, invite_code: &str) -> Result<()> {
+    pub async fn accept_invite(&mut self, invite_code: &str) -> Result<Vec<Feed>> {
         let req_id = self.api.invite_use_req_send(invite_code).await?;
 
-        self.print_source_until_eof(req_id, invite_create).await?;
-        Ok(())
+        let res = self.get_async(req_id, invite_accept_res_parse).await?;
+        Ok(res)
     }
 
     pub async fn publish(&mut self, msg: &str, mention: Option<Vec<Mention>>) -> Result<()> {
