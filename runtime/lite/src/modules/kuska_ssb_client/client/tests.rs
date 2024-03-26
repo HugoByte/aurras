@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::modules::kuska_ssb_client::client::{types, Client, UserConfig};
+    use crate::modules::kuska_ssb_client::client::{types, Client};
     use dotenv::dotenv;
     use kuska_ssb::keystore::read_patchwork_config;
 
@@ -121,7 +121,7 @@ mod tests {
         // wait for server to publish
         async_std::task::sleep(std::time::Duration::from_secs(1)).await;
 
-        let feed = client.user(false, &config.id).await.unwrap();
+        let feed = client.get_feed_by_user(false, &config.id).await.unwrap();
 
         let event = feed.last().unwrap().value.clone();
         let message = event.get("content").unwrap();
@@ -230,8 +230,6 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_event_subscription() {
-        use super::*;
-
         dotenv().ok();
 
         let secret = std::env::var("SECRET").unwrap_or_else(|_| {

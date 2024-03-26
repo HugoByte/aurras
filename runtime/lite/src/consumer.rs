@@ -2,12 +2,12 @@ use kuska_ssb::keystore::read_patchwork_config;
 use runtime::{
     common::RequestBody,
     logger::CoreLogger,
+    state_manager::GlobalState,
     modules::kuska_ssb_client::client::Client,
     storage::{CoreStorage, Storage},
     Ctx, Logger,
 };
 use std::{
-    borrow::{Borrow, BorrowMut},
     net::{TcpListener, TcpStream},
     sync::{Arc, Mutex},
 };
@@ -20,9 +20,13 @@ use dotenv::dotenv;
 async fn main() {
     dotenv().ok();
     let db = CoreStorage::new("runtime").unwrap();
+    let logger = CoreLogger::new(Some("./workflow"));
+    let state_manager = GlobalState::new(logger.clone());
+
     let context = Arc::new(Mutex::new(Context::new(
-        CoreLogger::new(Some("./workflow")),
+        logger,
         db,
+        state_manager
     )));
 
     let secret = std::env::var("SECRET").unwrap_or_else(|_| {
@@ -39,7 +43,10 @@ async fn main() {
         let mut client = Client::new(Some(key), "0.0.0.0".to_string(), port)
             .await
             .unwrap();
-        client.live_feed_with_execution_of_workflow(true, ssb_context).await.unwrap();
+        client
+            .live_feed_with_execution_of_workflow(true, ssb_context)
+            .await
+            .unwrap();
     });
 
     // Spawn the HTTP server task
@@ -77,7 +84,7 @@ fn handle_client(mut stream: TcpStream, ctx: Arc<Mutex<dyn Ctx>>) {
 
     db.insert(&body.pub_id.clone(), body).unwrap();
     logger.info("Data inserted successfully");
-    
+
     // println!("Received data: {:?}", body);
     // Respond to the client (optional)
     let response = "Data received!";

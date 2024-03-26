@@ -95,7 +95,7 @@ impl Storage for CoreStorage {
     /// The `set_data` function returns a `Result<(), Error>`.
     fn set_data(&self, key: &str, value: Vec<u8>) -> Result<(), CustomError> {
         let serialized_value = value;
-        self.db.put(key, &serialized_value)?;
+        self.db.put(key, serialized_value)?;
         Ok(())
     }
 
@@ -115,7 +115,7 @@ impl Storage for CoreStorage {
     /// The `modify_data` function is returning a `Result<(), Error>`.
     fn modify_data(&self, key: &str, value: Vec<u8>) -> Result<(), CustomError> {
         let _existing_data = self.get_data(key)?;
-        self.db.put(key, &value)?;
+        self.db.put(key, value)?;
 
         Ok(())
     }
@@ -151,7 +151,7 @@ impl Storage for CoreStorage {
     ///
     /// The `store_wasm` function is returning a `Result<(), Error>`.
     fn store_wasm(&self, key: &str, wasm: &[u8]) -> Result<(), CustomError> {
-        self.db.put(key, &wasm)?;
+        self.db.put(key, wasm)?;
 
         Ok(())
     }
