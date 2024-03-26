@@ -1,9 +1,11 @@
+use std::sync::{Arc, Mutex};
+
+use crate::{
+    modules::logger::Logger, modules::storage::Storage, modules::wasmtime_wasi_module, Ctx,
+};
+
 use super::*;
 use kuska_ssb::api::dto::content::Mention;
-use serde::{Deserialize, Serialize};
-use rocksdb::DB;
-use uuid::Uuid;
-
 
 impl Client {
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
@@ -61,7 +63,7 @@ impl Client {
                     RecvMsg::ErrorResponse(message) => {
                         return std::result::Result::Err(Box::new(AppError::new(message)));
                     }
-                    RecvMsg::CancelStreamRespose() => break,
+                    RecvMsg::CancelStreamResponse() => break,
                     _ => {}
                 }
             }
@@ -99,16 +101,16 @@ impl Client {
         })
     }
 
-    pub async fn new(configs: Option<UserConfig>, ip: String, port: String) -> Result<Client> {
+    pub async fn new(configs: Option<OwnedIdentity>, ip: String, port: String) -> Result<Client> {
         match configs {
             Some(config) => {
-                let public_key =
-                    PublicKey::from_slice(&base64::decode(&config.public_key)?).unwrap();
-                let secret_key =
-                    SecretKey::from_slice(&base64::decode(&config.secret_key)?).unwrap();
-                let id = config.id;
+                // let public_key =
+                //     PublicKey::from_slice(&base64::decode(&config.public_key)?).unwrap();
+                // let secret_key =
+                //     SecretKey::from_slice(&base64::decode(&config.secret_key)?).unwrap();
+                // let id = config.id;
 
-                Self::ssb_handshake(public_key, secret_key, id, ip, port).await
+                Self::ssb_handshake(config.pk, config.sk, config.id, ip, port).await
             }
             None => {
                 let OwnedIdentity { pk, sk, id } =
@@ -142,7 +144,7 @@ impl Client {
         Ok(msg)
     }
 
-    pub async fn user(&mut self, live: bool, user_id: &str) -> Result<()> {
+    pub async fn user(&mut self, live: bool, user_id: &str) -> Result<Vec<Feed>> {
         let user_id = match user_id {
             "me" => self.whoami().await?,
             _ => user_id.to_string(),
@@ -151,9 +153,9 @@ impl Client {
         let args = CreateHistoryStreamIn::new(user_id).live(live);
 
         let req_id = self.api.create_history_stream_req_send(&args).await?;
-        self.print_source_until_eof(req_id, feed_res_parse).await?;
+        let feed = self.print_source_until_eof(req_id, feed_res_parse).await?;
 
-        Ok(())
+        Ok(feed)
     }
 
     pub async fn feed(&mut self, live: bool) -> Result<Vec<Feed>> {
@@ -165,11 +167,15 @@ impl Client {
         Ok(feed)
     }
 
-    pub async fn live_feed_with_execution_of_workflow(&mut self, live: bool) -> Result<()> {
+    pub async fn live_feed_with_execution_of_workflow(
+        &mut self,
+        live: bool,
+        ctx: Arc<Mutex<dyn Ctx>>,
+    ) -> Result<()> {
         let args = CreateStreamIn::default().live(live);
         let req_id = self.api.create_feed_stream_req_send(&args).await?;
 
-        let _feed = self.execute_workflow_by_event(req_id).await?;
+        let _feed = self.execute_workflow_by_event(req_id, ctx).await?;
 
         Ok(())
     }
@@ -234,27 +240,32 @@ impl Client {
         Ok(())
     }
 
+    pub async fn publish_event(&mut self, msg: &str, mention: Option<Vec<Mention>>) -> Result<()> {
+        let _req_id = self
+            .api
+            .publish_req_send(TypedMessage::Event {
+                text: msg.to_string(),
+                mentions: mention,
+            })
+            .await?;
+
+        Ok(())
+    }
+
     pub async fn close(&mut self) -> Result<()> {
         self.api.rpc().close().await?;
         Ok(())
     }
 
-    async fn read_workflow_and_input_data(&self, event_id: &str) -> Result<(Vec<u8>, serde_json::Value)> {
-        let storage = storage::CoreStorage::new("my-db").unwrap(); // Replace with your actual database name
-
-        // Fetch the workflow WASM from the database
-        let workflow_uuid = Uuid::parse_str(event_id)?; 
-        let workflow_wasm = storage.get_wasm(&workflow_uuid)?;
-    
-        let input_data_key = format!("input_data_for_{}", event_id); 
-        let input_data_json = storage.get_data(&input_data_key)?;
-        let input_data: serde_json::Value = serde_json::from_slice(&input_data_json)?;
-    
-        Ok((workflow_wasm, input_data))
-    }
-
-    async fn execute_workflow_by_event(&mut self, req_no: RequestNo) -> Result<()> {
+    async fn execute_workflow_by_event(
+        &mut self,
+        req_no: RequestNo,
+        ctx: Arc<Mutex<dyn Ctx>>,
+    ) -> Result<()> {
         let mut response = vec![];
+
+        let mut is_synced = false;
+
         loop {
             let (id, msg) = self.rpc_reader.recv().await?;
 
@@ -265,28 +276,42 @@ impl Client {
 
                         match display {
                             Ok(display) => {
-                                match serde_json::from_value::<Content>(
-                                    display.value.get("content").unwrap().clone(),
-                                ) {
-                                    Ok(x) => match serde_json::from_str::<Event>(&x.text) {
-                                        Ok(event) => {
-                                            response.push(display);
-                                            println!("{:#?}", event);
+                                if is_synced {
+                                    match serde_json::from_value::<kuska_ssb::api::dto::content::Post>(
+                                        display.value.get("content").unwrap().clone(),
+                                    ) {
+                                        Ok(x) => {
+                                            match serde_json::from_str::<serde_json::Value>(&x.text)
+                                            {
+                                                Ok(mut event) => {
+                                                    response.push(display);
+                                                    println!("{:#?}", event);
 
-                                            let event_id = event.id.clone();
+                                                    let ctx = ctx.lock().unwrap();
+                                                    let db = ctx.get_db();
+                                                    let logger = ctx.get_logger();
 
-                                            let (workflow_wasm, input_data) = self.read_workflow_and_input_data(&event_id).await?;
-    
-                                            wasmtime_wasi_module::run_workflow(
-                                                input_data,
-                                                vec![],
-                                                0,
-                                                "hello" 
-                                            );
+                                                    match db.get(&x.mentions.unwrap()[0].link) {
+                                                        Ok(body) => {
+                                                            let data = serde_json::json!({
+                                                                "data" : crate::common::combine_values(&mut event, &body.input),
+                                                                "allowed_hosts": body.allowed_hosts
+                                                            });
+                                                            wasmtime_wasi_module::run_workflow(
+                                                                serde_json::to_value(data).unwrap(),
+                                                                body.wasm,
+                                                                0,
+                                                                "hello",
+                                                            );
+                                                        }
+                                                        Err(e) => logger.error(&e.to_string()),
+                                                    }
+                                                }
+                                                Err(e) => println!("{:#?}", e),
+                                            }
                                         }
                                         Err(e) => println!("{:#?}", e),
-                                    },
-                                    Err(e) => println!("{:#?}", e),
+                                    }
                                 }
                             }
                             Err(err) => {
@@ -294,6 +319,7 @@ impl Client {
 
                                 if body == "{\"sync\":true}" {
                                     println!("Syncing Successful");
+                                    is_synced = true;
                                 } else {
                                     return std::result::Result::Err(err);
                                 }
@@ -303,7 +329,7 @@ impl Client {
                     RecvMsg::ErrorResponse(message) => {
                         return std::result::Result::Err(Box::new(AppError::new(message)));
                     }
-                    RecvMsg::CancelStreamRespose() => {}
+                    RecvMsg::CancelStreamResponse() => {}
                     _ => {}
                 }
             }

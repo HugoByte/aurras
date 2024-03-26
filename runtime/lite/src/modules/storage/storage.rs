@@ -10,15 +10,13 @@
 /// * `db`: The `db` property in the `CoreStorage` struct is an instance of the `rocksdb::DB` type,
 /// which represents a connection to a RocksDB database. This property is used to interact with the
 /// underlying database for storing and retrieving data as defined in the `Storage` trait implementation
-use crate::traits::Storage;
+use super::traits::Storage;
 use rocksdb::Error as RocksDBError;
 use rocksdb::DB;
 use std::{fmt, io};
 use uuid::Uuid;
 use serde_derive::{Deserialize, Serialize};
 
-
-use std::fs;
 
 #[derive(Debug)]
 pub enum CustomError {
@@ -40,9 +38,13 @@ impl From<io::Error> for CustomError {
     }
 }
 
-impl From<serde_json::Error> for CustomError {
-    fn from(error: serde_json::Error) -> Self {
-        CustomError::Json(error) // Convert serde_json::Error to a specific variant
+impl From<CustomError> for io::Error {
+    fn from(error: CustomError) -> Self {
+        match  error {
+            CustomError::RocksDB(e) => io::Error::new(io::ErrorKind::Other, e),
+            CustomError::Io(e) => e,
+            CustomError::Custom(e) => io::Error::new(io::ErrorKind::Other, e),
+        }
     }
 }
 
@@ -57,6 +59,7 @@ impl fmt::Display for CustomError {
     }
 }
 
+#[derive(Debug)]
 pub struct CoreStorage {
     pub db: rocksdb::DB,
 }
@@ -102,8 +105,7 @@ impl Storage for CoreStorage {
     ///
     /// The `set_data` function returns a `Result<(), Error>`.
     fn set_data(&self, key: &str, value: Vec<u8>) -> Result<(), CustomError> {
-        let serialized_value = rmp_serde::to_vec(&value)
-            .map_err(|e| CustomError::Custom(format!("Serialization error: {}", e)))?;
+        let serialized_value = value;
         self.db.put(key, &serialized_value)?;
         Ok(())
     }
@@ -194,6 +196,27 @@ impl Storage for CoreStorage {
                 event_id
             ))),
             Err(err) => Err(CustomError::RocksDB(err)),
+        }
+    }
+
+    fn insert(&self, key: &str, value: crate::common::RequestBody) -> Result<(), CustomError> {
+        let bytes = serde_json::to_vec(&value).map_err(|e| CustomError::Custom(e.to_string()))?;
+        self.db
+            .put(key, bytes)
+            .map_err(|e| CustomError::Custom(e.to_string()))
+    }
+    fn get(&self, key: &str) -> Result<crate::common::RequestBody, CustomError> {
+        let res = self
+            .db
+            .get(key)
+            .map_err(|e| CustomError::Custom(e.to_string()))?;
+        match res {
+            Some(bytes) => {
+                let value = serde_json::from_slice(&bytes)
+                    .map_err(|e| CustomError::Custom(e.to_string()))?;
+                Ok(value)
+            }
+            None => Err(CustomError::Custom("Data not found".to_string())),
         }
     }
 }

@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::storage::CoreStorage;
-    use crate::Storage;
+    use crate::modules::storage::CoreStorage;
+    use crate::modules::storage::Storage;
     pub use rocksdb::DB;
     use std::time::Duration;
     use std::{fs, thread};
@@ -42,7 +42,7 @@ mod tests {
             .unwrap();
         let result = core_storage.get_data("test_key").unwrap();
         println!("{:?}", result);
-        let deserialized_value: Vec<u8> = rmp_serde::from_slice(&result).unwrap();
+        let deserialized_value: Vec<u8> = result;
         fs::remove_dir_all(std::path::Path::new("test2")).unwrap();
         assert_eq!(deserialized_value, b"test_value");
     }
