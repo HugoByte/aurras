@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 #[cfg(test)]
 mod wasi_http;
+mod types;
 
 pub mod helper;
 pub use helper::*;
@@ -202,6 +203,7 @@ mod tests {
 
     #[cfg(test)]
     mod flow_macro_tests {
+        use super::*;
         use dyn_clone::{clone_trait_object, DynClone};
         use serde_json::Value;
         use std::fmt::Debug;
@@ -210,8 +212,12 @@ mod tests {
         pub trait Execute: Debug + DynClone {
             fn execute(&mut self) -> Result<(), String>;
             fn get_task_output(&self) -> Value;
+            fn set_result_output(&mut self, inp: Value);
             fn set_output_to_task(&mut self, inp: Value);
+            fn get_action_name(&self) -> String;
+            fn get_json_string(&self) -> String;
         }
+
 
         clone_trait_object!(Execute);
         #[derive(Debug, Flow)]
@@ -219,6 +225,7 @@ mod tests {
         pub struct WorkflowGraph {
             edges: Vec<(usize, usize)>,
             nodes: Vec<Box<dyn Execute>>,
+            state_manager: types::StateManager,
         }
 
         impl WorkflowGraph {
@@ -226,6 +233,7 @@ mod tests {
                 WorkflowGraph {
                     nodes: Vec::with_capacity(size),
                     edges: Vec::new(),
+                    state_manager: types::StateManager::init(),
                 }
             }
         }
@@ -254,6 +262,18 @@ mod tests {
                     todo!()
                 }
                 fn set_output_to_task(&mut self, inp: Value) {
+                    todo!()
+                }
+
+                fn get_action_name(&self) -> String{
+                    todo!()
+                }
+    
+                fn get_json_string(&self) -> String{
+                    todo!()
+                }
+    
+                fn set_result_output(&mut self, inp: Value) {
                     todo!()
                 }
             }
