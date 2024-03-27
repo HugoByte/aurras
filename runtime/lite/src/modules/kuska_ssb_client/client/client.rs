@@ -100,9 +100,7 @@ impl Client {
 
     pub async fn new(configs: Option<OwnedIdentity>, ip: String, port: String) -> Result<Client> {
         match configs {
-            Some(config) => {
-                Self::ssb_handshake(config.pk, config.sk, config.id, ip, port).await
-            }
+            Some(config) => Self::ssb_handshake(config.pk, config.sk, config.id, ip, port).await,
             None => {
                 let OwnedIdentity { pk, sk, id } =
                     from_patchwork_local().await.expect("read local secret");
@@ -189,12 +187,14 @@ impl Client {
         Ok(())
     }
 
-    pub async fn publish_event(&mut self, msg: &str, mention: Option<Vec<Mention>>) -> Result<()> {
+    pub async fn publish_event(&mut self, event: Event) -> Result<()> {
         let _req_id = self
             .api
             .publish_req_send(TypedMessage::Event {
-                text: msg.to_string(),
-                mentions: mention,
+                event: event.event,
+                section: event.section,
+                content: event.content,
+                mentions: event.mentions,
             })
             .await?;
 
@@ -211,7 +211,6 @@ impl Client {
         req_no: RequestNo,
         ctx: Arc<Mutex<dyn Ctx>>,
     ) -> Result<()> {
-
         let mut is_synced = false;
 
         loop {
@@ -284,4 +283,3 @@ impl Client {
         }
     }
 }
-

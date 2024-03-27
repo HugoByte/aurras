@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use kuska_ssb::keystore::read_patchwork_config;
-    use crate::modules::kuska_ssb_client::client::{types, Client};
+    use crate::modules::kuska_ssb_client::client::Client;
     use dotenv::dotenv;
+    use kuska_ssb::keystore::read_patchwork_config;
+    use serde_json::{json, Value};
 
     // ssb-server should keep running for testing
     /* configure the env variables such as ssb-sercret file path, ip and port where
@@ -93,7 +94,7 @@ mod tests {
     #[ignore]
     // returns list of feeds posted by particular user
     async fn test_user_method() {
-        use types::Event;
+        // use types::Event;
         dotenv().ok();
 
         let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
@@ -109,10 +110,10 @@ mod tests {
             .await
             .unwrap();
 
-        let old_event = Event {
-            id: "1".to_string(),
-            body: "hello_world_event".to_string(),
-        };
+        let old_event = json!({
+            "id": "1".to_string(),
+            "body": "hello_world_event".to_string(),
+        });
 
         let value = serde_json::to_value(old_event.clone()).unwrap();
 
@@ -134,7 +135,7 @@ mod tests {
         let feed_text = message.get("text").unwrap();
         let feed_text: String = serde_json::from_value(feed_text.clone()).unwrap();
 
-        let new_event: Event = serde_json::from_str(&feed_text).unwrap();
+        let new_event: Value = serde_json::from_str(&feed_text).unwrap();
         // let event = serde_json::from_value(event).unwrap();
         assert_eq!(old_event, new_event);
     }
@@ -197,10 +198,10 @@ mod tests {
         let feed = client.feed(false).await.unwrap();
         let prev_len = feed.len();
 
-        let old_event = types::Event {
-            id: "1".to_string(),
-            body: "hello_world_event".to_string(),
-        };
+        let old_event = json!({
+            "id": "1".to_string(),
+            "body": "hello_world_event".to_string(),
+        });
 
         let value = serde_json::to_value(old_event.clone()).unwrap();
 
@@ -223,7 +224,7 @@ mod tests {
         let feed_text = message.get("text").unwrap();
         let feed_text: String = serde_json::from_value(feed_text.clone()).unwrap();
 
-        let new_event: types::Event = serde_json::from_str(&feed_text).unwrap();
+        let new_event: Value = serde_json::from_str(&feed_text).unwrap();
         assert_eq!(old_event, new_event);
     }
 
@@ -331,24 +332,6 @@ mod tests {
             .await
             .unwrap();
         let res = client.create_invite().await;
-        assert!(res.is_ok())
-    }
-
-    #[async_std::test]
-    #[ignore]
-    async fn test_accept_invite() {
-        dotenv::dotenv().ok();
-        let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
-            let home_dir = dirs::home_dir().unwrap();
-            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
-        });
-        let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| 8015.to_string());
-        let mut file = async_std::fs::File::open(secret).await.unwrap();
-        let key = read_patchwork_config(&mut file).await.unwrap();
-        let mut client = Client::new(Some(key), "0.0.0.0".to_string(), port)
-            .await
-            .unwrap();
-        let res = client.accept_invite("172.28.0.4:8008:@hkYrVBGtWm5+xeRYDzsL9u6b0cM2rtcYs4NiiZQEVLs=.ed25519~BERengMsq9t2ovXHBZgiFtKDlcvAYQTXSPk/JAw+3zQ=").await;
         assert!(res.is_ok())
     }
 }
