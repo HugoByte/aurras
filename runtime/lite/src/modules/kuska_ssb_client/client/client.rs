@@ -83,9 +83,9 @@ impl Client {
 
         let server_pk =
             ed25519::PublicKey::from_slice(&base64::decode(&server_pk)?).expect("bad public key");
-        let server_ipport = format!("{}:{}", ip, port);
+        let server_ip_port = format!("{}:{}", ip, port);
 
-        let mut socket = TcpStream::connect(server_ipport).await?;
+        let mut socket = TcpStream::connect(server_ip_port).await?;
 
         let handshake =
             handshake_client(&mut socket, ssb_net_id(), pk, sk.clone(), server_pk).await?;

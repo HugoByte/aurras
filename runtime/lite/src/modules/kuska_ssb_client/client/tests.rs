@@ -6,7 +6,7 @@ mod tests {
     use serde_json::{json, Value};
 
     // ssb-server should keep running for testing
-    /* configure the env variables such as ssb-sercret file path, ip and port where
+    /* configure the env variables such as ssb-secret file path, ip and port where
     ssb-server is running in .env file */
     // use `cargo test -- --ignored` command for testing
 

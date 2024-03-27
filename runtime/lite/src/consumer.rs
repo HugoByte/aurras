@@ -75,7 +75,7 @@ fn handle_client(mut stream: TcpStream, ctx: Arc<Mutex<dyn Ctx>>) {
 
     let ctx = ctx.lock().unwrap();
     let logger = ctx.get_logger().clone();
-    logger.info("Data Deseriased");
+    logger.info("Data Deserialized");
     let db = ctx.get_db();
 
     db.insert_request_body(&body.pub_id.clone(), body).unwrap();
