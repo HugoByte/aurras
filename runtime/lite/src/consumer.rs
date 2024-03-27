@@ -29,11 +29,11 @@ async fn main() {
         state_manager
     )));
 
-    let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+    let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
         let home_dir = dirs::home_dir().unwrap();
         std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
     });
-    let port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+    let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| 8008.to_string());
     let mut file = async_std::fs::File::open(secret).await.unwrap();
     let key = read_patchwork_config(&mut file).await.unwrap();
 

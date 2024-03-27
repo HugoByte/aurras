@@ -44,11 +44,21 @@ This runtime harnesses the capabilities of Secure Scuttlebutt, a decentralized m
 
         cargo run
 
-7. Run a local polakdot chain for test purpose
+7. Send workflows to the consumer
+
+        let mut stream = TcpStream::connect("127.0.0.1:8080").unwrap();
+        let wasm = fs::read("<wasm-path>").unwrap();
+        let buf = RequestBody{wasm: wasm,invite: "text".to_string(),pub_id: "<pub-id>".to_string(),input: serde_json::json!({"test": "test"}),allowed_hosts: None,};
+        let data = serde_json::to_vec(&buf).unwrap();stream.write_all(&data).unwrap();`
+        stream.shutdown(std::net::Shutdown::Write).unwrap();
+
+    *Note:* Get the pub address using script `./ssb-up.sh pub-whoami`
+
+8. Run a local polakdot chain for test purpose
 
         docker run -p 9944:9944 parity/polkadot:v1.0.0  --dev --rpc-external
 
-8. Run the basic example for producer with required environment variables
+9. Run the basic example for producer with required environment variables
 
         PUB_ADDRESS="@pjrBmtifFU9P9NhoHRiPbn3O3xGUXtsLWJXhxLEpkug=.ed25519"
         PRODUCER_SECRET=./runtime/lite/scripts/secret/consumer_secret
@@ -56,4 +66,4 @@ This runtime harnesses the capabilities of Secure Scuttlebutt, a decentralized m
     *Note:* Get the pub address using script `./ssb-up.sh pub-whoami`
 
         cargo run --example basic-producer
-9. Make transfer event on the chain manually.
+10. Make transfer event on the chain manually.
