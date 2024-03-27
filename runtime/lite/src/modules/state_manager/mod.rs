@@ -11,6 +11,7 @@ pub use logger::{CoreLogger, Logger};
 
 use super::logger;
 
+#[derive(Debug)]
 pub struct GlobalState<T: WorkflowStateManager, U: Logger> {
     workflows: Vec<T>,
     logger: U,
@@ -27,10 +28,11 @@ impl<U: Logger> GlobalState<WorkflowState, U> {
 
 impl<U: Logger> GlobalStateManager for GlobalState<WorkflowState, U>
 {
-    fn new_workflow(&mut self, workflow_id: usize, workflow_name: &str) {
+    fn new_workflow(&mut self, workflow_id: usize, workflow_name: &str) -> usize{
         self.workflows
             .push(WorkflowState::new(workflow_id, workflow_name));
         self.logger.info(&format!("[new workflow created with id:{}]", workflow_id));
+        self.workflows.len() - 1
     }
 
     fn get_state_data(&self, workflow_index: usize) -> Result<Box<dyn WorkflowStateManager>> {

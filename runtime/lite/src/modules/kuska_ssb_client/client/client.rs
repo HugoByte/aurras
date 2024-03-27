@@ -1,7 +1,10 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    modules::logger::Logger, modules::storage::Storage, modules::wasmtime_wasi_module, Ctx,
+    modules::{
+        logger::Logger, state_manager::GlobalStateManager, storage::Storage, wasmtime_wasi_module,
+    },
+    Ctx,
 };
 
 use super::*;
@@ -236,20 +239,30 @@ impl Client {
                                                     let ctx = ctx.lock().unwrap();
                                                     let db = ctx.get_db();
                                                     let logger = ctx.get_logger();
+                                                    let state_manager = ctx.get_state_manager();
 
-                                                    match db.get(&x.mentions.unwrap()[0].link) {
+                                                    match db.get_request_body(
+                                                        &x.mentions.unwrap()[0].link,
+                                                    ) {
                                                         Ok(body) => {
                                                             let data = serde_json::json!({
                                                                 "data" : crate::common::combine_values(&mut event, &body.input),
                                                                 "allowed_hosts": body.allowed_hosts
                                                             });
+
+                                                            let workflow_index = ctx
+                                                                .get_state_manager()
+                                                                .new_workflow(0, "hello");
+
                                                             let _ =
                                                                 wasmtime_wasi_module::run_workflow(
+                                                                    state_manager,
+                                                                    logger,
                                                                     serde_json::to_value(data)
                                                                         .unwrap(),
                                                                     body.wasm,
-                                                                    0,
-                                                                    "hello",
+                                                                    workflow_index,
+                                                                    false,
                                                                 );
                                                         }
                                                         Err(e) => logger.error(&e.to_string()),

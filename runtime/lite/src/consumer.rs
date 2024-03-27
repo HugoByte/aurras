@@ -2,8 +2,8 @@ use kuska_ssb::keystore::read_patchwork_config;
 use runtime::{
     common::RequestBody,
     logger::CoreLogger,
-    state_manager::GlobalState,
     modules::kuska_ssb_client::client::Client,
+    state_manager::GlobalState,
     storage::{CoreStorage, Storage},
     Ctx, Logger,
 };
@@ -23,11 +23,7 @@ async fn main() {
     let logger = CoreLogger::new(Some("./workflow"));
     let state_manager = GlobalState::new(logger.clone());
 
-    let context = Arc::new(Mutex::new(Context::new(
-        logger,
-        db,
-        state_manager
-    )));
+    let context = Arc::new(Mutex::new(Context::new(logger, db, state_manager)));
 
     let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
         let home_dir = dirs::home_dir().unwrap();
@@ -82,7 +78,7 @@ fn handle_client(mut stream: TcpStream, ctx: Arc<Mutex<dyn Ctx>>) {
     logger.info("Data Deseriased");
     let db = ctx.get_db();
 
-    db.insert(&body.pub_id.clone(), body).unwrap();
+    db.insert_request_body(&body.pub_id.clone(), body).unwrap();
     logger.info("Data inserted successfully");
 
     // println!("Received data: {:?}", body);
