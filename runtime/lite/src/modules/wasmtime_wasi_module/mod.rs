@@ -24,7 +24,7 @@ use wasmtime_wasi::sync::WasiCtxBuilder;
 use super::logger;
 
 #[allow(dead_code)]
-fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
+pub fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
     data: Value,
     wasm_file: Vec<u8>,
     hash_key: String,

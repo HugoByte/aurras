@@ -1,11 +1,20 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    fs,
+    sync::{Arc, Mutex},
+};
 
 use crate::{
-    modules::logger::Logger, modules::storage::Storage, modules::wasmtime_wasi_module, Ctx,
+    modules::{logger::Logger, storage::Storage, wasmtime_wasi_module},
+    state_manager::{CoreLogger, GlobalState, GlobalStateManager},
+    wasmtime_wasi_module::run_workflow_helper,
+    Ctx,
 };
 
 use super::*;
 use kuska_ssb::api::dto::content::Mention;
+use serde_json::Value;
+use sha256::digest;
 
 impl Client {
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
@@ -266,6 +275,55 @@ impl Client {
 
         let mut is_synced = false;
 
+        let mut workflow_map: HashMap<String, fn(&mut Self, &Value) -> Result<()>> = HashMap::new();
+
+        workflow_map.insert(
+            "transfer".to_string(),
+            |this: &mut Self, data: &Value| -> Result<()> {
+                let sender = data
+                    .get("sender_address")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_owned();
+                let recipient = data
+                    .get("recipient_address")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_owned();
+                let amount = data.get("amount").unwrap().as_u64().unwrap();
+
+                let logger = CoreLogger::new(Some("./workflow.log"));
+                let mut state_manager = GlobalState::new(logger.clone());
+                let workflow_id = 0;
+                let workflow_name = "hello_world";
+
+                let wasm_file_path = data.get("wasm_file").unwrap().as_str().unwrap().to_owned();
+                let wasm_bytes = fs::read(&wasm_file_path)?;
+
+                state_manager.new_workflow(workflow_id, workflow_name);
+
+                let digest = digest(format!("{:?}{:?}", data, workflow_name));
+                run_workflow_helper(
+                    data.clone(),
+                    wasm_bytes,
+                    digest,
+                    &mut state_manager,
+                    0,
+                    false,
+                    logger,
+                )?;
+
+                println!(
+                    "Money transfer: {} sent {} to {}",
+                    sender, amount, recipient
+                );
+
+                Ok(())
+            },
+        );
+
         loop {
             let (id, msg) = self.rpc_reader.recv().await?;
 
@@ -277,6 +335,21 @@ impl Client {
                         match display {
                             Ok(display) => {
                                 if is_synced {
+                                    let event_type =
+                                        display.value.get("type").unwrap().as_str().unwrap();
+                                    if let Some(workflow_fn) =
+                                        workflow_map.get(&event_type.to_string())
+                                    {
+                                        let data = display.value.clone();
+                                        // Execute the mapped workflow function
+                                        workflow_fn(self, &data)?;
+                                    } else {
+                                        println!(
+                                            "No workflow registered for event type: {}",
+                                            event_type
+                                        );
+                                    }
+
                                     match serde_json::from_value::<kuska_ssb::api::dto::content::Post>(
                                         display.value.get("content").unwrap().clone(),
                                     ) {

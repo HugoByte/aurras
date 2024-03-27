@@ -14,6 +14,9 @@ use super::traits::Storage;
 use rocksdb::Error as RocksDBError;
 use rocksdb::DB;
 use std::{fmt, io};
+// use uuid::Uuid;
+use serde_derive::{Deserialize, Serialize};
+
 
 #[derive(Debug)]
 pub enum CustomError {
@@ -58,6 +61,12 @@ impl fmt::Display for CustomError {
 pub struct CoreStorage {
     pub db: rocksdb::DB,
 }
+
+// #[derive(Serialize, Deserialize)] // Define the WasmData struct for serialization
+// struct WasmData {
+//     id: Uuid,
+//     wasm: Vec<u8>,
+// }
 
 impl CoreStorage {
     pub fn new(db_name: &str) -> Result<Self, CustomError> {
@@ -155,6 +164,7 @@ impl Storage for CoreStorage {
 
         Ok(())
     }
+
 
     /// The function `get_wasm` retrieves a WebAssembly module from a database using a given key.
     ///
