@@ -190,7 +190,13 @@ impl Client {
         Ok(())
     }
 
-    pub async fn publish_event(&mut self, event: &str, section: &str, content: &str, mentions: Option<Vec<Mention>>) -> Result<()> {
+    pub async fn publish_event(
+        &mut self,
+        event: &str,
+        section: &str,
+        content: &str,
+        mentions: Option<Vec<Mention>>,
+    ) -> Result<()> {
         let _req_id = self
             .api
             .publish_req_send(TypedMessage::Event {
@@ -238,8 +244,6 @@ impl Client {
                                             match serde_json::from_str::<serde_json::Value>(&x.text)
                                             {
                                                 Ok(mut event) => {
-
-
                                                     logger.info(&format!("Event: {:#?}", event));
 
                                                     match db.get_request_body(

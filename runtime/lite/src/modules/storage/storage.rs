@@ -94,7 +94,6 @@ impl Storage for CoreStorage {
     ///
     /// The `set_data` function returns a `Result<(), Error>`.
     fn set_data(&self, key: &str, value: Vec<u8>) -> Result<(), CustomError> {
-        // let serialized_value = value;
         self.db.put(key, value)?;
         Ok(())
     }
