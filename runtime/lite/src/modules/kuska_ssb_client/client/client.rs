@@ -227,7 +227,7 @@ impl Client {
             let ctx = ctx.lock().unwrap();
             let db = ctx.get_db();
             let logger = ctx.get_logger();
-            let state_manager = ctx.get_state_manager();
+            let mut state_manager = ctx.get_state_manager();
 
             if id == req_no {
                 match msg {
@@ -255,8 +255,7 @@ impl Client {
                                                                 "allowed_hosts": body.allowed_hosts
                                                             });
 
-                                                            let workflow_index = ctx
-                                                                .get_state_manager()
+                                                            let workflow_index = state_manager
                                                                 .new_workflow(0, "hello");
 
                                                             let _ =
