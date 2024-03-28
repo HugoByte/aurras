@@ -4,7 +4,6 @@ use runtime::{
     logger::CoreLogger,
     state_manager::GlobalState,
     modules::kuska_ssb_client::client::Client,
-    state_manager::GlobalState,
     storage::{CoreStorage, Storage},
     Ctx, Logger,
 };
