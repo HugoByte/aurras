@@ -2,12 +2,12 @@ use kuska_ssb::keystore::read_patchwork_config;
 use runtime::{
     common::RequestBody,
     logger::CoreLogger,
+    state_manager::GlobalState,
     modules::kuska_ssb_client::client::Client,
     storage::{CoreStorage, Storage},
     Ctx, Logger,
 };
 use std::{
-    borrow::{Borrow, BorrowMut},
     net::{TcpListener, TcpStream},
     sync::{Arc, Mutex},
 };
@@ -20,9 +20,15 @@ use dotenv::dotenv;
 async fn main() {
     dotenv().ok();
     let db = CoreStorage::new("runtime").unwrap();
+    let logger = CoreLogger::new(Some("./ssb-consumer.log"));
+    let state_manager = GlobalState::new(logger.clone());
+
+    logger.info("starting consumer...");
+
     let context = Arc::new(Mutex::new(Context::new(
-        CoreLogger::new(Some("./runtime.log")),
+        logger.clone(),
         db,
+        state_manager
     )));
 
     let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
@@ -34,25 +40,33 @@ async fn main() {
     let key = read_patchwork_config(&mut file).await.unwrap();
 
     let ssb_context = context.clone();
+
     // Spawn the SSB feed listener task
-    tokio::spawn(async {
+    tokio::spawn(async move{
         let mut client = Client::new(Some(key), "0.0.0.0".to_string(), port)
             .await
             .unwrap();
-        client.live_feed_with_execution_of_workflow(true, ssb_context).await.unwrap();
+
+        let logger = ssb_context.clone().lock().unwrap().get_logger().clone();
+        logger.info("consumer successfully started✅");
+
+        client
+            .live_feed_with_execution_of_workflow(true, ssb_context)
+            .await
+            .unwrap();
     });
 
     // Spawn the HTTP server task
     tokio::spawn(async move {
         let listener = TcpListener::bind("127.0.0.1:8080").expect("Failed to bind to address");
-        println!("Listening on 127.0.0.1:8080...");
+        logger.info("Listening on 127.0.0.1:8080...");
         for stream in listener.incoming() {
             match stream {
                 Ok(stream) => {
                     handle_client(stream, context.clone());
                 }
                 Err(e) => {
-                    eprintln!("Error accepting connection: {}", e);
+                    logger.error(&format!("Error accepting connection: {}", e));
                 }
             }
         }
@@ -72,13 +86,12 @@ fn handle_client(mut stream: TcpStream, ctx: Arc<Mutex<dyn Ctx>>) {
 
     let ctx = ctx.lock().unwrap();
     let logger = ctx.get_logger().clone();
-    logger.info("Data Deseriased");
+    logger.info("Data Deserialized");
     let db = ctx.get_db();
 
     db.insert(&body.pub_id.clone(), body).unwrap();
     logger.info("Data inserted successfully");
-    
-    // println!("Received data: {:?}", body);
+
     // Respond to the client (optional)
     let response = "Data received!";
     stream

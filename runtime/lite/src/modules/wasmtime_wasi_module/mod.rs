@@ -40,7 +40,7 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
     let cache = DB::open_default(format!("./.cache/{:?}", id)).unwrap();
 
     let prev_internal_state_data = if !restart {
-        let prev_internal_state_data: Value = match cache.get(&hash_key.as_bytes()).unwrap() {
+        let prev_internal_state_data: Value = match cache.get(hash_key.as_bytes()).unwrap() {
             Some(data) => serde_json::from_slice(&data).unwrap(),
             None => serde_json::json!([]),
         };
@@ -267,7 +267,7 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
 
         let mut bytes: Vec<u8> = Vec::new();
         serde_json::to_writer(&mut bytes, &state_output).unwrap();
-        cache.put(&hash_key.as_bytes(), bytes).unwrap();
+        cache.put(hash_key.as_bytes(), bytes).unwrap();
     } else {
         state_manager
             .update_result(workflow_index, res.result.clone(), true)
@@ -276,7 +276,7 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
         let state_result = serde_json::json!({ "success" : res });
         let mut bytes: Vec<u8> = Vec::new();
         serde_json::to_writer(&mut bytes, &state_result).unwrap();
-        cache.put(&hash_key.as_bytes(), bytes).unwrap();
+        cache.put(hash_key.as_bytes(), bytes).unwrap();
     }
 
     Ok(res)

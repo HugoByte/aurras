@@ -1,11 +1,15 @@
 use dotenv::dotenv;
 use kuska_ssb::{api::dto::content::Mention, keystore::read_patchwork_config};
 use runtime::kuska_ssb_client::client::Client;
+use runtime::logger::{CoreLogger, Logger};
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    println!("start");
+
+    let logger = CoreLogger::new(Some("./ssb-producer.log"));
+
+    logger.info("starting producer...");
     let secret = std::env::var("PRODUCER_SECRET").unwrap_or_else(|_| {
         let home_dir = dirs::home_dir().unwrap();
         std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
@@ -20,6 +24,8 @@ async fn main() {
     let mut client = Client::new(Some(key), "0.0.0.0".to_string(), port)
         .await
         .unwrap();
+
+    logger.info("producer successfully started✅");
 
     use subxt::{OnlineClient, PolkadotConfig};
 
@@ -38,22 +44,9 @@ async fn main() {
         let block_number = block.header().number;
         let block_hash = block.hash();
 
-        println!("Block #{block_number}:");
-        println!("  Hash: {block_hash}");
-        println!("  Extrinsics:");
-
-        // Code for automate transfer 
-        // use subxt_signer::sr25519::dev;
-        // if block_number == 10 {
-        //     let dest = dev::bob().public_key().into();
-        //     let tx = polkadot::tx().balances().transfer_allow_death(dest, 10_000);
-        //     let from = dev::alice();
-        //     let _events = api
-        //         .tx()
-        //         .sign_and_submit_then_watch_default(&tx, &from)
-        //         .await
-        //         .unwrap();
-        // }
+        logger.info(&format!(
+            "Block #{block_number} Hash: {block_hash} Extrinsics:"
+        ));
 
         // Log each of the extrinsic with it's associated events:
         let extrinsics = block.extrinsics().await.unwrap();
@@ -69,23 +62,22 @@ async fn main() {
                     let from_addr = transfer.from.to_string();
                     let to_addr = transfer.from.to_string();
                     let amount = transfer.amount;
-                    println!("{from_addr:?}");
+
+                    logger.info(&format!("Transfer: {from_addr} -> {to_addr} {amount}"));
 
                     let value = format!(
                         "{{\"from\":\"{}\",\"to\":\"{}\",\"amount\":\"{}\"}}",
                         from_addr, to_addr, amount
                     );
 
-                    let menttion = Mention {
+                    let mention = Mention {
                         link: pub_address.clone(),
                         name: None,
                     };
 
-                    let result = client
-                        .publish(&value.to_string(), Some(vec![menttion]))
+                    let _ = client
+                        .publish(&value.to_string(), Some(vec![mention]))
                         .await;
-                    // assert!(result.is_ok());
-                    // break 'outer;
                 }
                 None => (),
             }
