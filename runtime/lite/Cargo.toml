@@ -1,64 +1,74 @@
-[package]
-name = "runtime"
-authors = ["The HugoByte Team <hello@hugobyte.com>"]
-edition = "2021"
-repository = "https://github.com/hugobyte/aurras.git"
-version = "0.0.1"
-
-
 [[bin]]
-name = "consumer"
-path = "src/consumer.rs"
+name = 'consumer'
+path = 'src/consumer.rs'
+
+[package]
+name = 'runtime'
+authors = ['The HugoByte Team <hello@hugobyte.com>']
+edition = '2021'
+repository = 'https://github.com/hugobyte/aurras.git'
+version = '0.0.1'
 
 [lib]
-path = "src/lib.rs"
+path = 'src/lib.rs'
 
 [dependencies]
-kuska-ssb = { git = "https://github.com/shanithkk/ssb.git", branch = "fix-invite-accept-issue" }
-kuska-handshake = { git = "https://github.com/Kuska-ssb/handshake.git", features = [
-    "async_std",
-] }
-# kuska-handshake = "0.2.0"
-kuska-sodiumoxide = "0.2.5-0"
-base64 = "0.11.0"
-# hex = "0.4.0"
-async-std = { version = "1.12.0", features = ["unstable", "attributes"] }
-log = "0.4.8"
-serde = { version = "1.0.104", features = ["derive"] }
-serde_json = { version = "1.0.48", features = [
-    "preserve_order",
-    "arbitrary_precision",
-] }
-dirs = "2.0"
+kuska-sodiumoxide = '0.2.5-0'
+base64 = '0.11.0'
+log = '0.4.8'
+dirs = '2.0'
+subxt-signer = '0.34.0'
+slog = '2.7.0'
+slog-async = '2.8.0'
+slog-term = '2.9.1'
+wasmtime = '0.35.0'
+anyhow = '1.0.80'
+wasmtime-wasi = '0.35.0'
+wasi-common = '0.35.0'
+serde_derive = '1.0.81'
+http = '0.2'
+bytes = '1'
+wasi-experimental-http-wasmtime = '0.10.0'
+sha256 = '1.5.0'
+rocksdb = '0.18.0'
+dotenv = '0.15.0'
 
-# rand = "0.7.3"
-# wasmtime-wasi-module = { path = "/Users/shanithkk/Hugobyte/learn/rust/search/wasmtime-wasi-module" }
+[dependencies.kuska-ssb]
+git = 'https://github.com/shanithkk/ssb.git'
+branch = 'fix-invite-accept-issue'
 
-tokio = { version = "1.36.0", features = ["macros", "time", "rt-multi-thread"] }
-subxt-signer = "0.34.0"
+[dependencies.kuska-handshake]
+git = 'https://github.com/Kuska-ssb/handshake.git'
+features = ['async_std']
 
-slog = "2.7.0"
-slog-async = "2.8.0"
-slog-term = "2.9.1"
+[dependencies.async-std]
+version = '1.12.0'
+features = [
+    'unstable',
+    'attributes',
+]
 
-wasmtime = "0.35.0"
-anyhow = "1.0.80"
-# wiremock = "0.5.17"
-wasmtime-wasi = "0.35.0"
-wasi-common = "0.35.0"
-serde_derive = "1.0.81"
-http = "0.2"
-bytes = "1"
-wasi-experimental-http-wasmtime = "0.10.0"
-sha256 = "1.5.0"
-test_util = { path = "../../workflow/test_util" }
+[dependencies.serde]
+version = '1.0.104'
+features = ['derive']
 
-rocksdb = "0.18.0"
+[dependencies.serde_json]
+version = '1.0.48'
+features = [
+    'preserve_order',
+    'arbitrary_precision',
+]
 
+[dependencies.tokio]
+version = '1.36.0'
+features = [
+    'macros',
+    'time',
+    'rt-multi-thread',
+]
 
-# tempfile = "3.10.1"
-dotenv = "0.15.0"
-
+[dependencies.test_util]
+path = '../../workflow/test_util'
 
 [dev-dependencies]
-subxt = "0.34.0"
+subxt = '0.34.0'

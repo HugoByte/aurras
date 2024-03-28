@@ -1,7 +1,7 @@
+use super::*;
+
 use kuska_ssb::api::dto::content::Mention;
 use serde::{Deserialize, Serialize};
-
-use super::*;
 
 pub struct Client {
     pub api: ApiCaller<TcpStream>,
@@ -9,16 +9,30 @@ pub struct Client {
     pub sk: SecretKey,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Event {
-    pub id: String,
-    pub body: String,
+    pub event: String,
+    pub section: String,
+    pub content: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mentions: Option<Vec<Mention>>,
 }
 
-pub struct UserConfig {
-    pub public_key: String,
-    pub secret_key: String,
-    pub id: String,
+impl Event {
+    pub fn new(
+        event: String,
+        section: String,
+        content: String,
+        mentions: Option<Vec<Mention>>,
+    ) -> Self {
+        Self {
+            event,
+            section,
+            content,
+            mentions,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -27,14 +41,4 @@ pub struct Content {
     pub types: String,
     pub text: String,
     // mentions: Option<Vec<Mention>>,
-}
-
-impl UserConfig {
-    pub fn new(public_key: &str, secret_key: &str, id: &str) -> Self {
-        Self {
-            public_key: public_key.to_string(),
-            secret_key: secret_key.to_string(),
-            id: id.to_string(),
-        }
-    }
 }

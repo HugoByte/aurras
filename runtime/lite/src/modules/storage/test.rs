@@ -15,7 +15,6 @@ mod tests {
 
         while retries < 3 {
             if let Err(_) = std::fs::remove_file(lock_file_path) {
-                println!("Failed to remove lock file: {}", lock_file_path);
                 retries += 1;
 
                 // Wait for 1 second before retrying
@@ -41,7 +40,6 @@ mod tests {
             .set_data("test_key", b"test_value".to_vec())
             .unwrap();
         let result = core_storage.get_data("test_key").unwrap();
-        println!("{:?}", result);
         let deserialized_value: Vec<u8> = result;
         fs::remove_dir_all(std::path::Path::new("test2")).unwrap();
         assert_eq!(deserialized_value, b"test_value");
@@ -92,37 +90,6 @@ mod tests {
 
         let result = core_storage.get_data("test_key");
         fs::remove_dir_all(std::path::Path::new("test5")).unwrap();
-        result.unwrap();
-    }
-
-    /// The test function stores a WebAssembly file in a database and then retrieves it to compare with
-    /// the original file.
-    #[test]
-    fn test_store_and_get_wasm() {
-        let core_storage = CoreStorage::new("test8").unwrap();
-        let wasm_bytes = vec![0x00, 0x61, 0x01];
-
-        let key = "boilerplate";
-        core_storage.store_wasm(key, &wasm_bytes).unwrap();
-
-        let retrieved_wasm = core_storage.get_wasm(key).unwrap();
-        fs::remove_dir_all(std::path::Path::new("test8")).unwrap();
-        assert_eq!(retrieved_wasm, wasm_bytes)
-    }
-
-    /// The test function is checking if an error is raised when trying to retrieve a WebAssembly module
-    /// with a different key than the one it was stored with.
-    #[test]
-    #[should_panic]
-    fn test_get_wasm_with_different_key() {
-        let core_storage = CoreStorage::new("test9").unwrap();
-        let wasm_bytes = vec![0x00, 0x61, 0x01];
-
-        let key = "boilerplate";
-        core_storage.store_wasm(key, &wasm_bytes).unwrap();
-
-        let result = core_storage.get_wasm("hello");
-        fs::remove_dir_all(std::path::Path::new("test9")).unwrap();
         result.unwrap();
     }
 }

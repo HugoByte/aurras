@@ -29,4 +29,10 @@ services:
     ports:
       - "8015:8008" # Map container port 8088 to host port 8082
     restart: on-failure
+
+  healer:
+    image: ahdinosaur/healer
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock
+    restart: unless-stopped
     
