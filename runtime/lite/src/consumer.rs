@@ -20,10 +20,16 @@ use dotenv::dotenv;
 async fn main() {
     dotenv().ok();
     let db = CoreStorage::new("runtime").unwrap();
-    let logger = CoreLogger::new(Some("./workflow"));
+    let logger = CoreLogger::new(Some("./ssb-consumer.log"));
     let state_manager = GlobalState::new(logger.clone());
 
-    let context = Arc::new(Mutex::new(Context::new(logger, db, state_manager)));
+    logger.info("starting consumer...");
+
+    let context = Arc::new(Mutex::new(Context::new(
+        logger.clone(),
+        db,
+        state_manager
+    )));
 
     let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
         let home_dir = dirs::home_dir().unwrap();
@@ -34,11 +40,13 @@ async fn main() {
     let key = read_patchwork_config(&mut file).await.unwrap();
 
     let ssb_context = context.clone();
+
     // Spawn the SSB feed listener task
-    tokio::spawn(async {
+    tokio::spawn(async move{
         let mut client = Client::new(Some(key), "0.0.0.0".to_string(), port)
             .await
             .unwrap();
+
         client
             .live_feed_with_execution_of_workflow(true, ssb_context)
             .await
@@ -48,14 +56,15 @@ async fn main() {
     // Spawn the HTTP server task
     tokio::spawn(async move {
         let listener = TcpListener::bind("127.0.0.1:8080").expect("Failed to bind to address");
-        println!("Listening on 127.0.0.1:8080...");
+        logger.info("Listening on 127.0.0.1:8080...");
+
         for stream in listener.incoming() {
             match stream {
                 Ok(stream) => {
                     handle_client(stream, context.clone());
                 }
                 Err(e) => {
-                    eprintln!("Error accepting connection: {}", e);
+                    logger.error(&format!("Error accepting connection: {}", e));
                 }
             }
         }
@@ -81,7 +90,6 @@ fn handle_client(mut stream: TcpStream, ctx: Arc<Mutex<dyn Ctx>>) {
     db.insert_request_body(&body.pub_id.clone(), body).unwrap();
     logger.info("Data inserted successfully");
 
-    // println!("Received data: {:?}", body);
     // Respond to the client (optional)
     let response = "Data received!";
     stream

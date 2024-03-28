@@ -15,7 +15,6 @@ mod tests {
 
         while retries < 3 {
             if let Err(_) = std::fs::remove_file(lock_file_path) {
-                println!("Failed to remove lock file: {}", lock_file_path);
                 retries += 1;
 
                 // Wait for 1 second before retrying
@@ -41,7 +40,6 @@ mod tests {
             .set_data("test_key", b"test_value".to_vec())
             .unwrap();
         let result = core_storage.get_data("test_key").unwrap();
-        println!("{:?}", result);
         let deserialized_value: Vec<u8> = result;
         fs::remove_dir_all(std::path::Path::new("test2")).unwrap();
         assert_eq!(deserialized_value, b"test_value");

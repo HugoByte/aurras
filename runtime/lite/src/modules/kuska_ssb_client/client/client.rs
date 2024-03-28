@@ -218,6 +218,10 @@ impl Client {
 
         loop {
             let (id, msg) = self.rpc_reader.recv().await?;
+            let ctx = ctx.lock().unwrap();
+            let db = ctx.get_db();
+            let logger = ctx.get_logger();
+            let state_manager = ctx.get_state_manager();
 
             if id == req_no {
                 match msg {
@@ -234,12 +238,9 @@ impl Client {
                                             match serde_json::from_str::<serde_json::Value>(&x.text)
                                             {
                                                 Ok(mut event) => {
-                                                    println!("{:#?}", event);
 
-                                                    let ctx = ctx.lock().unwrap();
-                                                    let db = ctx.get_db();
-                                                    let logger = ctx.get_logger();
-                                                    let state_manager = ctx.get_state_manager();
+
+                                                    logger.info(&format!("Event: {:#?}", event));
 
                                                     match db.get_request_body(
                                                         &x.mentions.unwrap()[0].link,
@@ -268,10 +269,10 @@ impl Client {
                                                         Err(e) => logger.error(&e.to_string()),
                                                     }
                                                 }
-                                                Err(e) => println!("{:#?}", e),
+                                                Err(e) => logger.error(&e.to_string()),
                                             }
                                         }
-                                        Err(e) => println!("{:#?}", e),
+                                        Err(e) => logger.error(&e.to_string()),
                                     }
                                 }
                             }
@@ -279,7 +280,7 @@ impl Client {
                                 let body = std::str::from_utf8(&body).unwrap();
 
                                 if body == "{\"sync\":true}" {
-                                    println!("Syncing Successful");
+                                    logger.info("Syncing Successful");
                                     is_synced = true;
                                 } else {
                                     return std::result::Result::Err(err);
