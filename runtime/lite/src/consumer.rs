@@ -2,8 +2,8 @@ use kuska_ssb::keystore::read_patchwork_config;
 use runtime::{
     common::RequestBody,
     logger::CoreLogger,
-    modules::kuska_ssb_client::client::Client,
     state_manager::GlobalState,
+    modules::kuska_ssb_client::client::Client,
     storage::{CoreStorage, Storage},
     Ctx, Logger,
 };
@@ -19,7 +19,7 @@ use dotenv::dotenv;
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let db = CoreStorage::new("runtime").unwrap();
+    let db = CoreStorage::new("runtime-db").unwrap();
     let logger = CoreLogger::new(Some("./ssb-consumer.log"));
     let state_manager = GlobalState::new(logger.clone());
 
@@ -57,7 +57,6 @@ async fn main() {
     tokio::spawn(async move {
         let listener = TcpListener::bind("127.0.0.1:8080").expect("Failed to bind to address");
         logger.info("Listening on 127.0.0.1:8080...");
-
         for stream in listener.incoming() {
             match stream {
                 Ok(stream) => {
