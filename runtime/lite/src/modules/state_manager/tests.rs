@@ -47,7 +47,7 @@ fn test_get_state_data_pass() {
     assert_eq!(state_data.get_result().unwrap(), data);
 
     global_state.update_running(0).unwrap();
-    global_state.update_result(0, data.clone(), true).unwrap();
+    global_state.update_result(0, data.clone(), true, false).unwrap();
     let state_data = global_state.get_state_data(0).unwrap();
     assert_eq!(state_data.get_id(), 0);
     assert_eq!(state_data.get_workflow_name(), "test_workflow");
@@ -115,7 +115,7 @@ fn test_update_result_pass() {
     global_state.new_workflow(0, "test_workflow");
     global_state.update_running(0).unwrap();
     let data = Value::String("some result".to_string());
-    global_state.update_result(0, data.clone(), true).unwrap();
+    global_state.update_result(0, data.clone(), true, false).unwrap();
     let state_data = global_state.get_state_data(0).unwrap();
     std::fs::remove_file("./test_log_8.log").unwrap();
     assert_eq!(state_data.get_result().unwrap(), data);
@@ -128,5 +128,5 @@ fn test_update_result_fail() {
     let mut global_state = GlobalState::new(logger);
     global_state.new_workflow(0, "test_workflow");
     std::fs::remove_file("./test_log_9.log").unwrap();
-    global_state.update_result(1, Value::Null, true).unwrap();
+    global_state.update_result(1, Value::Null, true, false).unwrap();
 }

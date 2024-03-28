@@ -220,8 +220,8 @@ impl Client {
             let (id, msg) = self.rpc_reader.recv().await?;
             let ctx = ctx.lock().unwrap();
             let db = ctx.get_db();
-            let logger = ctx.get_logger();
-            let state_manager = ctx.get_state_manager();
+            let mut logger = ctx.get_logger();
+            let mut state_manager = ctx.get_state_manager();
 
             if id == req_no {
                 match msg {
@@ -257,13 +257,14 @@ impl Client {
 
                                                             let _ =
                                                                 wasmtime_wasi_module::run_workflow(
-                                                                    state_manager,
-                                                                    logger,
+                                                                    &mut state_manager,
+                                                                    &mut logger,
                                                                     serde_json::to_value(data)
                                                                         .unwrap(),
                                                                     body.wasm,
                                                                     workflow_index,
                                                                     false,
+                                                                    None
                                                                 );
                                                         }
                                                         Err(e) => logger.error(&e.to_string()),

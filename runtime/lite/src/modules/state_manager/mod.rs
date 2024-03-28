@@ -80,6 +80,7 @@ impl<U: Logger> GlobalStateManager for GlobalState<WorkflowState, U> {
         workflow_index: usize,
         result: Value,
         is_success: bool,
+        is_cached: bool
     ) -> Result<()> {
         if self.workflows.len() <= workflow_index {
             Err(anyhow!("index out of bound"))
@@ -87,6 +88,14 @@ impl<U: Logger> GlobalStateManager for GlobalState<WorkflowState, U> {
             self.workflows[workflow_index].update_result(result.clone(), is_success)?;
 
             if is_success {
+
+                if is_cached {
+                    self.logger.warn(&format!(
+                        "[workflow:{} cached result used]",
+                        self.workflows[workflow_index].get_id()
+                    ));
+                }
+
                 self.logger.info(&format!(
                     "[workflow:{} execution success✅]",
                     self.workflows[workflow_index].get_id()

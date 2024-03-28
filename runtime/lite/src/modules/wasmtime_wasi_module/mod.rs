@@ -22,12 +22,13 @@ use wasmtime_wasi::sync::WasiCtxBuilder;
 use super::logger;
 
 pub fn run_workflow<U: Logger + Clone + std::marker::Send + 'static>(
-    mut state_manager: MutexGuard<GlobalState<WorkflowState, U>>,
-    logger: MutexGuard<U>,
+    state_manager: &mut MutexGuard<GlobalState<WorkflowState, U>>,
+    logger: &mut MutexGuard<U>,
     data: Value,
     wasm_file: Vec<u8>,
     workflow_index: usize,
     ignore_cache: bool, // ignores the cache
+    pause_at: Option<usize>,
 ) -> Result<Output, String> {
     let workflow_id = state_manager
         .get_state_data(workflow_index)
@@ -47,9 +48,8 @@ pub fn run_workflow<U: Logger + Clone + std::marker::Send + 'static>(
         // returns the main output without passing the state data to the workflow
         if let Some(output) = prev_internal_state_data.get("success") {
             state_manager.update_running(workflow_index).unwrap();
-            logger.warn(&format!("[workflow:{workflow_id} cached result used]"));
             state_manager
-                .update_result(workflow_index, output.clone(), true)
+                .update_result(workflow_index, output.clone(), true, true)
                 .unwrap();
             return Ok(serde_json::from_value(output.clone()).unwrap());
         }
@@ -63,9 +63,9 @@ pub fn run_workflow<U: Logger + Clone + std::marker::Send + 'static>(
     let mut input: MainInput = serde_json::from_value(data).unwrap();
 
     input.data = if prev_internal_state_data.is_some() {
-        serde_json::json!({"data": input.data, "prev_output": prev_internal_state_data})
+        serde_json::json!({"data": input.data, "prev_output": prev_internal_state_data, "pause_at": pause_at})
     } else {
-        serde_json::json!({"data": input.data, "prev_output": []})
+        serde_json::json!({"data": input.data, "prev_output": [], "pause_at": pause_at})
     };
 
     let engine = Engine::default();
@@ -157,6 +157,15 @@ pub fn run_workflow<U: Logger + Clone + std::marker::Send + 'static>(
                                 ExecutionState::Paused => {
                                     logger_cln.lock().unwrap().warn(&format!(
                                         "[workflow:{:?} task[{}:{}] paused]",
+                                        workflow_id,
+                                        task_state_data.task_index,
+                                        task_state_data.action_name
+                                    ));
+                                }
+
+                                ExecutionState::Cached => {
+                                    logger_cln.lock().unwrap().warn(&format!(
+                                        "[workflow:{:?} task[{}:{}] cached result used]",
                                         workflow_id,
                                         task_state_data.task_index,
                                         task_state_data.action_name
@@ -265,15 +274,27 @@ pub fn run_workflow<U: Logger + Clone + std::marker::Send + 'static>(
 
     if res.result.get("Err").is_some() {
         state_manager
-            .update_result(workflow_index, res.result.clone(), false)
+            .update_result(workflow_index, res.result.clone(), false, false)
             .unwrap();
+
+        let mut bytes: Vec<u8> = Vec::new();
+        serde_json::to_writer(&mut bytes, &state_output).unwrap();
+        cache.put(hash_key.as_bytes(), bytes).unwrap();
+    } else if res
+        .result
+        .get("Ok")
+        .unwrap()
+        .get("workflow_paused")
+        .is_some()
+    {
+        state_manager.update_paused(workflow_index, None).unwrap();
 
         let mut bytes: Vec<u8> = Vec::new();
         serde_json::to_writer(&mut bytes, &state_output).unwrap();
         cache.put(hash_key.as_bytes(), bytes).unwrap();
     } else {
         state_manager
-            .update_result(workflow_index, res.result.clone(), true)
+            .update_result(workflow_index, res.result.clone(), true, false)
             .unwrap();
 
         let state_result = serde_json::json!({ "success" : res });

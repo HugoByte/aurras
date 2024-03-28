@@ -16,5 +16,5 @@ pub trait GlobalStateManager {
     fn get_state_data(&self, workflow_index: usize) -> Result<Box<dyn WorkflowStateManager>>;
     fn update_running(&mut self, workflow_index: usize) -> Result<()>;
     fn update_paused(&mut self, workflow_index: usize, output: Option<Value>) -> Result<()>;
-    fn update_result(&mut self, workflow_index: usize, result:Value, is_success: bool) -> Result<()>;
+    fn update_result(&mut self, workflow_index: usize, result:Value, is_success: bool, is_cached: bool) -> Result<()>;
 }

@@ -8,6 +8,7 @@ pub enum ExecutionState {
     Paused,
     Failed,
     Success,
+    Cached,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
@@ -37,6 +38,8 @@ impl WorkflowStateManager for WorkflowState {
                 self.get_result()
             )),
 
+            ExecutionState::Cached => Err(anyhow!("workflow already cached")),
+
             ExecutionState::Running => Err(anyhow!("workflow execution already in progress!")),
 
             ExecutionState::Init | ExecutionState::Paused => {
@@ -57,7 +60,7 @@ impl WorkflowStateManager for WorkflowState {
                 Err(anyhow!("workflow does not executed! execution_state: Init"))
             }
 
-            ExecutionState::Running | ExecutionState::Paused => {
+            ExecutionState::Running | ExecutionState::Paused | ExecutionState::Cached => {
                 if is_success {
                     self.execution_state = ExecutionState::Success;
                 } else {
@@ -75,6 +78,8 @@ impl WorkflowStateManager for WorkflowState {
                 "workflow already executed! result: {:?}",
                 self.get_result()
             )),
+
+            ExecutionState::Cached => Err(anyhow!("workflow already cached")),
 
             ExecutionState::Paused => Err(anyhow!("workflow already paused")),
 
@@ -108,7 +113,7 @@ impl WorkflowStateManager for WorkflowState {
             ExecutionState::Running => Err(anyhow!("execution in-progress")),
             ExecutionState::Paused => Err(anyhow!("execution paused")),
             ExecutionState::Failed => Ok(false),
-            ExecutionState::Success => Ok(true),
+            ExecutionState::Success | ExecutionState::Cached => Ok(true),
         }
     }
 
@@ -120,7 +125,7 @@ impl WorkflowStateManager for WorkflowState {
                 Some(value) => Ok(value.clone()),
                 None => Err(anyhow!("no result is stored!")),
             },
-            ExecutionState::Failed | ExecutionState::Success => Ok(self.result.clone().unwrap()),
+            ExecutionState::Failed | ExecutionState::Success | ExecutionState::Cached => Ok(self.result.clone().unwrap()),
         }
     }
 }
