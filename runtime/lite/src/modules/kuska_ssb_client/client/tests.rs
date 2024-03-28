@@ -94,7 +94,6 @@ mod tests {
     #[ignore]
     // returns list of feeds posted by particular user
     async fn test_user_method() {
-        // use types::Event;
         dotenv().ok();
 
         let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
@@ -136,7 +135,6 @@ mod tests {
         let feed_text: String = serde_json::from_value(feed_text.clone()).unwrap();
 
         let new_event: Value = serde_json::from_str(&feed_text).unwrap();
-        // let event = serde_json::from_value(event).unwrap();
         assert_eq!(old_event, new_event);
     }
 

@@ -13,5 +13,4 @@ pub struct Content {
     #[serde(rename = "type")]
     pub types: String,
     pub text: String,
-    // mentions: Option<Vec<Mention>>,
 }
