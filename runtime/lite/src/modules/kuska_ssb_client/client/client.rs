@@ -190,14 +190,14 @@ impl Client {
         Ok(())
     }
 
-    pub async fn publish_event(&mut self, event: Event) -> Result<()> {
+    pub async fn publish_event(&mut self, event: &str, section: &str, content: &str, mentions: Option<Vec<Mention>>) -> Result<()> {
         let _req_id = self
             .api
             .publish_req_send(TypedMessage::Event {
-                event: event.event,
-                section: event.section,
-                content: event.content,
-                mentions: event.mentions,
+                event: event.to_string(),
+                section: section.to_string(),
+                content: content.to_string(),
+                mentions,
             })
             .await?;
 
