@@ -269,11 +269,6 @@ mod tests {
             let block = block.unwrap();
 
             let block_number = block.header().number;
-            let block_hash = block.hash();
-
-            println!("Block #{block_number}:");
-            println!("  Hash: {block_hash}");
-            println!("  Extrinsics:");
 
             if block_number == 10 {
                 let dest = dev::bob().public_key().into();
@@ -300,7 +295,6 @@ mod tests {
                         let from_addr = transfer.from.to_string();
                         let to_addr = transfer.from.to_string();
                         let amount = transfer.amount;
-                        println!("{from_addr:?}");
 
                         let value = format!(
                             "{{\"from\":\"{}\",\"to\":\"{}\",\"amount\":\"{}\"}}",
