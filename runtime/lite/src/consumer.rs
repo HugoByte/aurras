@@ -19,7 +19,7 @@ use dotenv::dotenv;
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let db = CoreStorage::new("runtime").unwrap();
+    let db = CoreStorage::new("runtime-db").unwrap();
     let logger = CoreLogger::new(Some("./ssb-consumer.log"));
     let state_manager = GlobalState::new(logger.clone());
 
@@ -46,9 +46,6 @@ async fn main() {
         let mut client = Client::new(Some(key), "0.0.0.0".to_string(), port)
             .await
             .unwrap();
-
-        let logger = ssb_context.clone().lock().unwrap().get_logger().clone();
-        logger.info("consumer successfully started✅");
 
         client
             .live_feed_with_execution_of_workflow(true, ssb_context)
@@ -89,7 +86,7 @@ fn handle_client(mut stream: TcpStream, ctx: Arc<Mutex<dyn Ctx>>) {
     logger.info("Data Deserialized");
     let db = ctx.get_db();
 
-    db.insert(&body.pub_id.clone(), body).unwrap();
+    db.insert_request_body(&body.pub_id.clone(), body).unwrap();
     logger.info("Data inserted successfully");
 
     // Respond to the client (optional)

@@ -36,7 +36,7 @@ impl From<io::Error> for CustomError {
 
 impl From<CustomError> for io::Error {
     fn from(error: CustomError) -> Self {
-        match  error {
+        match error {
             CustomError::RocksDB(e) => io::Error::new(io::ErrorKind::Other, e),
             CustomError::Io(e) => e,
             CustomError::Custom(e) => io::Error::new(io::ErrorKind::Other, e),
@@ -94,8 +94,7 @@ impl Storage for CoreStorage {
     ///
     /// The `set_data` function returns a `Result<(), Error>`.
     fn set_data(&self, key: &str, value: Vec<u8>) -> Result<(), CustomError> {
-        let serialized_value = value;
-        self.db.put(key, serialized_value)?;
+        self.db.put(key, value)?;
         Ok(())
     }
 
@@ -137,25 +136,6 @@ impl Storage for CoreStorage {
         Ok(())
     }
 
-    /// The function `store_wasm` stores a WebAssembly binary file in a key-value database.
-    ///
-    /// Arguments:
-    ///
-    /// * `key`: The `key` parameter is a reference to a string that represents the key under which the
-    /// WebAssembly binary will be stored in the database.
-    /// * `wasm_path`: The `wasm_path` parameter in the `store_wasm` function represents the file path
-    /// to the WebAssembly (Wasm) file that you want to store in the database. This function reads the
-    /// contents of the Wasm file as bytes and stores them in the database with the specified key.
-    ///
-    /// Returns:
-    ///
-    /// The `store_wasm` function is returning a `Result<(), Error>`.
-    fn store_wasm(&self, key: &str, wasm: &[u8]) -> Result<(), CustomError> {
-        self.db.put(key, wasm)?;
-
-        Ok(())
-    }
-
     /// The function `get_wasm` retrieves a WebAssembly module from a database using a given key.
     ///
     /// Arguments:
@@ -168,24 +148,14 @@ impl Storage for CoreStorage {
     /// The `get_wasm` function returns a `Result` containing either a vector of `u8` bytes or an
     /// `Error`.
 
-    fn get_wasm(&self, key: &str) -> Result<Vec<u8>, CustomError> {
-        match self.db.get(key) {
-            Ok(Some(retrieved_wasm_bytes)) => Ok(retrieved_wasm_bytes),
-            Ok(None) => Err(CustomError::Custom(format!(
-                "WASM module not found with key: {:?}",
-                key
-            ))),
-            Err(err) => Err(CustomError::RocksDB(err)),
-        }
-    }
-
-    fn insert(&self, key: &str, value: crate::common::RequestBody) -> Result<(), CustomError> {
+    fn insert_request_body(&self, key: &str, value: crate::common::RequestBody) -> Result<(), CustomError> {
         let bytes = serde_json::to_vec(&value).map_err(|e| CustomError::Custom(e.to_string()))?;
         self.db
             .put(key, bytes)
             .map_err(|e| CustomError::Custom(e.to_string()))
     }
-    fn get(&self, key: &str) -> Result<crate::common::RequestBody, CustomError> {
+
+    fn get_request_body(&self, key: &str) -> Result<crate::common::RequestBody, CustomError> {
         let res = self
             .db
             .get(key)

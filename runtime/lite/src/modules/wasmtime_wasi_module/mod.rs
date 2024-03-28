@@ -1,19 +1,17 @@
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-pub mod help;
-pub use help::*;
-mod tests;
-
 use crate::modules::state_manager::{
     ExecutionState, GlobalState, GlobalStateManager, WorkflowState,
 };
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sha256::digest;
+use std::sync::MutexGuard;
 use std::sync::{Arc, Mutex};
 
+mod tests;
 mod types;
 pub use types::*;
 
-use logger::{CoreLogger, Logger};
+use logger::Logger;
 use rocksdb::DB;
 use wasi_common::WasiCtx;
 use wasi_experimental_http_wasmtime::{HttpCtx, HttpState};
@@ -23,23 +21,24 @@ use wasmtime_wasi::sync::WasiCtxBuilder;
 
 use super::logger;
 
-#[allow(dead_code)]
-fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
+pub fn run_workflow<U: Logger + Clone + std::marker::Send + 'static>(
+    mut state_manager: MutexGuard<GlobalState<WorkflowState, U>>,
+    logger: MutexGuard<U>,
     data: Value,
     wasm_file: Vec<u8>,
-    hash_key: String,
-    state_manager: &mut GlobalState<WorkflowState, U>,
     workflow_index: usize,
-    restart: bool, // ignores the cache
-    logger: U,
+    ignore_cache: bool, // ignores the cache
 ) -> Result<Output, String> {
-    let id = state_manager
+    let workflow_id = state_manager
         .get_state_data(workflow_index)
         .unwrap()
         .get_id();
-    let cache = DB::open_default(format!("./.cache/{:?}", id)).unwrap();
 
-    let prev_internal_state_data = if !restart {
+    let hash_key = digest(format!("{:?}{:?}", data, workflow_id));
+
+    let cache = DB::open_default(format!("./.cache/{:?}", workflow_id)).unwrap();
+
+    let prev_internal_state_data = if !ignore_cache {
         let prev_internal_state_data: Value = match cache.get(hash_key.as_bytes()).unwrap() {
             Some(data) => serde_json::from_slice(&data).unwrap(),
             None => serde_json::json!([]),
@@ -48,7 +47,7 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
         // returns the main output without passing the state data to the workflow
         if let Some(output) = prev_internal_state_data.get("success") {
             state_manager.update_running(workflow_index).unwrap();
-            logger.warn(&format!("[workflow:{id} cached result used]"));
+            logger.warn(&format!("[workflow:{workflow_id} cached result used]"));
             state_manager
                 .update_result(workflow_index, output.clone(), true)
                 .unwrap();
@@ -120,7 +119,7 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
     let output_2: Arc<Mutex<Vec<Value>>> = Arc::new(Mutex::new(Vec::new()));
     let output_ = output_2.clone();
 
-    let logger_cln = Arc::new(Mutex::new(logger));
+    let logger_cln = Arc::new(Mutex::new(logger.clone()));
 
     linker
         .func_wrap(
@@ -142,21 +141,25 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
                                 ExecutionState::Init => {
                                     logger_cln.lock().unwrap().info(&format!(
                                         "[workflow:{:?} task[{}...] ]",
-                                        id, task_state_data.action_name
+                                        workflow_id, task_state_data.action_name
                                     ));
                                 }
 
                                 ExecutionState::Running => {
                                     logger_cln.lock().unwrap().info(&format!(
                                         "[workflow:{:?} task[{}:{}] running]",
-                                        id, task_state_data.task_index, task_state_data.action_name
+                                        workflow_id,
+                                        task_state_data.task_index,
+                                        task_state_data.action_name
                                     ));
                                 }
 
                                 ExecutionState::Paused => {
                                     logger_cln.lock().unwrap().warn(&format!(
                                         "[workflow:{:?} task[{}:{}] paused]",
-                                        id, task_state_data.task_index, task_state_data.action_name
+                                        workflow_id,
+                                        task_state_data.task_index,
+                                        task_state_data.action_name
                                     ));
                                 }
 
@@ -167,14 +170,14 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
                                         -1 => {
                                             logger_cln.lock().unwrap().info(&format!(
                                                 "[workflow:{:?} task[{}] success]",
-                                                id, task_state_data.action_name
+                                                workflow_id, task_state_data.action_name
                                             ));
                                         }
 
                                         _ => {
                                             logger_cln.lock().unwrap().info(&format!(
                                                 "[workflow:{:?} task[{}:{}] success]",
-                                                id,
+                                                workflow_id,
                                                 task_state_data.task_index,
                                                 task_state_data.action_name
                                             ));
@@ -188,7 +191,7 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
                                 ExecutionState::Failed => {
                                     logger_cln.lock().unwrap().error(&format!(
                                         "[workflow:{:?} task[{}:{}] failed[{}]]",
-                                        id,
+                                        workflow_id,
                                         task_state_data.task_index,
                                         task_state_data.action_name,
                                         task_state_data.error.unwrap()
@@ -280,27 +283,4 @@ fn run_workflow_helper<U: Logger + Clone + std::marker::Send + 'static>(
     }
 
     Ok(res)
-}
-
-pub fn run_workflow(
-    data: Value,
-    wasm_file: Vec<u8>,
-    workflow_id: usize,
-    workflow_name: &str,
-) -> Result<Output, String> {
-    let logger = CoreLogger::new(Some("./workflow.log"));
-    let mut state_manager = GlobalState::new(logger.clone());
-
-    state_manager.new_workflow(workflow_id, workflow_name);
-
-    let digest = digest(format!("{:?}{:?}", data, workflow_name));
-    run_workflow_helper(
-        data,
-        wasm_file,
-        digest,
-        &mut state_manager,
-        0,
-        false,
-        logger,
-    )
 }
