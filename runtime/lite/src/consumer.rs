@@ -19,7 +19,7 @@ use dotenv::dotenv;
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let db = CoreStorage::new("runtime").unwrap();
+    let db = CoreStorage::new("runtime-db").unwrap();
     let logger = CoreLogger::new(Some("./ssb-consumer.log"));
     let state_manager = GlobalState::new(logger.clone());
 
