@@ -64,9 +64,9 @@ async fn main() {
         if let Ok(invite) = channel_invite_rx.recv() {
             if let Err(err) = client.accept_invite(&invite).await {
                 logger.error(&format!("Error accepting invite: {:?}", err));
-                return;
+            } else {
+                logger.info("Invite Accepted");
             }
-            logger.info("Invite Accepted");
         }
 
         if let Err(err) = client

@@ -255,14 +255,7 @@ impl Client {
             if id == req_no {
                 match msg {
                     RecvMsg::RpcResponse(_type, body) => {
-                        let display = match feed_res_parse(&body) {
-                            Ok(display) => display,
-                            Err(err) => {
-                                logger.error(&format!("Error parsing feed response: {}", err));
-                                continue;
-                            }
-                        };
-
+                        let display = feed_res_parse(&body)?;
                         let display_value = display.value.get("content").unwrap().clone();
                         match serde_json::from_value::<Post>(display_value) {
                             Ok(x) => match serde_json::from_str::<serde_json::Value>(&x.text) {
