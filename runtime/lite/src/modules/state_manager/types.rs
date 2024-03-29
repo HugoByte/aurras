@@ -120,7 +120,9 @@ impl WorkflowStateManager for WorkflowState {
                 Some(value) => Ok(value.clone()),
                 None => Err(anyhow!("no result is stored!")),
             },
-            ExecutionState::Failed | ExecutionState::Success => Ok(self.result.clone().unwrap()),
+            ExecutionState::Failed | ExecutionState::Success => {
+                self.result.clone().ok_or_else(|| anyhow!("no result available for completed workflow"))
+            }
         }
     }
 }
