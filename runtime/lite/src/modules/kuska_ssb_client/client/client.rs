@@ -164,9 +164,9 @@ impl Client {
         Ok(())
     }
 
-    pub async fn create_invite(&mut self) -> Result<Vec<String>> {
+    pub async fn create_invite(&mut self) -> Result<String> {
         let req_id = self.api.invite_create_req_send(1).await?;
-        let responses = self.get_responses(req_id, invite_create).await?;
+        let responses = self.get_async(req_id, invite_create).await?;
         Ok(responses)
     }
 

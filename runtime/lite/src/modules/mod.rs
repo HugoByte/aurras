@@ -5,3 +5,5 @@ pub mod wasmtime_wasi_module;
 pub mod state_manager;
 pub mod storage;
 pub mod common;
+
+pub use common::*;
