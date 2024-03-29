@@ -30,11 +30,11 @@ impl WorkflowState {
 }
 
 impl WorkflowStateManager for WorkflowState {
-    fn update_running(&mut self) -> Result<()> {
+    fn update_running(&mut self) -> Result<(), anyhow::Error> {
         match self.execution_state {
             ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
                 "workflow already executed! result: {:?}",
-                self.get_result()
+                self.get_result()?
             )),
 
             ExecutionState::Running => Err(anyhow!("workflow execution already in progress!")),
@@ -46,11 +46,11 @@ impl WorkflowStateManager for WorkflowState {
         }
     }
 
-    fn update_result(&mut self, result: Value, is_success: bool) -> Result<()> {
+    fn update_result(&mut self, result: Value, is_success: bool) -> Result<(), anyhow::Error> {
         match self.execution_state {
             ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
                 "workflow already executed! result: {:?}",
-                self.get_result()
+                self.get_result()?
             )),
 
             ExecutionState::Init => {
@@ -69,11 +69,11 @@ impl WorkflowStateManager for WorkflowState {
         }
     }
 
-    fn update_paused(&mut self, output: Option<Value>) -> Result<()> {
+    fn update_paused(&mut self, output: Option<Value>) -> Result<(), anyhow::Error> {
         match self.execution_state {
             ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
                 "workflow already executed! result: {:?}",
-                self.get_result()
+                self.get_result()?
             )),
 
             ExecutionState::Paused => Err(anyhow!("workflow already paused")),
