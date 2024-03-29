@@ -1,9 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    modules::{
-        logger::Logger, state_manager::GlobalStateManager, storage::Storage, wasmtime_wasi_module,
-    },
+    modules::{logger::Logger, storage::Storage, wasmtime_wasi_module, state_manager::traits::GlobalStateManager},
     Ctx,
 };
 

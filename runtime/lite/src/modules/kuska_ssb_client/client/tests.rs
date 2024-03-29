@@ -20,7 +20,7 @@ mod tests {
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_ip = std::env::var("CONSUMER_IP").unwrap_or_else(|_| "0.0.0.0".to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -37,7 +37,7 @@ mod tests {
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_ip = std::env::var("CONSUMER_IP").unwrap_or_else(|_| "0.0.0.0".to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -55,7 +55,7 @@ mod tests {
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_ip = std::env::var("CONSUMER_IP").unwrap_or_else(|_| "0.0.0.0".to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -78,7 +78,7 @@ mod tests {
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_ip = std::env::var("CONSUMER_IP").unwrap_or_else(|_| "0.0.0.0".to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -101,7 +101,7 @@ mod tests {
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_ip = std::env::var("CONSUMER_IP").unwrap_or_else(|_| "0.0.0.0".to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -149,7 +149,7 @@ mod tests {
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port = std::env::var("PRODUCER_PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_ip = std::env::var("CONSUMER_IP").unwrap_or_else(|_| "0.0.0.0".to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -169,7 +169,7 @@ mod tests {
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port = std::env::var("PRODUCER_PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_ip = std::env::var("CONSUMER_IP").unwrap_or_else(|_| "0.0.0.0".to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -188,7 +188,7 @@ mod tests {
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port = std::env::var("PRODUCER_PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_ip = std::env::var("CONSUMER_IP").unwrap_or_else(|_| "0.0.0.0".to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -236,7 +236,7 @@ mod tests {
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_ip = std::env::var("CONSUMER_IP").unwrap_or_else(|_| "0.0.0.0".to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
         //TODO

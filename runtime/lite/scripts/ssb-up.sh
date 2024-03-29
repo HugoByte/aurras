@@ -103,8 +103,8 @@ copy_secrets_to(){
     
     mkdir -p ./secret
 
-    docker cp  $consumer_container:/root/.ssb/secret ./secret/producer_secret
-    docker cp  $producer_container:/root/.ssb/secret ./secret/consumer_secret
+    docker cp  $consumer_container:/root/.ssb/secret ./secret/consumer_secret
+    docker cp  $producer_container:/root/.ssb/secret ./secret/producer_secret
     docker cp  $pubs_container:/home/node/.ssb/secret ./secret/pubs_secret
 }
 start_specific_service() {

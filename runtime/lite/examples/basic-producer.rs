@@ -16,15 +16,19 @@ async fn main() {
     });
 
     let port = std::env::var("PRODUCER_PORT").unwrap_or("8014".to_string());
+    let ip = std::env::var("PRODUCER_IP").unwrap_or("0.0.0.0".to_string());
     let pub_address = std::env::var("PUB_ADDRESS").expect("Pub address must be provided");
+    let invite = std::env::var("PRODUCER_INVITE").expect("invite address must be provided");
 
     let mut file = async_std::fs::File::open(secret).await.unwrap();
     let key = read_patchwork_config(&mut file).await.unwrap();
 
-    let mut client = Client::new(Some(key), "0.0.0.0".to_string(), port)
+    let mut client = Client::new(Some(key), ip, port)
         .await
         .unwrap();
 
+    let invite_res = client.accept_invite(&invite).await;
+    logger.info(&format!("{:?}", invite_res));
     logger.info("producer successfully started✅");
 
     use subxt::{OnlineClient, PolkadotConfig};

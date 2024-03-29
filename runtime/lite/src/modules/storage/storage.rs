@@ -13,6 +13,7 @@
 use super::traits::Storage;
 use rocksdb::Error as RocksDBError;
 use rocksdb::DB;
+use serde::Serialize;
 use std::{fmt, io};
 
 #[derive(Debug)]
@@ -168,5 +169,29 @@ impl Storage for CoreStorage {
             }
             None => Err(CustomError::Custom("Data not found".to_string())),
         }
+    }
+
+    fn get_value<T: serde::de::DeserializeOwned>(
+        &self,
+        key: &str,
+    ) -> Result<Option<T>, CustomError> {
+        let res = self
+            .db
+            .get(key)
+            .map_err(|e| CustomError::Custom(e.to_string()))?;
+        match res {
+            Some(bytes) => {
+                let value = serde_json::from_slice(&bytes)
+                    .map_err(|e| CustomError::Custom(e.to_string()))?;
+                Ok(Some(value))
+            }
+            None => Ok(None),
+        }
+    }
+    fn insert_value<T: Serialize>(&self, key: &str, value: T) -> Result<(), CustomError> {
+        let bytes = serde_json::to_vec(&value).map_err(|e| CustomError::Custom(e.to_string()))?;
+        self.db
+            .put(key, bytes)
+            .map_err(|e| CustomError::Custom(e.to_string()))
     }
 }
