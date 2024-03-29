@@ -1,7 +1,8 @@
+pub mod constants;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct RequestBody {
     pub wasm: Vec<u8>,
     pub invite: String,

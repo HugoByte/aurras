@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use crate::common::RequestBody;
     use crate::modules::storage::CoreStorage;
     use crate::modules::storage::Storage;
     pub use rocksdb::DB;
@@ -122,5 +123,23 @@ mod tests {
         let result = core_storage.get_wasm("hello");
         fs::remove_dir_all(std::path::Path::new("test9")).unwrap();
         result.unwrap();
+    }
+    #[test]
+    fn test_get_value() {
+        let core_storage = CoreStorage::new("test10").unwrap();
+        let req = RequestBody {
+            wasm: vec![0, 1, 3],
+            invite: "todo!()".to_string(),
+            pub_id: "todo!()".to_string(),
+            allowed_hosts: Some(vec!["todo!()".to_string()]),
+            input: serde_json::json!({ "test": "test"}),
+        };
+
+        let key = "test";
+        core_storage.insert_value(key, &req).unwrap();
+
+        let result = core_storage.get_value::<RequestBody>(key).unwrap();
+        fs::remove_dir_all(std::path::Path::new("test10")).unwrap();
+        assert_eq!(result, Some(req));
     }
 }
