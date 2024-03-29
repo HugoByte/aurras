@@ -17,7 +17,6 @@ kuska-sodiumoxide = '0.2.5-0'
 base64 = '0.11.0'
 log = '0.4.8'
 dirs = '2.0'
-subxt-signer = '0.34.0'
 slog = '2.7.0'
 slog-async = '2.8.0'
 slog-term = '2.9.1'
@@ -72,3 +71,4 @@ path = '../../workflow/test_util'
 
 [dev-dependencies]
 subxt = '0.34.0'
+subxt-signer = '0.34.0'
