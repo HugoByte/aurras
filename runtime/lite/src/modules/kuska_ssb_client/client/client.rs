@@ -48,7 +48,16 @@ impl Client {
                         match display {
                             Ok(display) => response.push(display),
                             Err(err) => {
-                                let body = std::str::from_utf8(&body).unwrap();
+                                let body = match std::str::from_utf8(&body) {
+                                    Ok(body_str) => body_str,
+                                    Err(err) => {
+                                        eprintln!(
+                                            "Error converting response body to string: {}",
+                                            err
+                                        );
+                                        continue;
+                                    }
+                                };
 
                                 if body == "{\"sync\":true}" {
                                     println!("Syncing Successful");
@@ -201,6 +210,7 @@ impl Client {
                 event: event.to_string(),
                 section: section.to_string(),
                 content: content.to_string(),
+
                 mentions,
             })
             .await?;
@@ -221,71 +231,88 @@ impl Client {
         let mut is_synced = false;
 
         loop {
-            let (id, msg) = self.rpc_reader.recv().await?;
-            let ctx = ctx.lock().unwrap();
+            let (id, msg) = match self.rpc_reader.recv().await {
+                Ok((id, msg)) => (id, msg),
+                Err(err) => {
+                    return Err(Box::new(AppError::new(format!(
+                        "Error receiving message: {}",
+                        err
+                    ))));
+                }
+            };
+            let ctx = match ctx.lock() {
+                Ok(ctx) => ctx,
+                Err(err) => {
+                    return Err(Box::new(AppError::new(format!(
+                        "Failed to acquire lock on context: {}",
+                        err
+                    ))));
+                }
+            };
             let db = ctx.get_db();
             let logger = ctx.get_logger();
 
             if id == req_no {
                 match msg {
                     RecvMsg::RpcResponse(_type, body) => {
-                        let display = feed_res_parse(&body);
+                        let display = match feed_res_parse(&body) {
+                            Ok(display) => display,
+                            Err(err) => {
+                                logger.error(&format!("Error parsing feed response: {}", err));
+                                continue;
+                            }
+                        };
 
-                        match display {
-                            Ok(display) => {
-                                if is_synced {
-                                    match serde_json::from_value::<Post>(
-                                        display.value.get("content").unwrap().clone(),
-                                    ) {
-                                        Ok(x) => {
-                                            match serde_json::from_str::<serde_json::Value>(&x.text)
-                                            {
-                                                Ok(mut event) => {
-                                                    logger.info(&format!("Event: {:#?}", event));
+                        let display_value = display.value.get("content").unwrap().clone();
+                        match serde_json::from_value::<Post>(display_value) {
+                            Ok(x) => match serde_json::from_str::<serde_json::Value>(&x.text) {
+                                Ok(mut event) => {
+                                    logger.info(&format!("Event: {:#?}", event));
 
-                                                    match db.get(&x.mentions.unwrap()[0].link) {
-                                                        Ok(body) => {
-                                                            let data = serde_json::json!({
-                                                                "data" : crate::common::combine_values(&mut event, &body.input),
-                                                                "allowed_hosts": body.allowed_hosts
-                                                            });
-                                                            let _ =
-                                                                wasmtime_wasi_module::run_workflow(
-                                                                    serde_json::to_value(data)
-                                                                        .unwrap(),
-                                                                    body.wasm,
-                                                                    0,
-                                                                    "hello",
-                                                                );
-                                                        }
-                                                        Err(e) => logger.error(&e.to_string()),
-                                                    }
-                                                }
-                                                Err(e) => logger.error(&e.to_string()),
+                                    match db.get(&x.mentions.unwrap()[0].link) {
+                                        Ok(body) => {
+                                            let data = serde_json::json!({
+                                                "data" : crate::common::combine_values(&mut event, &body.input),
+                                                "allowed_hosts": body.allowed_hosts
+                                            });
+
+                                            let data_value =
+                                                serde_json::to_value(data).map_err(|err| {
+                                                    Box::new(AppError::new(format!(
+                                                        "Error converting data to JSON: {}",
+                                                        err
+                                                    )))
+                                                })?;
+
+                                            match wasmtime_wasi_module::run_workflow(
+                                                data_value, body.wasm, 0, "hello",
+                                            ) {
+                                                Ok(_) => (),
+                                                Err(err) => logger.error(&format!(
+                                                    "Error running workflow: {}",
+                                                    err
+                                                )),
                                             }
                                         }
                                         Err(e) => logger.error(&e.to_string()),
                                     }
                                 }
-                            }
-                            Err(err) => {
-                                let body = std::str::from_utf8(&body).unwrap();
-
-                                if body == "{\"sync\":true}" {
-                                    logger.info("Syncing Successful");
-                                    is_synced = true;
-                                } else {
-                                    return std::result::Result::Err(err);
-                                }
-                            }
+                                Err(e) => logger.error(&e.to_string()),
+                            },
+                            Err(e) => logger.error(&e.to_string()),
                         }
                     }
+
                     RecvMsg::ErrorResponse(message) => {
                         return std::result::Result::Err(Box::new(AppError::new(message)))
                     }
                     _ => {}
                 }
             }
+            if is_synced {
+                break;
+            }
         }
+        Ok(())
     }
 }

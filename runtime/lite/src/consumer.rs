@@ -32,29 +32,49 @@ async fn main() {
         std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
     });
     let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| 8008.to_string());
-    let mut file = async_std::fs::File::open(secret).await.unwrap();
-    let key = read_patchwork_config(&mut file).await.unwrap();
+    let key = match async_std::fs::File::open(&secret).await {
+        Ok(mut file) => match read_patchwork_config(&mut file).await {
+            Ok(key) => key,
+            Err(err) => {
+                eprintln!("Error reading Patchwork config: {}", err);
+                return;
+            }
+        },
+        Err(err) => {
+            eprintln!("Error opening secret file: {}", err);
+            return;
+        }
+    };
 
     let ssb_context = context.clone();
 
     let (channel_invite_tx, channel_invite_rx) = std::sync::mpsc::channel::<String>();
-    let mut client = Client::new(Some(key), "0.0.0.0".to_string(), port)
-        .await
-        .unwrap();
+    let mut client = match Client::new(Some(key), "0.0.0.0".to_string(), port).await {
+        Ok(client) => client,
+        Err(err) => {
+            logger.critical(&format!("Error creating SSB client: {}", err));
+            return;
+        }
+    };
+
     // Spawn the SSB feed listener task
     tokio::spawn(async move {
         let logger = ssb_context.clone().lock().unwrap().get_logger().clone();
         logger.info("consumer successfully started✅");
-        {
-            let invite = channel_invite_rx.recv().unwrap();
-            let res = client.accept_invite(&invite).await;
-            logger.info(&format!("Invite Accepted: {:?}", res));
+        if let Ok(invite) = channel_invite_rx.recv() {
+            if let Err(err) = client.accept_invite(&invite).await {
+                logger.error(&format!("Error accepting invite: {:?}", err));
+                return;
+            }
+            logger.info("Invite Accepted");
         }
 
-        client
+        if let Err(err) = client
             .live_feed_with_execution_of_workflow(true, ssb_context)
             .await
-            .unwrap();
+        {
+            logger.critical(&format!("Error starting live feed: {:?}", err));
+        }
     });
 
     // Spawn the HTTP server task
@@ -85,36 +105,75 @@ fn handle_client(
     channel_invite_tx: std::sync::mpsc::Sender<String>,
 ) {
     let mut buffer = Vec::new();
-    stream.read_to_end(&mut buffer).expect("Error reading data");
+    if let Err(err) = stream.read_to_end(&mut buffer) {
+        eprintln!("Error reading data: {}", err);
+        return;
+    };
 
-    let body = serde_json::from_slice::<RequestBody>(&buffer).unwrap();
+    let body = match serde_json::from_slice::<RequestBody>(&buffer) {
+        Ok(body) => body,
+        Err(err) => {
+            eprintln!("Error deserializing request body: {}", err);
+            return;
+        }
+    };
 
-    let ctx = ctx.lock().unwrap();
+    let ctx = match ctx.lock() {
+        Ok(ctx) => ctx,
+        Err(err) => {
+            eprintln!("Error acquiring lock on context: {}", err);
+            return;
+        }
+    };
+
     let logger = ctx.get_logger().clone();
     logger.info("Data Deserialized");
     let db = ctx.get_db();
 
-    let get_follow_list = db.get_value::<Vec<String>>(FOLLOW_LIST_KEY).unwrap();
+    let get_follow_list = match db.get_value::<Vec<String>>(FOLLOW_LIST_KEY) {
+        Ok(value) => value,
+        Err(err) => {
+            eprintln!("Error retrieving follow list from database: {}", err);
+            return;
+        }
+    };
+
     match get_follow_list {
         Some(mut list) => {
             if list.contains(&body.pub_id) {
                 logger.info("Already Following the publisher");
             } else {
                 list.push(body.pub_id.clone());
-                let _res = channel_invite_tx.send(body.invite.clone());
-                db.insert_value(FOLLOW_LIST_KEY, list).unwrap();
+                if let Err(err) = channel_invite_tx.send(body.invite.clone()) {
+                    eprintln!("Error sending invite: {}", err);
+                    return;
+                }
+                if let Err(err) = db.insert_value(FOLLOW_LIST_KEY, list) {
+                    eprintln!("Error inserting follow list into database: {}", err);
+                    return;
+                }
                 logger.info(&format!("Following the publisher {}", body.pub_id));
             }
         }
         None => {
-            let _res = channel_invite_tx.send(body.invite.clone());
-            db.insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()])
-                .unwrap();
+            if let Err(err) = channel_invite_tx.send(body.invite.clone()) {
+                eprintln!("Error sending invite: {}", err);
+                return;
+            }
+            if let Err(err) = db.insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()]) {
+                eprintln!("Error inserting follow list into database: {}", err);
+                return;
+            }
+
             logger.info(&format!("Following the publisher {}", body.pub_id));
         }
     }
 
-    db.insert_value(&body.pub_id.clone(), body).unwrap();
+    // db.insert_value(&body.pub_id.clone(), body).unwrap();
+    if let Err(err) = db.insert_value(&body.pub_id.clone(), body) {
+        eprintln!("Error inserting data into database: {}", err);
+        return;
+    }
     logger.info("Data inserted successfully");
 
     // Respond to the client (optional)
