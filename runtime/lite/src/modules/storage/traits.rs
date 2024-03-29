@@ -1,3 +1,5 @@
+use serde::{de::DeserializeOwned, Serialize};
+
 use crate::{common::RequestBody, modules::storage::CustomError};
 
 pub trait Storage {
@@ -7,4 +9,6 @@ pub trait Storage {
     fn delete_data(&self, key: &str) -> Result<(), CustomError>;
     fn insert_request_body(&self, key: &str, value: RequestBody) -> Result<(), CustomError>;
     fn get_request_body(&self, key: &str) -> Result<RequestBody, CustomError>;
+    fn get_value<T: DeserializeOwned>(&self, key: &str) -> Result<Option<T>, CustomError>;
+    fn insert_value<T: Serialize>(&self, key: &str, value: T) -> Result<(), CustomError>;
 }

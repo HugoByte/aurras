@@ -1,0 +1,11 @@
+pub const FOLLOW_LIST_KEY: &str = "follow_list";
+pub const HTTP_SERVER_ADDRESS: &str = "127.0.0.1:8080";
+pub const DEFAULT_CONSUMER_IP: &str = "0.0.0.0";
+pub const DEFAULT_PRODUCER_IP: &str = "0.0.0.0";
+pub const DEFAULT_PUB_IP: &str = "0.0.0.0";
+pub const DEFAULT_PUB_PORT: &str = "8013";
+pub const DEFAULT_CONSUMER_PORT: &str = "8014";
+pub const DEFAULT_PRODUCER_PORT: &str = "8015";
+pub const DEFAULT_CONSUMER_SECRET_DIR: &str = "scripts/secret/consumer_secret";
+pub const DEFAULT_PRODUCER_SECRET_DIR: &str = "scripts/secret/producer_secret";
+pub const DEFAULT_PUB_SECRET_DIR: &str = "scripts/secret/pubs_secret";

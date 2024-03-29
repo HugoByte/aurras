@@ -1,9 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    modules::{
-        logger::Logger, state_manager::GlobalStateManager, storage::Storage, wasmtime_wasi_module,
-    },
+    modules::{logger::Logger, storage::Storage, wasmtime_wasi_module, state_manager::traits::GlobalStateManager},
     Ctx,
 };
 
@@ -166,9 +164,9 @@ impl Client {
         Ok(())
     }
 
-    pub async fn create_invite(&mut self) -> Result<Vec<String>> {
+    pub async fn create_invite(&mut self) -> Result<String> {
         let req_id = self.api.invite_create_req_send(1).await?;
-        let responses = self.get_responses(req_id, invite_create).await?;
+        let responses = self.get_async(req_id, invite_create).await?;
         Ok(responses)
     }
 
@@ -190,14 +188,20 @@ impl Client {
         Ok(())
     }
 
-    pub async fn publish_event(&mut self, event: Event) -> Result<()> {
+    pub async fn publish_event(
+        &mut self,
+        event: &str,
+        section: &str,
+        content: &str,
+        mentions: Option<Vec<Mention>>,
+    ) -> Result<()> {
         let _req_id = self
             .api
             .publish_req_send(TypedMessage::Event {
-                event: event.event,
-                section: event.section,
-                content: event.content,
-                mentions: event.mentions,
+                event: event.to_string(),
+                section: section.to_string(),
+                content: content.to_string(),
+                mentions,
             })
             .await?;
 
@@ -221,7 +225,7 @@ impl Client {
             let ctx = ctx.lock().unwrap();
             let db = ctx.get_db();
             let logger = ctx.get_logger();
-            let state_manager = ctx.get_state_manager();
+            let mut state_manager = ctx.get_state_manager();
 
             if id == req_no {
                 match msg {
@@ -238,8 +242,6 @@ impl Client {
                                             match serde_json::from_str::<serde_json::Value>(&x.text)
                                             {
                                                 Ok(mut event) => {
-
-
                                                     logger.info(&format!("Event: {:#?}", event));
 
                                                     match db.get_request_body(
@@ -251,8 +253,7 @@ impl Client {
                                                                 "allowed_hosts": body.allowed_hosts
                                                             });
 
-                                                            let workflow_index = ctx
-                                                                .get_state_manager()
+                                                            let workflow_index = state_manager
                                                                 .new_workflow(0, "hello");
 
                                                             let _ =

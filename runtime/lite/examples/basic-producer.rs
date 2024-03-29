@@ -1,7 +1,9 @@
 use dotenv::dotenv;
 use kuska_ssb::{api::dto::content::Mention, keystore::read_patchwork_config};
+use runtime::constants::DEFAULT_PRODUCER_SECRET_DIR;
 use runtime::kuska_ssb_client::client::Client;
 use runtime::logger::{CoreLogger, Logger};
+use runtime::common::constants::{DEFAULT_PRODUCER_IP, DEFAULT_PRODUCER_PORT};
 
 #[tokio::main]
 async fn main() {
@@ -11,20 +13,23 @@ async fn main() {
 
     logger.info("starting producer...");
     let secret = std::env::var("PRODUCER_SECRET").unwrap_or_else(|_| {
-        let home_dir = dirs::home_dir().unwrap();
-        std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        DEFAULT_PRODUCER_SECRET_DIR.to_string()
     });
 
-    let port = std::env::var("PRODUCER_PORT").unwrap_or("8014".to_string());
+    let port = std::env::var("PRODUCER_PORT").unwrap_or(DEFAULT_PRODUCER_PORT.to_string());
+    let ip = std::env::var("PRODUCER_IP").unwrap_or(DEFAULT_PRODUCER_IP.to_string());
     let pub_address = std::env::var("PUB_ADDRESS").expect("Pub address must be provided");
+    let invite = std::env::var("PRODUCER_INVITE").expect("invite address must be provided");
 
     let mut file = async_std::fs::File::open(secret).await.unwrap();
     let key = read_patchwork_config(&mut file).await.unwrap();
 
-    let mut client = Client::new(Some(key), "0.0.0.0".to_string(), port)
+    let mut client = Client::new(Some(key), ip, port)
         .await
         .unwrap();
 
+    let invite_res = client.accept_invite(&invite).await;
+    logger.info(&format!("{:?}", invite_res));
     logger.info("producer successfully started✅");
 
     use subxt::{OnlineClient, PolkadotConfig};
