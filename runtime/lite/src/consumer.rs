@@ -1,9 +1,17 @@
 use kuska_ssb::keystore::read_patchwork_config;
 use runtime::{
     common::{
-        constants::{DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, FOLLOW_LIST_KEY, HTTP_SERVER_ADDRESS},
+        constants::{
+            DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, FOLLOW_LIST_KEY, HTTP_SERVER_ADDRESS,
+        },
         RequestBody,
-    }, constants::DEFAULT_CONSUMER_SECRET_DIR, logger::CoreLogger, modules::kuska_ssb_client::client::Client, state_manager::GlobalState, storage::{CoreStorage, Storage}, Ctx, Logger
+    },
+    constants::DEFAULT_CONSUMER_SECRET_DIR,
+    logger::CoreLogger,
+    modules::kuska_ssb_client::client::Client,
+    state_manager::GlobalState,
+    storage::{CoreStorage, Storage},
+    Ctx, Logger,
 };
 use std::{
     net::{TcpListener, TcpStream},
@@ -25,9 +33,8 @@ async fn main() {
 
     let context = Arc::new(Mutex::new(Context::new(logger.clone(), db, state_manager)));
 
-    let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
-        DEFAULT_CONSUMER_SECRET_DIR.to_string()
-    });
+    let secret = std::env::var("CONSUMER_SECRET")
+        .unwrap_or_else(|_| DEFAULT_CONSUMER_SECRET_DIR.to_string());
     let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
     let ip = std::env::var("CONSUMER_IP").unwrap_or(DEFAULT_CONSUMER_IP.to_string());
     let mut file = async_std::fs::File::open(secret).await.unwrap();
@@ -39,18 +46,17 @@ async fn main() {
     let mut client = Client::new(Some(key), ip, port).await.unwrap();
     // Spawn the SSB feed listener task
     tokio::spawn(async move {
-        let logger = ssb_context.clone().lock().unwrap().get_logger().clone();
-        logger.info("consumer successfully started✅");
-        {
-            let invite = channel_invite_rx.recv().unwrap();
-            let res = client.accept_invite(&invite).await;
-            logger.info(&format!("Invite Accepted: {:?}", res));
-        }
-
         client
-            .live_feed_with_execution_of_workflow(true, ssb_context)
+            .live_feed_with_execution_of_workflow(true, ssb_context.clone())
             .await
             .unwrap();
+
+        let logger = ssb_context.lock().unwrap().get_logger().clone();
+        logger.info("consumer successfully started✅");
+        
+        let invite = channel_invite_rx.recv().unwrap();
+        let res = client.accept_invite(&invite).await;
+        logger.info(&format!("Invite Accepted: {:?}", res));
     });
 
     // Spawn the HTTP server task
