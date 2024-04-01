@@ -1,6 +1,12 @@
 use kuska_ssb::keystore::read_patchwork_config;
 use runtime::{
-    common::{constants::FOLLOW_LIST_KEY, RequestBody},
+    common::{
+        constants::{
+            DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, FOLLOW_LIST_KEY, HTTP_SERVER_ADDRESS,
+        },
+        RequestBody,
+    },
+    constants::DEFAULT_CONSUMER_SECRET_DIR,
     logger::CoreLogger,
     modules::kuska_ssb_client::client::Client,
     state_manager::GlobalState,
@@ -19,7 +25,7 @@ use dotenv::dotenv;
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let db = CoreStorage::new("runtime_db").unwrap();
+    let db = CoreStorage::new("runtime-db").unwrap();
     let logger = CoreLogger::new(Some("./ssb-consumer.log"));
     let state_manager = GlobalState::new(logger.clone());
 
@@ -27,60 +33,36 @@ async fn main() {
 
     let context = Arc::new(Mutex::new(Context::new(logger.clone(), db, state_manager)));
 
-    let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
-        let home_dir = dirs::home_dir().unwrap();
-        std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
-    });
-    let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| 8008.to_string());
-    let key = match async_std::fs::File::open(&secret).await {
-        Ok(mut file) => match read_patchwork_config(&mut file).await {
-            Ok(key) => key,
-            Err(err) => {
-                eprintln!("Error reading Patchwork config: {}", err);
-                return;
-            }
-        },
-        Err(err) => {
-            eprintln!("Error opening secret file: {}", err);
-            return;
-        }
-    };
+    let secret = std::env::var("CONSUMER_SECRET")
+        .unwrap_or_else(|_| DEFAULT_CONSUMER_SECRET_DIR.to_string());
+    let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
+    let ip = std::env::var("CONSUMER_IP").unwrap_or(DEFAULT_CONSUMER_IP.to_string());
+    let mut file = async_std::fs::File::open(secret).await.unwrap();
+    let key = read_patchwork_config(&mut file).await.unwrap();
 
     let ssb_context = context.clone();
 
     let (channel_invite_tx, channel_invite_rx) = std::sync::mpsc::channel::<String>();
-    let mut client = match Client::new(Some(key), "0.0.0.0".to_string(), port).await {
-        Ok(client) => client,
-        Err(err) => {
-            logger.critical(&format!("Error creating SSB client: {}", err));
-            return;
-        }
-    };
-
+    let mut client = Client::new(Some(key), ip, port).await.unwrap();
     // Spawn the SSB feed listener task
     tokio::spawn(async move {
-        let logger = ssb_context.clone().lock().unwrap().get_logger().clone();
-        logger.info("consumer successfully started✅");
-        if let Ok(invite) = channel_invite_rx.recv() {
-            if let Err(err) = client.accept_invite(&invite).await {
-                logger.error(&format!("Error accepting invite: {:?}", err));
-            } else {
-                logger.info("Invite Accepted");
-            }
-        }
-
-        if let Err(err) = client
-            .live_feed_with_execution_of_workflow(true, ssb_context)
+        client
+            .live_feed_with_execution_of_workflow(true, ssb_context.clone())
             .await
-        {
-            logger.critical(&format!("Error starting live feed: {:?}", err));
-        }
+            .unwrap();
+
+        let logger = ssb_context.lock().unwrap().get_logger().clone();
+        logger.info("consumer successfully started✅");
+        
+        let invite = channel_invite_rx.recv().unwrap();
+        let res = client.accept_invite(&invite).await;
+        logger.info(&format!("Invite Accepted: {:?}", res));
     });
 
     // Spawn the HTTP server task
     tokio::spawn(async move {
-        let listener = TcpListener::bind("127.0.0.1:8080").expect("Failed to bind to address");
-        logger.info("Listening on 127.0.0.1:8080...");
+        let listener = TcpListener::bind(HTTP_SERVER_ADDRESS).expect("Failed to bind to address");
+        logger.info(&format!("Listening on {HTTP_SERVER_ADDRESS}..."));
         for stream in listener.incoming() {
             match stream {
                 Ok(stream) => {

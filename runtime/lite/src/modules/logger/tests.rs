@@ -27,7 +27,7 @@ fn test_writing_to_log_file() {
 }
 
 #[test]
-fn test_logger_in_multi_threads(){
+fn test_logger_in_multi_threads() {
     let logger = CoreLogger::new(Some("test3.log"));
     let mut handles = vec![];
 

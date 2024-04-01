@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    modules::{logger::Logger, storage::Storage, wasmtime_wasi_module},
+    modules::{logger::Logger, storage::Storage, wasmtime_wasi_module, state_manager::traits::GlobalStateManager},
     Ctx,
 };
 
@@ -90,9 +90,9 @@ impl Client {
 
         let server_pk =
             ed25519::PublicKey::from_slice(&base64::decode(&server_pk)?).expect("bad public key");
-        let server_ipport = format!("{}:{}", ip, port);
+        let server_ip_port = format!("{}:{}", ip, port);
 
-        let mut socket = TcpStream::connect(server_ipport).await?;
+        let mut socket = TcpStream::connect(server_ip_port).await?;
 
         let handshake =
             handshake_client(&mut socket, ssb_net_id(), pk, sk.clone(), server_pk).await?;
@@ -173,9 +173,9 @@ impl Client {
         Ok(())
     }
 
-    pub async fn create_invite(&mut self) -> Result<Vec<String>> {
+    pub async fn create_invite(&mut self) -> Result<String> {
         let req_id = self.api.invite_create_req_send(1).await?;
-        let responses = self.get_responses(req_id, invite_create).await?;
+        let responses = self.get_async(req_id, invite_create).await?;
         Ok(responses)
     }
 
@@ -231,81 +231,80 @@ impl Client {
         let mut is_synced = false;
 
         loop {
-            let (id, msg) = match self.rpc_reader.recv().await {
-                Ok((id, msg)) => (id, msg),
-                Err(err) => {
-                    return Err(Box::new(AppError::new(format!(
-                        "Error receiving message: {}",
-                        err
-                    ))));
-                }
-            };
-            let ctx = match ctx.lock() {
-                Ok(ctx) => ctx,
-                Err(err) => {
-                    return Err(Box::new(AppError::new(format!(
-                        "Failed to acquire lock on context: {}",
-                        err
-                    ))));
-                }
-            };
+            let (id, msg) = self.rpc_reader.recv().await?;
+            let ctx = ctx.lock().unwrap();
             let db = ctx.get_db();
             let logger = ctx.get_logger();
+            let mut state_manager = ctx.get_state_manager();
 
             if id == req_no {
                 match msg {
                     RecvMsg::RpcResponse(_type, body) => {
-                        let display = feed_res_parse(&body)?;
-                        let display_value = display.value.get("content").unwrap().clone();
-                        match serde_json::from_value::<Post>(display_value) {
-                            Ok(x) => match serde_json::from_str::<serde_json::Value>(&x.text) {
-                                Ok(mut event) => {
-                                    logger.info(&format!("Event: {:#?}", event));
+                        let display = feed_res_parse(&body);
 
-                                    match db.get(&x.mentions.unwrap()[0].link) {
-                                        Ok(body) => {
-                                            let data = serde_json::json!({
-                                                "data" : crate::common::combine_values(&mut event, &body.input),
-                                                "allowed_hosts": body.allowed_hosts
-                                            });
+                        match display {
+                            Ok(display) => {
+                                if is_synced {
+                                    match serde_json::from_value::<Post>(
+                                        display.value.get("content").unwrap().clone(),
+                                    ) {
+                                        Ok(x) => {
+                                            match serde_json::from_str::<serde_json::Value>(&x.text)
+                                            {
+                                                Ok(mut event) => {
+                                                    logger.info(&format!("Event: {:#?}", event));
 
-                                            let data_value =
-                                                serde_json::to_value(data).map_err(|err| {
-                                                    Box::new(AppError::new(format!(
-                                                        "Error converting data to JSON: {}",
-                                                        err
-                                                    )))
-                                                })?;
+                                                    match db.get_request_body(
+                                                        &x.mentions.unwrap()[0].link,
+                                                    ) {
+                                                        Ok(body) => {
+                                                            let data = serde_json::json!({
+                                                                "data" : crate::common::combine_values(&mut event, &body.input),
+                                                                "allowed_hosts": body.allowed_hosts
+                                                            });
 
-                                            match wasmtime_wasi_module::run_workflow(
-                                                data_value, body.wasm, 0, "hello",
-                                            ) {
-                                                Ok(_) => (),
-                                                Err(err) => logger.error(&format!(
-                                                    "Error running workflow: {}",
-                                                    err
-                                                )),
+                                                            let workflow_index = state_manager
+                                                                .new_workflow(0, "hello");
+
+                                                            let _ =
+                                                                wasmtime_wasi_module::run_workflow(
+                                                                    state_manager,
+                                                                    logger,
+                                                                    serde_json::to_value(data)
+                                                                        .unwrap(),
+                                                                    body.wasm,
+                                                                    workflow_index,
+                                                                    false,
+                                                                );
+                                                        }
+                                                        Err(e) => logger.error(&e.to_string()),
+                                                    }
+                                                }
+                                                Err(e) => logger.error(&e.to_string()),
                                             }
                                         }
                                         Err(e) => logger.error(&e.to_string()),
                                     }
                                 }
-                                Err(e) => logger.error(&e.to_string()),
-                            },
-                            Err(e) => logger.error(&e.to_string()),
+                            }
+                            Err(err) => {
+                                let body = std::str::from_utf8(&body).unwrap();
+
+                                if body == "{\"sync\":true}" {
+                                    logger.info("Syncing Successful");
+                                    is_synced = true;
+                                } else {
+                                    return std::result::Result::Err(err);
+                                }
+                            }
                         }
                     }
-
                     RecvMsg::ErrorResponse(message) => {
                         return std::result::Result::Err(Box::new(AppError::new(message)))
                     }
                     _ => {}
                 }
             }
-            if is_synced {
-                break;
-            }
         }
-        Ok(())
     }
 }
