@@ -7,5 +7,3 @@ pub mod storage;
 pub use storage::*;
 pub mod test;
 pub use test::*;
-pub mod error;
-pub use error::*;

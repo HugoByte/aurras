@@ -3,9 +3,9 @@ use std::sync::{Arc, Mutex};
 use crate::{
     modules::{
         logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
-        wasmtime_wasi_module
+        wasmtime_wasi_module,
     },
-    Ctx,
+    AppError, Ctx,
 };
 
 use super::*;

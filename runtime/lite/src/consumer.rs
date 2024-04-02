@@ -7,10 +7,11 @@ use runtime::{
         RequestBody,
     },
     constants::DEFAULT_CONSUMER_SECRET_DIR,
-    logger::{CoreLogger},
+    logger::CoreLogger,
     modules::kuska_ssb_client::client::Client,
     state_manager::GlobalState,
-    storage::{CoreStorage, Storage}, Ctx, Logger,
+    storage::{CoreStorage, Storage},
+    Ctx, Logger,
 };
 use std::{
     net::{TcpListener, TcpStream},
