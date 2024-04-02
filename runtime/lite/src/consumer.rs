@@ -11,7 +11,7 @@ use runtime::{
     modules::kuska_ssb_client::client::Client,
     state_manager::GlobalState,
     storage::{CoreStorage, Storage},
-    Ctx, Logger,
+    AppError, Ctx, Logger,
 };
 use std::{
     net::{TcpListener, TcpStream},
@@ -54,22 +54,38 @@ async fn main() {
     let ssb_context = context.clone();
     let (channel_invite_tx, mut channel_invite_rx) = tokio::sync::mpsc::channel::<String>(10);
 
-    let mut client = Client::new(Some(key.clone()), ip.clone(), port.clone())
-        .await
-        .unwrap();
+    let mut client = match Client::new(Some(key.clone()), ip.clone(), port.clone()).await {
+        Ok(client) => client,
+        Err(err) => {
+            logger.critical(&format!("Error creating SSB client: {}", err));
+            return;
+        }
+    };
 
     // Spawn the SSB feed listener task
     tokio::spawn(async move {
-        client
+        match client
             .live_feed_with_execution_of_workflow(true, ssb_context.clone())
             .await
-            .unwrap();
+        {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                return Err(Box::new(AppError::new(format!(
+                    "Error in live feed with execution of workflow: {}",
+                    err
+                ))));
+            }
+        }
     });
 
     tokio::spawn(async move {
-        let mut client = Client::new(Some(key.clone()), ip.clone(), port.clone())
-            .await
-            .unwrap();
+        let mut client = match Client::new(Some(key.clone()), ip.clone(), port.clone()).await {
+            Ok(client) => client,
+            Err(err) => {
+                eprintln!("Error creating client: {}", err);
+                return; // Exit the spawned task on error
+            }
+        };
         while let Some(msg) = channel_invite_rx.recv().await {
             let _res = client.accept_invite(&msg).await;
         }
@@ -144,15 +160,29 @@ async fn handle_client(
             } else {
                 list.push(body.pub_id.clone());
                 let _res = channel_invite_tx.send(body.invite.clone()).await;
-                db.insert_value(FOLLOW_LIST_KEY, list).unwrap();
-                logger.info(&format!("Following the publisher {}", body.pub_id));
+                if let Err(err) = db.insert_value(FOLLOW_LIST_KEY, list).map_err(|err| {
+                    logger.info(&format!("Error inserting data into database: {}", err));
+                    err
+                }) {
+                    logger.info(&format!("Error inserting data into database: {}", err));
+                } else {
+                    logger.info(&format!("Following the publisher {}", body.pub_id));
+                }
             }
         }
         None => {
             let _res = channel_invite_tx.send(body.invite.clone()).await;
-            db.insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()])
-                .unwrap();
-            logger.info(&format!("Following the publisher {}", body.pub_id));
+            if let Err(err) = db
+                .insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()])
+                .map_err(|err| {
+                    logger.info(&format!("Error inserting data into database: {}", err));
+                    err
+                })
+            {
+                logger.info(&format!("Error inserting data into database: {}", err));
+            } else {
+                logger.info(&format!("Following the publisher {}", body.pub_id));
+            }
         }
     }
 
