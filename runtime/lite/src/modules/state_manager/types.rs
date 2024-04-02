@@ -30,11 +30,11 @@ impl WorkflowState {
 }
 
 impl WorkflowStateManager for WorkflowState {
-    fn update_running(&mut self) -> Result<(), anyhow::Error> {
+    fn update_running(&mut self) -> Result<()> {
         match self.execution_state {
             ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
                 "workflow already executed! result: {:?}",
-                self.get_result()?
+                self.get_result()
             )),
 
             ExecutionState::Running => Err(anyhow!("workflow execution already in progress!")),
@@ -46,11 +46,11 @@ impl WorkflowStateManager for WorkflowState {
         }
     }
 
-    fn update_result(&mut self, result: Value, is_success: bool) -> Result<(), anyhow::Error> {
+    fn update_result(&mut self, result: Value, is_success: bool) -> Result<()> {
         match self.execution_state {
             ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
                 "workflow already executed! result: {:?}",
-                self.get_result()?
+                self.get_result()
             )),
 
             ExecutionState::Init => {
@@ -69,11 +69,11 @@ impl WorkflowStateManager for WorkflowState {
         }
     }
 
-    fn update_paused(&mut self, output: Option<Value>) -> Result<(), anyhow::Error> {
+    fn update_paused(&mut self, output: Option<Value>) -> Result<()> {
         match self.execution_state {
             ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
                 "workflow already executed! result: {:?}",
-                self.get_result()?
+                self.get_result()
             )),
 
             ExecutionState::Paused => Err(anyhow!("workflow already paused")),
@@ -120,9 +120,10 @@ impl WorkflowStateManager for WorkflowState {
                 Some(value) => Ok(value.clone()),
                 None => Err(anyhow!("no result is stored!")),
             },
-            ExecutionState::Failed | ExecutionState::Success => {
-                self.result.clone().ok_or_else(|| anyhow!("no result available for completed workflow"))
-            }
+            ExecutionState::Failed | ExecutionState::Success => self
+                .result
+                .clone()
+                .ok_or_else(|| anyhow!("no result available for completed workflow")),
         }
     }
 }
@@ -296,25 +297,25 @@ mod tests {
     }
 
     #[test]
-    fn test_get_id_pass(){
+    fn test_get_id_pass() {
         let workflow_state = WorkflowState::new(1, "test_workflow");
         assert_eq!(workflow_state.get_id(), 1);
     }
 
     #[test]
-    fn test_get_workflow_name_pass(){
+    fn test_get_workflow_name_pass() {
         let workflow_state = WorkflowState::new(1, "test_workflow");
         assert_eq!(workflow_state.get_workflow_name(), "test_workflow");
     }
 
     #[test]
-    fn test_get_execution_state_pass(){
+    fn test_get_execution_state_pass() {
         let workflow_state = WorkflowState::new(1, "test_workflow");
         assert_eq!(workflow_state.get_execution_state(), ExecutionState::Init);
     }
 
     #[test]
-    fn test_is_success_pass_success(){
+    fn test_is_success_pass_success() {
         let mut workflow_state = WorkflowState::new(1, "test_workflow");
         workflow_state.update_running().unwrap();
         workflow_state.update_result(Value::Null, true).unwrap();
@@ -323,7 +324,7 @@ mod tests {
     }
 
     #[test]
-    fn test_is_success_pass_failed(){
+    fn test_is_success_pass_failed() {
         let mut workflow_state = WorkflowState::new(1, "test_workflow");
         workflow_state.update_running().unwrap();
         workflow_state.update_result(Value::Null, false).unwrap();
@@ -355,7 +356,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_result_pass_success_result(){
+    fn test_get_result_pass_success_result() {
         let mut workflow_state = WorkflowState::new(1, "test_workflow");
         workflow_state.update_running().unwrap();
         let data = Value::String("success".to_string());
@@ -365,7 +366,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_result_pass_paused_result(){
+    fn test_get_result_pass_paused_result() {
         let mut workflow_state = WorkflowState::new(1, "test_workflow");
         let data = Value::String("success".to_string());
         workflow_state.update_paused(Some(data.clone())).unwrap();
@@ -374,14 +375,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic="execution not started"]
+    #[should_panic = "execution not started"]
     fn test_get_result_fail_not_executed() {
         let workflow_state = WorkflowState::new(1, "test_workflow");
         workflow_state.get_result().unwrap();
     }
 
     #[test]
-    #[should_panic="execution in-progress"]
+    #[should_panic = "execution in-progress"]
     fn test_get_result_fail_not_completed() {
         let mut workflow_state = WorkflowState::new(1, "test_workflow");
         workflow_state.update_running().unwrap();
@@ -389,12 +390,10 @@ mod tests {
     }
 
     #[test]
-    #[should_panic="no result is stored!"]
+    #[should_panic = "no result is stored!"]
     fn test_get_result_fail_paused_no_result() {
         let mut workflow_state = WorkflowState::new(1, "test_workflow");
         workflow_state.update_paused(None).unwrap();
         workflow_state.get_result().unwrap();
     }
-
-
 }
