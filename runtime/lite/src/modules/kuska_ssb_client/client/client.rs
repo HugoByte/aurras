@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use crate::{
     modules::{
         logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
-        wasmtime_wasi_module,
+        wasmtime_wasi_module
     },
     Ctx,
 };
@@ -259,65 +259,77 @@ impl Client {
             if id == req_no {
                 match msg {
                     RecvMsg::RpcResponse(_type, body) => {
-                        let display = match feed_res_parse(&body) {
-                            Ok(display) => display,
-                            Err(e) => {
-                                logger.error(&e.to_string());
-                                continue;
-                            }
-                        };
+                        let display = feed_res_parse(&body);
 
-                        let display_value = display.value.get("content").unwrap().clone();
-                        match serde_json::from_value::<Post>(display_value) {
-                            Ok(x) => {
-                                let mut event =
-                                    match serde_json::from_str::<serde_json::Value>(&x.text) {
-                                        Ok(mut event) => {
-                                            logger.info(&format!("Event: {:#?}", event));
-                                            event
-                                        }
-                                        Err(err) => {
-                                            logger.error(&format!("Error parsing event: {}", err));
-                                            continue;
-                                        }
-                                    };
-
+                        match display {
+                            Ok(display) => {
                                 if is_synced {
-                                    match db.get_request_body(&x.mentions.unwrap()[0].link) {
-                                        Ok(body) => {
-                                            let data = serde_json::json!({
-                                                "data": crate::common::combine_values(&mut event, &body.input),
-                                                "allowed_hosts": body.allowed_hosts
-                                            });
+                                    match serde_json::from_value::<Post>(
+                                        display.value.get("content").unwrap().clone(),
+                                    ) {
+                                        Ok(x) => {
+                                            match serde_json::from_str::<serde_json::Value>(&x.text)
+                                            {
+                                                Ok(mut event) => {
+                                                    logger.info(&format!("Event: {:#?}", event));
 
-                                            let data_value = serde_json::to_value(data.clone())
-                                                .map_err(|err| {
-                                                    Box::new(AppError::new(format!(
-                                                        "Error converting data to JSON: {}",
-                                                        err
-                                                    )))
-                                                })?;
+                                                    match db.get_request_body(
+                                                        &x.mentions.unwrap()[0].link,
+                                                    ) {
+                                                        Ok(body) => {
+                                                            let data = serde_json::json!({
+                                                                "data" : crate::common::combine_values(&mut event, &body.input),
+                                                                "allowed_hosts": body.allowed_hosts
+                                                            });
 
-                                            let workflow_index =
-                                                state_manager.new_workflow(0, "hello");
-                                            let _ = wasmtime_wasi_module::run_workflow(
-                                                state_manager,
-                                                logger,
-                                                data_value,
-                                                body.wasm,
-                                                workflow_index,
-                                                false,
-                                            );
+                                                            let data_value =
+                                                                serde_json::to_value(data.clone())
+                                                                    .map_err(|err| {
+                                                                        Box::new(AppError::new(
+                                                                            format!(
+                                                                        "Error converting data to JSON: {}",
+                                                                            err
+                                                                        ),
+                                                                        ))
+                                                                    })?;
+
+                                                            let workflow_index = state_manager
+                                                                .new_workflow(0, "hello");
+
+                                                            let _ =
+                                                                wasmtime_wasi_module::run_workflow(
+                                                                    state_manager,
+                                                                    logger,
+                                                                    data_value,
+                                                                    body.wasm,
+                                                                    workflow_index,
+                                                                    false,
+                                                                );
+                                                        }
+                                                        Err(e) => logger.error(&e.to_string()),
+                                                    }
+                                                }
+                                                Err(e) => logger.error(&e.to_string()),
+                                            }
                                         }
                                         Err(e) => logger.error(&e.to_string()),
                                     }
                                 }
                             }
-                            Err(e) => logger.error(&e.to_string()),
+                            Err(err) => {
+                                let body = std::str::from_utf8(&body).unwrap();
+
+                                if body == "{\"sync\":true}" {
+                                    logger.info("Syncing Successful");
+                                    is_synced = true;
+                                } else {
+                                    return Err(err.into());
+                                }
+                            }
                         }
                     }
                     RecvMsg::ErrorResponse(message) => {
-                        return Err(Box::new(AppError::new(message)))
+                        return Err(AppError::new(message).into());
                     }
                     _ => {}
                 }

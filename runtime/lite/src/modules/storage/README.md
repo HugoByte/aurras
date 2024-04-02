@@ -2,7 +2,7 @@
 
 Storing the entire runtime state refers to saving all the data and context associated with a program's execution at runtime.
 
-This will provide the operations like set, get, delete, modify for the other modules. Where Storage interface lets other modules to interact with the Db.
+This will provide operations like set, get, delete, and modify for the other modules. Where the Storage interface lets other modules interact with the Db.
 
 The `CoreStorage` module implements the `Storage` trait to interact with a `RocksDB` database.
 

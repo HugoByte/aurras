@@ -106,28 +106,22 @@ async fn main() {
 
 use std::io::{Read, Write};
 
-enum Result {
-    Ok(String),
-    Err(String),
-}
-
 fn handle_client(
     mut stream: TcpStream,
     ctx: Arc<Mutex<dyn Ctx>>,
     channel_invite_tx: std::sync::mpsc::Sender<String>,
-) -> Result {
+) {
     let logger = CoreLogger::new(Some("./ssb-consumer.log"));
     let mut buffer = Vec::new();
     if let Err(err) = stream.read_to_end(&mut buffer) {
         logger.error(&format!("Error reading data: {}", err));
-        return Result::Err(format!("Error reading data: {}", err));
     };
 
     let body = match serde_json::from_slice::<RequestBody>(&buffer) {
         Ok(body) => body,
         Err(err) => {
             logger.error(&format!("Error deserialising request body: {}", err));
-            return Result::Err(format!("Error deserialising request body: {}", err));
+            return;
         }
     };
 
@@ -135,7 +129,7 @@ fn handle_client(
         Ok(ctx) => ctx,
         Err(err) => {
             logger.error(&format!("Error acquiring lock on context: {}", err));
-            return Result::Err(format!("Error acquiring lock on context: {}", err));
+            return;
         }
     };
 
@@ -150,10 +144,7 @@ fn handle_client(
                 "Error retrieving follow list from database: {}",
                 err
             ));
-            return Result::Err(format!(
-                "Error retrieving follow list from database: {}",
-                err
-            ));
+            return;
         }
     };
 
@@ -165,14 +156,9 @@ fn handle_client(
                 list.push(body.pub_id.clone());
                 if let Err(err) = channel_invite_tx.send(body.invite.clone()) {
                     logger.error(&format!("Error sending invite: {}", err));
-                    return Result::Err(format!("Error sending invite: {}", err));
                 }
                 if let Err(err) = db.insert_value(FOLLOW_LIST_KEY, list) {
                     logger.error(&format!(
-                        "Error inserting follow list into database: {}",
-                        err
-                    ));
-                    return Result::Err(format!(
                         "Error inserting follow list into database: {}",
                         err
                     ));
@@ -184,14 +170,12 @@ fn handle_client(
             if let Err(err) = channel_invite_tx.send(body.invite.clone()) {
                 logger.info(&format!("Error sending the invite {}", err));
                 eprintln!("Error sending invite: {}", err);
-                return Result::Err(format!("Error sending invite: {}", err));
             }
             if let Err(err) = db.insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()]) {
                 logger.info(&format!(
                     "Error inserting follow list into database: {}",
                     err
                 ));
-                return Result::Err(format!("Error inserting follow list into database:{}", err));
             }
 
             logger.info(&format!("Following the publisher {}", body.pub_id));
@@ -200,7 +184,6 @@ fn handle_client(
 
     if let Err(err) = db.insert_value(&body.pub_id.clone(), body) {
         logger.info(&format!("Error inserting data into database: {}", err));
-        return Result::Err(format!("Error inserting data in to database:{}", err));
     }
     logger.info("Data inserted successfully");
 
@@ -210,5 +193,5 @@ fn handle_client(
         .write_all(response.as_bytes())
         .expect("Error writing response");
 
-    Result::Ok(response.to_string())
+    
 }
