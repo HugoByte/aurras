@@ -170,9 +170,9 @@ impl Client {
         Ok(responses)
     }
 
-    pub async fn accept_invite(&mut self, invite_code: &str) -> Result<Vec<String>> {
+    pub async fn accept_invite(&mut self, invite_code: &str) -> Result<Vec<Feed>> {
         let req_id = self.api.invite_use_req_send(invite_code).await?;
-        let responses = self.get_responses(req_id, invite_create).await?;
+        let responses = self.get_async(req_id, invite_accept_res_parse).await?;
         Ok(responses)
     }
 

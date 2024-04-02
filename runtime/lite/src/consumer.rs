@@ -60,7 +60,6 @@ async fn main() {
             .await
             .unwrap();
         while let Some(msg) = channel_invite_rx.recv().await {
-            println!("Received: {}", msg);
             let _res = client.accept_invite(&msg).await;
         }
     });
