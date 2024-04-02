@@ -7,12 +7,10 @@ use runtime::{
         RequestBody,
     },
     constants::DEFAULT_CONSUMER_SECRET_DIR,
-    kuska_ssb_client::client::AppError,
-    logger::{self, CoreLogger},
+    logger::{CoreLogger},
     modules::kuska_ssb_client::client::Client,
     state_manager::GlobalState,
-    storage::{CoreStorage, Storage},
-    Ctx, Logger,
+    storage::{CoreStorage, Storage}, Ctx, Logger,
 };
 use std::{
     net::{TcpListener, TcpStream},
@@ -192,6 +190,4 @@ fn handle_client(
     stream
         .write_all(response.as_bytes())
         .expect("Error writing response");
-
-    
 }
