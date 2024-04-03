@@ -7,7 +7,7 @@ pub struct RequestBody {
     pub wasm: Vec<u8>,
     pub invite: String,
     pub pub_id: String,
-    pub allowed_hosts : Option<Vec<String>>,
+    pub allowed_hosts: Option<Vec<String>>,
     pub input: Value,
 }
 

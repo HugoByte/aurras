@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    modules::{logger::Logger, storage::Storage, wasmtime_wasi_module},
+    modules::{logger::Logger, storage::Storage, wasmtime_wasi_module, state_manager::traits::GlobalStateManager},
     Ctx,
 };
 
@@ -81,9 +81,9 @@ impl Client {
 
         let server_pk =
             ed25519::PublicKey::from_slice(&base64::decode(&server_pk)?).expect("bad public key");
-        let server_ipport = format!("{}:{}", ip, port);
+        let server_ip_port = format!("{}:{}", ip, port);
 
-        let mut socket = TcpStream::connect(server_ipport).await?;
+        let mut socket = TcpStream::connect(server_ip_port).await?;
 
         let handshake =
             handshake_client(&mut socket, ssb_net_id(), pk, sk.clone(), server_pk).await?;
@@ -164,15 +164,15 @@ impl Client {
         Ok(())
     }
 
-    pub async fn create_invite(&mut self) -> Result<Vec<String>> {
+    pub async fn create_invite(&mut self) -> Result<String> {
         let req_id = self.api.invite_create_req_send(1).await?;
-        let responses = self.get_responses(req_id, invite_create).await?;
+        let responses = self.get_async(req_id, invite_create).await?;
         Ok(responses)
     }
 
-    pub async fn accept_invite(&mut self, invite_code: &str) -> Result<Vec<String>> {
+    pub async fn accept_invite(&mut self, invite_code: &str) -> Result<Vec<Feed>> {
         let req_id = self.api.invite_use_req_send(invite_code).await?;
-        let responses = self.get_responses(req_id, invite_create).await?;
+        let responses = self.get_async(req_id, invite_accept_res_parse).await?;
         Ok(responses)
     }
 
@@ -225,6 +225,7 @@ impl Client {
             let ctx = ctx.lock().unwrap();
             let db = ctx.get_db();
             let logger = ctx.get_logger();
+            let mut state_manager = ctx.get_state_manager();
 
             if id == req_no {
                 match msg {
@@ -243,19 +244,27 @@ impl Client {
                                                 Ok(mut event) => {
                                                     logger.info(&format!("Event: {:#?}", event));
 
-                                                    match db.get(&x.mentions.unwrap()[0].link) {
+                                                    match db.get_request_body(
+                                                        &x.mentions.unwrap()[0].link,
+                                                    ) {
                                                         Ok(body) => {
                                                             let data = serde_json::json!({
                                                                 "data" : crate::common::combine_values(&mut event, &body.input),
                                                                 "allowed_hosts": body.allowed_hosts
                                                             });
+
+                                                            let workflow_index = state_manager
+                                                                .new_workflow(0, "hello");
+
                                                             let _ =
                                                                 wasmtime_wasi_module::run_workflow(
+                                                                    state_manager,
+                                                                    logger,
                                                                     serde_json::to_value(data)
                                                                         .unwrap(),
                                                                     body.wasm,
-                                                                    0,
-                                                                    "hello",
+                                                                    workflow_index,
+                                                                    false,
                                                                 );
                                                         }
                                                         Err(e) => logger.error(&e.to_string()),

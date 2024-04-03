@@ -67,7 +67,8 @@ features = [
 ]
 
 [dependencies.test_util]
-path = '../../workflow/test_util'
+git = "https://github.com/HugoByte/aurras.git"
+branch = "aurras-runtime-lite-dev"
 
 [dev-dependencies]
 subxt = '0.34.0'
