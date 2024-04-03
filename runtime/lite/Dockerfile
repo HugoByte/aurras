@@ -27,5 +27,7 @@ ENV HEALING_ACTION RESTART
 EXPOSE 8008
 EXPOSE 8080
  
+RUN chmod +x ./run.sh
+ 
 # Start the ssb-server in the background  
-ENTRYPOINT ["/bin/sh", "-c", "./entrypoint.sh" ]
+ENTRYPOINT ["/bin/sh", "-c", "./run.sh" ]
