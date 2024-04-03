@@ -6,7 +6,7 @@ services:
     image: docker.io/ahdinosaur/ssb-pub:latest
     
     ports:
-      - "8013:8008" # Map container port 8088 to host port 8081
+      - "8014:8008" # Map container port 8088 to host port 8081
     # Mount a volume named pub-1-data to container's /data
     volumes:
       - type: bind
@@ -17,12 +17,6 @@ services:
     # entrypoint: ["ssb-server", "start"]
     command: "start"
     restart: always
-
-  consumer:
-    image: kkshanith/ssb-server
-    ports:
-      - "8014:8008" # Map container port 8088 to host port 
-    restart: on-failure
     
   producer:
     image: kkshanith/ssb-server

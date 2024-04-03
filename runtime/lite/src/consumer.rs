@@ -33,8 +33,11 @@ async fn main() {
 
     let context = Arc::new(Mutex::new(Context::new(logger.clone(), db, state_manager)));
 
-    let secret = std::env::var("CONSUMER_SECRET")
-        .unwrap_or_else(|_| DEFAULT_CONSUMER_SECRET_DIR.to_string());
+    let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
+        let home_dir = dirs::home_dir().unwrap();
+        std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+    });
+
     let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
     let ip = std::env::var("CONSUMER_IP").unwrap_or(DEFAULT_CONSUMER_IP.to_string());
     let mut file = async_std::fs::File::open(secret).await.unwrap();
