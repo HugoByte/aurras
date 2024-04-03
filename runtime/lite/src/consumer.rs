@@ -11,7 +11,7 @@ use runtime::{
     modules::kuska_ssb_client::client::Client,
     state_manager::GlobalState,
     storage::{CoreStorage, Storage},
-    AppError, Ctx, Logger,
+    AppError, Ctx, Logger, RuntimeError,
 };
 use std::{
     net::{TcpListener, TcpStream},
@@ -115,8 +115,17 @@ async fn handle_client(
     mut stream: TcpStream,
     ctx: Arc<Mutex<dyn Ctx>>,
     channel_invite_tx: tokio::sync::mpsc::Sender<String>,
-) {
-    let logger = CoreLogger::new(Some("./ssb-consumer.log"));
+) -> Result<(), RuntimeError> {
+    let ctx = match ctx.lock() {
+        Ok(ctx) => ctx,
+        Err(err) => {
+            return Err(RuntimeError::Custom(
+                "Error acquiring the context lock".to_string(),
+            ))
+        }
+    };
+    let logger = ctx.get_logger().clone();
+
     let mut buffer = Vec::new();
     if let Err(err) = stream.read_to_end(&mut buffer) {
         logger.error(&format!("Error reading data: {}", err));
@@ -126,19 +135,12 @@ async fn handle_client(
         Ok(body) => body,
         Err(err) => {
             logger.error(&format!("Error deserialising request body: {}", err));
-            return;
+            return Err(RuntimeError::Custom(
+                "Error deserialising the request body".to_string(),
+            ));
         }
     };
 
-    let ctx = match ctx.lock() {
-        Ok(ctx) => ctx,
-        Err(err) => {
-            logger.error(&format!("Error acquiring lock on context: {}", err));
-            return;
-        }
-    };
-
-    let logger = ctx.get_logger().clone();
     logger.info("Data Deserialized");
     let db = ctx.get_db();
 
@@ -149,7 +151,9 @@ async fn handle_client(
                 "Error retrieving follow list from database: {}",
                 err
             ));
-            return;
+            return Err(RuntimeError::Custom(
+                "Error in retrieving thr list from the dataabse".to_string(),
+            ));
         }
     };
 
@@ -196,4 +200,5 @@ async fn handle_client(
     stream
         .write_all(response.as_bytes())
         .expect("Error writing response");
+    Ok(())
 }
