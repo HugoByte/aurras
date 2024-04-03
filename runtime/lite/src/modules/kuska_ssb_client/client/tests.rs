@@ -1,10 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::common::constants::{
-        DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, DEFAULT_CONSUMER_SECRET_DIR,
-        DEFAULT_PRODUCER_IP, DEFAULT_PRODUCER_PORT, DEFAULT_PRODUCER_SECRET_DIR,
+        DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, DEFAULT_PRODUCER_IP, DEFAULT_PRODUCER_PORT,
     };
-    use crate::constants::{DEFAULT_PUB_IP, DEFAULT_PUB_PORT, DEFAULT_PUB_SECRET_DIR};
+    use crate::constants::{DEFAULT_PUB_IP, DEFAULT_PUB_PORT};
     use crate::modules::kuska_ssb_client::client::Client;
     use dotenv::dotenv;
     use kuska_ssb::keystore::read_patchwork_config;
@@ -23,7 +22,8 @@ mod tests {
         dbg!(std::env::current_dir().unwrap());
 
         let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
-            DEFAULT_CONSUMER_SECRET_DIR.to_string()
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port =
             std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
@@ -41,7 +41,8 @@ mod tests {
         dotenv().ok();
 
         let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
-            DEFAULT_CONSUMER_SECRET_DIR.to_string()
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port =
             std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
@@ -60,7 +61,8 @@ mod tests {
         dotenv().ok();
 
         let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
-            DEFAULT_CONSUMER_SECRET_DIR.to_string()
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port =
             std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
@@ -84,7 +86,8 @@ mod tests {
         dotenv().ok();
 
         let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
-            DEFAULT_CONSUMER_SECRET_DIR.to_string()
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port =
             std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
@@ -108,7 +111,8 @@ mod tests {
         dotenv().ok();
 
         let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
-            DEFAULT_CONSUMER_SECRET_DIR.to_string()
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port =
             std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
@@ -157,7 +161,8 @@ mod tests {
         dotenv().ok();
 
         let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
-            DEFAULT_CONSUMER_SECRET_DIR.to_string()
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port =
             std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
@@ -178,7 +183,8 @@ mod tests {
         dotenv().ok();
 
         let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
-            DEFAULT_CONSUMER_SECRET_DIR.to_string()
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port =
             std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
@@ -198,7 +204,8 @@ mod tests {
         dotenv().ok();
 
         let secret = std::env::var("PRODUCER_SECRET").unwrap_or_else(|_| {
-            DEFAULT_PRODUCER_SECRET_DIR.to_string()
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port =
             std::env::var("PRODUCER_PORT").unwrap_or_else(|_| DEFAULT_PRODUCER_PORT.to_string());
@@ -247,7 +254,8 @@ mod tests {
         dotenv().ok();
 
         let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
-            DEFAULT_CONSUMER_SECRET_DIR.to_string()
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let ssb_port =
             std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
@@ -330,7 +338,8 @@ mod tests {
     async fn test_create_invite() {
         dotenv::dotenv().ok();
         let secret = std::env::var("PUB_SECRET").unwrap_or_else(|_| {
-            DEFAULT_PUB_SECRET_DIR.to_string()
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
         let port = std::env::var("PUB_PORT").unwrap_or_else(|_| DEFAULT_PUB_PORT.to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
