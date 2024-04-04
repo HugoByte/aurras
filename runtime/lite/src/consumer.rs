@@ -12,7 +12,7 @@ use runtime::{
     storage::{CoreStorage, Storage},
     AppError, Ctx, Logger, RuntimeError,
 };
-use subxt::ext::futures::future::err;
+
 use std::{
     net::{TcpListener, TcpStream},
     sync::{Arc, Mutex},
