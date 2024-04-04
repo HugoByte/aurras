@@ -31,7 +31,6 @@ pub enum RuntimeError {
     AppError(AppError),
     RocksDB(RocksDBError),
     Io(io::Error),
-    Custom(String),
     Serde(serde_json::Error),
 }
 
@@ -52,7 +51,6 @@ impl From<RuntimeError> for io::Error {
         match error {
             RuntimeError::RocksDB(e) => io::Error::new(io::ErrorKind::Other, e),
             RuntimeError::Io(e) => e,
-            RuntimeError::Custom(e) => io::Error::new(io::ErrorKind::Other, e),
             RuntimeError::AppError(e) => io::Error::new(io::ErrorKind::Other, e),
             RuntimeError::Serde(e) => io::Error::new(io::ErrorKind::Other, e),
         }
@@ -65,7 +63,6 @@ impl std::fmt::Display for RuntimeError {
             RuntimeError::AppError(e) => write!(f, "Kusaka SSB Client Error: {}", e),
             RuntimeError::RocksDB(e) => write!(f, "Rocksdb error: {}", e),
             RuntimeError::Io(e) => write!(f, "Io error : {}", e),
-            RuntimeError::Custom(msg) => write!(f, "Custom error: {}", msg),
             RuntimeError::Serde(error) => write!(f, "Custom error: {}", error),
         }
     }

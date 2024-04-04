@@ -306,13 +306,13 @@ impl Client {
                                                                     false,
                                                                 );
                                                         }
-                                                        Err(e) => logger.error(&e.to_string()),
+                                                        Err(e) => logger.trace(&e.to_string()),
                                                     }
                                                 }
-                                                Err(e) => logger.error(&e.to_string()),
+                                                Err(e) => logger.trace(&e.to_string()),
                                             }
                                         }
-                                        Err(e) => logger.error(&e.to_string()),
+                                        Err(e) => logger.trace(&e.to_string()),
                                     }
                                 }
                             }

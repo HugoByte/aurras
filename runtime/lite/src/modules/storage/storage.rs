@@ -11,6 +11,7 @@
 /// which represents a connection to a RocksDB database. This property is used to interact with the
 /// underlying database for storing and retrieving data as defined in the `Storage` trait implementation
 use super::traits::Storage;
+use crate::AppError;
 use crate::RuntimeError;
 use rocksdb::DB;
 use serde::Serialize;
@@ -34,7 +35,11 @@ impl Storage for CoreStorage {
         let datastore = self.db.get(key)?;
         let data = match datastore {
             Some(ivec) => ivec.to_vec(),
-            None => return Err(RuntimeError::Custom("Data not found".to_string())),
+            None => {
+                return Err(RuntimeError::AppError(AppError::new(
+                    "Data not found".to_string(),
+                )))
+            }
         };
         Ok(data)
     }
@@ -114,24 +119,27 @@ impl Storage for CoreStorage {
         key: &str,
         value: crate::common::RequestBody,
     ) -> Result<(), RuntimeError> {
-        let bytes = serde_json::to_vec(&value).map_err(|e| RuntimeError::Custom(e.to_string()))?;
+        let bytes = serde_json::to_vec(&value)
+            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
         self.db
             .put(key, bytes)
-            .map_err(|e| RuntimeError::Custom(e.to_string()))
+            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))
     }
 
     fn get_request_body(&self, key: &str) -> Result<crate::common::RequestBody, RuntimeError> {
         let res = self
             .db
             .get(key)
-            .map_err(|e| RuntimeError::Custom(e.to_string()))?;
+            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
         match res {
             Some(bytes) => {
                 let value = serde_json::from_slice(&bytes)
-                    .map_err(|e| RuntimeError::Custom(e.to_string()))?;
+                    .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
                 Ok(value)
             }
-            None => Err(RuntimeError::Custom("Data not found".to_string())),
+            None => Err(RuntimeError::AppError(AppError::new(
+                "Data not found".to_string(),
+            ))),
         }
     }
 
@@ -142,20 +150,21 @@ impl Storage for CoreStorage {
         let res = self
             .db
             .get(key)
-            .map_err(|e| RuntimeError::Custom(e.to_string()))?;
+            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
         match res {
             Some(bytes) => {
                 let value = serde_json::from_slice(&bytes)
-                    .map_err(|e| RuntimeError::Custom(e.to_string()))?;
+                    .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
                 Ok(Some(value))
             }
             None => Ok(None),
         }
     }
     fn insert_value<T: Serialize>(&self, key: &str, value: T) -> Result<(), RuntimeError> {
-        let bytes = serde_json::to_vec(&value).map_err(|e| RuntimeError::Custom(e.to_string()))?;
+        let bytes = serde_json::to_vec(&value)
+            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
         self.db
             .put(key, bytes)
-            .map_err(|e| RuntimeError::Custom(e.to_string()))
+            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))
     }
 }

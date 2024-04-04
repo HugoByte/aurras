@@ -22,7 +22,7 @@ use runtime::Context;
 
 use dotenv::dotenv;
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), RuntimeError> {
     dotenv().ok();
     let db = CoreStorage::new("runtime-db").unwrap();
     let logger = CoreLogger::new(Some("./ssb-consumer.log"));
@@ -43,12 +43,18 @@ async fn main() {
             Ok(key) => key,
             Err(err) => {
                 logger.error(&format!("Error reading Patchwork config: {}", err));
-                return;
+                return Err(RuntimeError::AppError(AppError::new(format!(
+                    "Error reading Patchwork config: {}",
+                    err
+                ))));
             }
         },
         Err(err) => {
             logger.error(&format!("Error opening the secret file: {}", err));
-            return;
+            return Err(RuntimeError::AppError(AppError::new(format!(
+                "Error opening the secret file: {}",
+                err
+            ))));
         }
     };
 
@@ -59,24 +65,24 @@ async fn main() {
         Ok(client) => client,
         Err(err) => {
             logger.critical(&format!("Error creating SSB client: {}", err));
-            return;
+            return Err(RuntimeError::AppError(AppError::new(format!(
+                "Error creating SSB client: {}",
+                err
+            ))));
         }
     };
 
     // Spawn the SSB feed listener task
     tokio::spawn(async move {
-        match client
+        client
             .live_feed_with_execution_of_workflow(true, ssb_context.clone())
             .await
-        {
-            Ok(_) => Ok(()),
-            Err(err) => {
-                return Err(Box::new(AppError::new(format!(
+            .map_err(|err| {
+                Box::new(RuntimeError::AppError(AppError::new(format!(
                     "Error in live feed with execution of workflow: {}",
                     err
-                ))));
-            }
-        }
+                ))))
+            })
     });
 
     tokio::spawn(async move {
@@ -98,7 +104,7 @@ async fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                handle_client(stream, context.clone(), channel_invite_tx.clone()).await;
+                handle_client(stream, context.clone(), channel_invite_tx.clone()).await?;
             }
             Err(e) => {
                 logger.error(&format!("Error accepting connection: {}", e));
@@ -108,6 +114,7 @@ async fn main() {
 
     // Keep the main thread alive
     tokio::signal::ctrl_c().await.unwrap();
+    Ok(())
 }
 
 use std::io::{Read, Write};
@@ -117,7 +124,7 @@ async fn handle_client(
     ctx: Arc<Mutex<dyn Ctx>>,
     channel_invite_tx: tokio::sync::mpsc::Sender<String>,
 ) -> Result<(), RuntimeError> {
-    let ctx =  ctx.lock()?;
+    let ctx = ctx.lock()?;
 
     let logger = ctx.get_logger().clone();
 
@@ -126,23 +133,12 @@ async fn handle_client(
         logger.error(&format!("Error reading data: {}", err));
     };
 
-    let body =  serde_json::from_slice::<RequestBody>(&buffer)?;
+    let body = serde_json::from_slice::<RequestBody>(&buffer)?;
 
     logger.info("Data Deserialized");
     let db = ctx.get_db();
 
-    let get_follow_list = match db.get_value::<Vec<String>>(FOLLOW_LIST_KEY) {
-        Ok(value) => value,
-        Err(err) => {
-            logger.error(&format!(
-                "Error retrieving follow list from database: {}",
-                err
-            ));
-            return Err(RuntimeError::Custom(
-                "Error in retrieving thr list from the dataabse".to_string(),
-            ));
-        }
-    };
+    let get_follow_list = db.get_value::<Vec<String>>(FOLLOW_LIST_KEY)?;
 
     match get_follow_list {
         Some(mut list) => {
@@ -151,35 +147,18 @@ async fn handle_client(
             } else {
                 list.push(body.pub_id.clone());
                 let _res = channel_invite_tx.send(body.invite.clone()).await;
-                if let Err(err) = db.insert_value(FOLLOW_LIST_KEY, list).map_err(|err| {
-                    logger.info(&format!("Error inserting data into database: {}", err));
-                    err
-                }) {
-                    logger.info(&format!("Error inserting data into database: {}", err));
-                } else {
-                    logger.info(&format!("Following the publisher {}", body.pub_id));
-                }
+                db.insert_value(FOLLOW_LIST_KEY, list)?;
+                logger.info(&format!("Following the publisher {}", body.pub_id));
             }
         }
         None => {
             let _res = channel_invite_tx.send(body.invite.clone()).await;
-            if let Err(err) = db
-                .insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()])
-                .map_err(|err| {
-                    logger.info(&format!("Error inserting data into database: {}", err));
-                    err
-                })
-            {
-                logger.info(&format!("Error inserting data into database: {}", err));
-            } else {
-                logger.info(&format!("Following the publisher {}", body.pub_id));
-            }
+            db.insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()])?;
+            logger.info(&format!("Following the publisher {}", body.pub_id));
         }
     }
 
-    if let Err(err) = db.insert_value(&body.pub_id.clone(), body) {
-        logger.info(&format!("Error inserting data into database: {}", err));
-    }
+    db.insert_value(&body.pub_id.clone(), body)?;
     logger.info("Data inserted successfully");
 
     // Respond to the client (optional)
