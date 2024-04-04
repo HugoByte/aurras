@@ -12,6 +12,7 @@ use runtime::{
     storage::{CoreStorage, Storage},
     AppError, Ctx, Logger, RuntimeError,
 };
+use subxt::ext::futures::future::err;
 use std::{
     net::{TcpListener, TcpStream},
     sync::{Arc, Mutex},
@@ -38,23 +39,16 @@ async fn main() -> Result<(), RuntimeError> {
     });
     let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
     let ip = std::env::var("CONSUMER_IP").unwrap_or(DEFAULT_CONSUMER_IP.to_string());
-    let key = match async_std::fs::File::open(&secret).await {
-        Ok(mut file) => match read_patchwork_config(&mut file).await {
-            Ok(key) => key,
-            Err(err) => {
-                logger.error(&format!("Error reading Patchwork config: {}", err));
+    
+    let mut file = async_std::fs::File::open(secret).await?;
+    let key = match read_patchwork_config(&mut file).await{
+        Ok(key) => key,
+        Err(err) => {
+            logger.error(&format!("Error reading Patchwork config: {}", err));
                 return Err(RuntimeError::AppError(AppError::new(format!(
                     "Error reading Patchwork config: {}",
                     err
                 ))));
-            }
-        },
-        Err(err) => {
-            logger.error(&format!("Error opening the secret file: {}", err));
-            return Err(RuntimeError::AppError(AppError::new(format!(
-                "Error opening the secret file: {}",
-                err
-            ))));
         }
     };
 
