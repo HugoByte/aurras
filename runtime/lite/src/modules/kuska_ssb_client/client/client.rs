@@ -1,7 +1,10 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    modules::{logger::Logger, storage::Storage, wasmtime_wasi_module, state_manager::traits::GlobalStateManager},
+    modules::{
+        logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
+        wasmtime_wasi_module,
+    },
     Ctx,
 };
 
@@ -238,25 +241,36 @@ impl Client {
                                     match serde_json::from_value::<Post>(
                                         display.value.get("content").unwrap().clone(),
                                     ) {
-                                        Ok(x) => {
-                                            match serde_json::from_str::<serde_json::Value>(&x.text)
-                                            {
+                                        Ok(content) => {
+                                            match serde_json::from_str::<serde_json::Value>(
+                                                &content.text,
+                                            ) {
                                                 Ok(mut event) => {
-                                                    logger.info(&format!("Event: {:#?}", event));
+                                                    let pub_id = &content.mentions.unwrap()[0].link;
 
-                                                    match db.get_request_body(
-                                                        &x.mentions.unwrap()[0].link,
-                                                    ) {
-                                                        Ok(body) => {
-                                                            let data = serde_json::json!({
-                                                                "data" : crate::common::combine_values(&mut event, &body.input),
-                                                                "allowed_hosts": body.allowed_hosts
-                                                            });
+                                                    let offset = db
+                                                        .get_value::<f64>(&format!(
+                                                            "{}offset",
+                                                            pub_id
+                                                        ))
+                                                        .unwrap()
+                                                        .unwrap();
 
-                                                            let workflow_index = state_manager
-                                                                .new_workflow(0, "hello");
+                                                    if offset < display.rts.unwrap() {
+                                                        logger
+                                                            .info(&format!("Event: {:#?}", event));
 
-                                                            let _ =
+                                                        match db.get_request_body(pub_id) {
+                                                            Ok(body) => {
+                                                                let data = serde_json::json!({
+                                                                    "data" : crate::common::combine_values(&mut event, &body.input),
+                                                                    "allowed_hosts": body.allowed_hosts
+                                                                });
+
+                                                                let workflow_index = state_manager
+                                                                    .new_workflow(0, "hello");
+
+                                                                let _ =
                                                                 wasmtime_wasi_module::run_workflow(
                                                                     state_manager,
                                                                     logger,
@@ -266,8 +280,15 @@ impl Client {
                                                                     workflow_index,
                                                                     false,
                                                                 );
+                                                            }
+                                                            Err(e) => logger.error(&e.to_string()),
                                                         }
-                                                        Err(e) => logger.error(&e.to_string()),
+
+                                                        db.insert_value(
+                                                            &format!("{}offset", pub_id),
+                                                            display.timestamp,
+                                                        )
+                                                        .unwrap();
                                                     }
                                                 }
                                                 Err(e) => logger.error(&e.to_string()),

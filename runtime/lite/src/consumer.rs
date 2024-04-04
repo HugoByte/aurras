@@ -1,4 +1,4 @@
-use kuska_ssb::keystore::read_patchwork_config;
+use kuska_ssb::keystore::{read_patchwork_config, OwnedIdentity};
 use runtime::{
     common::{
         constants::{
@@ -16,6 +16,8 @@ use std::{
     net::{TcpListener, TcpStream},
     sync::{Arc, Mutex},
 };
+
+use std::io::{Read, Write};
 
 pub use runtime;
 use runtime::Context;
@@ -42,7 +44,6 @@ async fn main() {
     let key = read_patchwork_config(&mut file).await.unwrap();
 
     let ssb_context = context.clone();
-    let (channel_invite_tx, mut channel_invite_rx) = tokio::sync::mpsc::channel::<String>(10);
 
     let mut client = Client::new(Some(key.clone()), ip.clone(), port.clone())
         .await
@@ -56,22 +57,20 @@ async fn main() {
             .unwrap();
     });
 
-    tokio::spawn(async move {
-        let mut client = Client::new(Some(key.clone()), ip.clone(), port.clone())
-            .await
-            .unwrap();
-        while let Some(msg) = channel_invite_rx.recv().await {
-            let _res = client.accept_invite(&msg).await;
-        }
-    });
-
     // Spawn the HTTP server task
     let listener = TcpListener::bind(HTTP_SERVER_ADDRESS).expect("Failed to bind to address");
     logger.info(&format!("Listening on {HTTP_SERVER_ADDRESS}..."));
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                handle_client(stream, context.clone(), channel_invite_tx.clone()).await;
+                handle_client(
+                    stream,
+                    context.clone(),
+                    key.clone(),
+                    ip.clone(),
+                    port.clone(),
+                )
+                .await;
             }
             Err(e) => {
                 logger.error(&format!("Error accepting connection: {}", e));
@@ -83,13 +82,15 @@ async fn main() {
     tokio::signal::ctrl_c().await.unwrap();
 }
 
-use std::io::{Read, Write};
-
 async fn handle_client(
     mut stream: TcpStream,
     ctx: Arc<Mutex<dyn Ctx>>,
-    channel_invite_tx: tokio::sync::mpsc::Sender<String>,
+    key: OwnedIdentity,
+    ip: String,
+    port: String,
 ) {
+    let mut client = Client::new(Some(key), ip, port).await.unwrap();
+
     let mut buffer = Vec::new();
     stream.read_to_end(&mut buffer).expect("Error reading data");
 
@@ -107,13 +108,24 @@ async fn handle_client(
                 logger.info("Already Following the publisher");
             } else {
                 list.push(body.pub_id.clone());
-                let _res = channel_invite_tx.send(body.invite.clone()).await;
+                let connect_feed = client.accept_invite(&body.invite).await.unwrap();
+                let timestamp = connect_feed[1].value.get("timestamp").unwrap();
+                db.insert_value(&format!("{}offset", body.pub_id), timestamp)
+                    .unwrap();
+
+                dbg!(&connect_feed[1].timestamp);
+
                 db.insert_value(FOLLOW_LIST_KEY, list).unwrap();
                 logger.info(&format!("Following the publisher {}", body.pub_id));
             }
         }
         None => {
-            let _res = channel_invite_tx.send(body.invite.clone()).await;
+            let connect_feed = client.accept_invite(&body.invite).await.unwrap();
+            let timestamp = connect_feed[1].value.get("timestamp").unwrap();
+
+            db.insert_value(&format!("{}offset", body.pub_id), timestamp)
+                .unwrap();
+
             db.insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()])
                 .unwrap();
             logger.info(&format!("Following the publisher {}", body.pub_id));
