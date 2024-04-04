@@ -25,7 +25,7 @@ use dotenv::dotenv;
 #[tokio::main]
 async fn main() -> Result<(), RuntimeError> {
     dotenv().ok();
-    let db = CoreStorage::new("runtime-db").unwrap();
+    let db = CoreStorage::new("runtime-db")?;
     let logger = CoreLogger::new(Some("./ssb-consumer.log"));
     let state_manager = GlobalState::new(logger.clone());
 
@@ -39,18 +39,14 @@ async fn main() -> Result<(), RuntimeError> {
     });
     let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
     let ip = std::env::var("CONSUMER_IP").unwrap_or(DEFAULT_CONSUMER_IP.to_string());
-    
+
     let mut file = async_std::fs::File::open(secret).await?;
-    let key = match read_patchwork_config(&mut file).await{
-        Ok(key) => key,
-        Err(err) => {
-            logger.error(&format!("Error reading Patchwork config: {}", err));
-                return Err(RuntimeError::AppError(AppError::new(format!(
-                    "Error reading Patchwork config: {}",
-                    err
-                ))));
-        }
-    };
+    let key = read_patchwork_config(&mut file).await.map_err(|err| {
+        RuntimeError::AppError(AppError::new(format!(
+            "Error reading Runtime config: {}",
+            err
+        )))
+    })?;
 
     let ssb_context = context.clone();
     let (channel_invite_tx, mut channel_invite_rx) = tokio::sync::mpsc::channel::<String>(10);

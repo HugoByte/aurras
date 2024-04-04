@@ -234,15 +234,7 @@ impl Client {
         let mut is_synced = false;
 
         loop {
-            let (id, msg) = match self.rpc_reader.recv().await {
-                Ok((id, msg)) => (id, msg),
-                Err(err) => {
-                    return Err(Box::new(AppError::new(format!(
-                        "Error receiving message: {}",
-                        err
-                    ))));
-                }
-            };
+            let (id, msg) =  self.rpc_reader.recv().await?;
             let ctx = match ctx.lock() {
                 Ok(ctx) => ctx,
                 Err(err) => {
