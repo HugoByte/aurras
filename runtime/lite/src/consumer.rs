@@ -117,14 +117,8 @@ async fn handle_client(
     ctx: Arc<Mutex<dyn Ctx>>,
     channel_invite_tx: tokio::sync::mpsc::Sender<String>,
 ) -> Result<(), RuntimeError> {
-    let ctx = match ctx.lock() {
-        Ok(ctx) => ctx,
-        Err(err) => {
-            return Err(RuntimeError::Custom(
-                "Error acquiring the context lock".to_string(),
-            ))
-        }
-    };
+    let ctx =  ctx.lock()?;
+
     let logger = ctx.get_logger().clone();
 
     let mut buffer = Vec::new();
@@ -132,15 +126,7 @@ async fn handle_client(
         logger.error(&format!("Error reading data: {}", err));
     };
 
-    let body = match serde_json::from_slice::<RequestBody>(&buffer) {
-        Ok(body) => body,
-        Err(err) => {
-            logger.error(&format!("Error deserialising request body: {}", err));
-            return Err(RuntimeError::Custom(
-                "Error deserialising the request body".to_string(),
-            ));
-        }
-    };
+    let body =  serde_json::from_slice::<RequestBody>(&buffer)?;
 
     logger.info("Data Deserialized");
     let db = ctx.get_db();
