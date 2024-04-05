@@ -1,8 +1,11 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    modules::{logger::Logger, storage::Storage, wasmtime_wasi_module, state_manager::traits::GlobalStateManager},
-    Ctx,
+    modules::{
+        logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
+        wasmtime_wasi_module,
+    },
+    AppError, Ctx,
 };
 
 use super::*;
@@ -48,7 +51,16 @@ impl Client {
                         match display {
                             Ok(display) => response.push(display),
                             Err(err) => {
-                                let body = std::str::from_utf8(&body).unwrap();
+                                let body = match std::str::from_utf8(&body) {
+                                    Ok(body_str) => body_str,
+                                    Err(err) => {
+                                        eprintln!(
+                                            "Error converting response body to string: {}",
+                                            err
+                                        );
+                                        continue;
+                                    }
+                                };
 
                                 if body == "{\"sync\":true}" {
                                     println!("Syncing Successful");
@@ -201,6 +213,7 @@ impl Client {
                 event: event.to_string(),
                 section: section.to_string(),
                 content: content.to_string(),
+
                 mentions,
             })
             .await?;
@@ -221,8 +234,16 @@ impl Client {
         let mut is_synced = false;
 
         loop {
-            let (id, msg) = self.rpc_reader.recv().await?;
-            let ctx = ctx.lock().unwrap();
+            let (id, msg) =  self.rpc_reader.recv().await?;
+            let ctx = match ctx.lock() {
+                Ok(ctx) => ctx,
+                Err(err) => {
+                    return Err(Box::new(AppError::new(format!(
+                        "Failed to acquire lock on context: {}",
+                        err
+                    ))));
+                }
+            };
             let db = ctx.get_db();
             let logger = ctx.get_logger();
             let mut state_manager = ctx.get_state_manager();
@@ -253,6 +274,17 @@ impl Client {
                                                                 "allowed_hosts": body.allowed_hosts
                                                             });
 
+                                                            let data_value =
+                                                                serde_json::to_value(data.clone())
+                                                                    .map_err(|err| {
+                                                                        Box::new(AppError::new(
+                                                                            format!(
+                                                                        "Error converting data to JSON: {}",
+                                                                            err
+                                                                        ),
+                                                                        ))
+                                                                    })?;
+
                                                             let workflow_index = state_manager
                                                                 .new_workflow(0, "hello");
 
@@ -260,20 +292,19 @@ impl Client {
                                                                 wasmtime_wasi_module::run_workflow(
                                                                     state_manager,
                                                                     logger,
-                                                                    serde_json::to_value(data)
-                                                                        .unwrap(),
+                                                                    data_value,
                                                                     body.wasm,
                                                                     workflow_index,
                                                                     false,
                                                                 );
                                                         }
-                                                        Err(e) => logger.error(&e.to_string()),
+                                                        Err(e) => logger.trace(&e.to_string()),
                                                     }
                                                 }
-                                                Err(e) => logger.error(&e.to_string()),
+                                                Err(e) => logger.trace(&e.to_string()),
                                             }
                                         }
-                                        Err(e) => logger.error(&e.to_string()),
+                                        Err(e) => logger.trace(&e.to_string()),
                                     }
                                 }
                             }
@@ -284,13 +315,13 @@ impl Client {
                                     logger.info("Syncing Successful");
                                     is_synced = true;
                                 } else {
-                                    return std::result::Result::Err(err);
+                                    return Err(err.into());
                                 }
                             }
                         }
                     }
                     RecvMsg::ErrorResponse(message) => {
-                        return std::result::Result::Err(Box::new(AppError::new(message)))
+                        return Err(AppError::new(message).into());
                     }
                     _ => {}
                 }
