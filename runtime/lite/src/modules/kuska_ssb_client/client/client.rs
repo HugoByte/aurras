@@ -1,11 +1,14 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use crate::{
     modules::{
         logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
         wasmtime_wasi_module,
     },
-    AppError, Ctx,
+    AppError, Ctx, RequestBody,
 };
 
 use super::*;
@@ -17,8 +20,8 @@ use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Eq)]
 pub struct EventId {
-    event: Value,          
-    sender_address: String, 
+    event: Value,
+    sender_address: String,
 }
 
 impl Hash for EventId {
@@ -249,13 +252,13 @@ impl Client {
         Ok(())
     }
 
-    async fn execute_workflow_by_event(
+    pub async fn execute_workflow_by_event(
         &mut self,
         req_no: RequestNo,
         ctx: Arc<Mutex<dyn Ctx>>,
     ) -> Result<()> {
-        let mut processed_events = HashSet::new();
         let mut is_synced = false;
+        let mut workflow_map: HashMap<String, RequestBody> = HashMap::new();
 
         loop {
             let (id, msg) = self.rpc_reader.recv().await?;
@@ -288,54 +291,51 @@ impl Client {
                                             {
                                                 Ok(mut event) => {
                                                     logger.info(&format!("Event: {:#?}", event));
-                                                    let sender_address =
-                                                        x.mentions.as_ref().unwrap()[0]
-                                                            .link
-                                                            .clone();
-                                                    let event_id = EventId {
-                                                        event: event.clone(),
-                                                        sender_address,
-                                                    };
+                                                    let pub_id = &x.mentions.unwrap()[0].link;
 
-                                                    if !processed_events.contains(&event_id) {
-                                                        processed_events.insert(event_id.clone());
-
-                                                        match db.get_request_body(
-                                                            &x.mentions.unwrap()[0].link,
-                                                        ) {
+                                                    // Check if workflow data exists for this pub_id
+                                                    if !workflow_map.contains_key(pub_id) {
+                                                        match db.get_request_body(pub_id) {
                                                             Ok(body) => {
-                                                                let data = serde_json::json!({
-                                                                    "data" : crate::common::combine_values(&mut event, &body.input),
-                                                                    "allowed_hosts": body.allowed_hosts
-                                                                });
-
-                                                                let data_value =
-                                                                serde_json::to_value(data.clone())
-                                                                    .map_err(|err| {
-                                                                        Box::new(AppError::new(
-                                                                            format!(
-                                                                        "Error converting data to JSON: {}",
-                                                                            err
-                                                                        ),
-                                                                        ))
-                                                                    })?;
-
-                                                                let workflow_index = state_manager
-                                                                    .new_workflow(0, "hello");
-
-                                                                let _ =
-                                                                wasmtime_wasi_module::run_workflow(
-                                                                    state_manager,
-                                                                    logger,
-                                                                    data_value,
-                                                                    body.wasm,
-                                                                    workflow_index,
-                                                                    false,
+                                                                workflow_map.insert(
+                                                                    pub_id.to_string(),
+                                                                    body,
                                                                 );
                                                             }
                                                             Err(e) => logger.trace(&e.to_string()),
                                                         }
                                                     }
+
+                                                    // Get workflow data for this pub_id
+                                                    let workflow_data =
+                                                        workflow_map.get(pub_id).unwrap();
+
+                                                    let data = serde_json::json!({
+                                                        "data": crate::common::combine_values(&mut event, &workflow_data.input),
+                                                        "allowed_hosts": workflow_data.allowed_hosts
+                                                    });
+
+                                                    let data_value = serde_json::to_value(
+                                                        data.clone(),
+                                                    )
+                                                    .map_err(|err| {
+                                                        Box::new(AppError::new(format!(
+                                                            "Error converting data to JSON: {}",
+                                                            err
+                                                        )))
+                                                    })?;
+
+                                                    let workflow_index =
+                                                        state_manager.new_workflow(0, "hello");
+
+                                                    let _ = wasmtime_wasi_module::run_workflow(
+                                                        state_manager,
+                                                        logger,
+                                                        data_value,
+                                                        workflow_data.wasm.clone(),
+                                                        workflow_index,
+                                                        false,
+                                                    );
                                                 }
                                                 Err(e) => logger.trace(&e.to_string()),
                                             }
