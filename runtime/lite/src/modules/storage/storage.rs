@@ -11,50 +11,10 @@
 /// which represents a connection to a RocksDB database. This property is used to interact with the
 /// underlying database for storing and retrieving data as defined in the `Storage` trait implementation
 use super::traits::Storage;
-use rocksdb::Error as RocksDBError;
+use crate::AppError;
+use crate::RuntimeError;
 use rocksdb::DB;
 use serde::Serialize;
-use std::{fmt, io};
-
-
-#[derive(Debug)]
-pub enum CustomError {
-    RocksDB(RocksDBError),
-    Io(io::Error),
-    Custom(String),
-}
-
-impl From<RocksDBError> for CustomError {
-    fn from(error: RocksDBError) -> Self {
-        CustomError::RocksDB(error)
-    }
-}
-
-impl From<io::Error> for CustomError {
-    fn from(error: io::Error) -> Self {
-        CustomError::Io(error)
-    }
-}
-
-impl From<CustomError> for io::Error {
-    fn from(error: CustomError) -> Self {
-        match error {
-            CustomError::RocksDB(e) => io::Error::new(io::ErrorKind::Other, e),
-            CustomError::Io(e) => e,
-            CustomError::Custom(e) => io::Error::new(io::ErrorKind::Other, e),
-        }
-    }
-}
-
-impl fmt::Display for CustomError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            CustomError::RocksDB(e) => write!(f, "RocksDBError: {}", e),
-            CustomError::Io(e) => write!(f, "IoError: {}", e),
-            CustomError::Custom(msg) => write!(f, "Custom error: {}", msg),
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct CoreStorage {
@@ -68,8 +28,8 @@ pub struct CoreStorage {
 // }
 
 impl CoreStorage {
-    pub fn new(db_name: &str) -> Result<Self, CustomError> {
-        let db = DB::open_default(db_name).map_err(CustomError::RocksDB)?;
+    pub fn new(db_name: &str) -> Result<Self, RuntimeError> {
+        let db = DB::open_default(db_name).map_err(RuntimeError::RocksDB)?;
         Ok(Self { db })
     }
 }
@@ -77,11 +37,15 @@ impl CoreStorage {
 impl Storage for CoreStorage {
     /// The `fn get_data(&self, key: &str) -> Result<Vec<u8>, Error>` function in the `CoreStorage`
     /// struct is implementing the `get_data` method defined in the `Storage` trait.
-    fn get_data(&self, key: &str) -> Result<Vec<u8>, CustomError> {
+    fn get_data(&self, key: &str) -> Result<Vec<u8>, RuntimeError> {
         let datastore = self.db.get(key)?;
         let data = match datastore {
             Some(ivec) => ivec.to_vec(),
-            None => return Err(CustomError::Custom("Data not found".to_string())),
+            None => {
+                return Err(RuntimeError::AppError(AppError::new(
+                    "Data not found".to_string(),
+                )))
+            }
         };
         Ok(data)
     }
@@ -101,7 +65,7 @@ impl Storage for CoreStorage {
     /// Returns:
     ///
     /// The `set_data` function returns a `Result<(), Error>`.
-    fn set_data(&self, key: &str, value: Vec<u8>) -> Result<(), CustomError> {
+    fn set_data(&self, key: &str, value: Vec<u8>) -> Result<(), RuntimeError> {
         self.db.put(key, value)?;
         Ok(())
     }
@@ -120,7 +84,7 @@ impl Storage for CoreStorage {
     /// Returns:
     ///
     /// The `modify_data` function is returning a `Result<(), Error>`.
-    fn modify_data(&self, key: &str, value: Vec<u8>) -> Result<(), CustomError> {
+    fn modify_data(&self, key: &str, value: Vec<u8>) -> Result<(), RuntimeError> {
         let _existing_data = self.get_data(key)?;
         self.db.put(key, value)?;
 
@@ -139,7 +103,7 @@ impl Storage for CoreStorage {
     /// The `delete_data` function is returning a `Result<(), Error>`. This means that it returns a
     /// `Result` enum where the success case contains an empty tuple `()` and the error case contains an
     /// `Error`.
-    fn delete_data(&self, key: &str) -> Result<(), CustomError> {
+    fn delete_data(&self, key: &str) -> Result<(), RuntimeError> {
         self.db.delete(key)?;
         Ok(())
     }
@@ -156,49 +120,57 @@ impl Storage for CoreStorage {
     /// The `get_wasm` function returns a `Result` containing either a vector of `u8` bytes or an
     /// `Error`.
 
-    fn insert_request_body(&self, key: &str, value: crate::common::RequestBody) -> Result<(), CustomError> {
-        let bytes = serde_json::to_vec(&value).map_err(|e| CustomError::Custom(e.to_string()))?;
+    fn insert_request_body(
+        &self,
+        key: &str,
+        value: crate::common::RequestBody,
+    ) -> Result<(), RuntimeError> {
+        let bytes = serde_json::to_vec(&value)
+            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
         self.db
             .put(key, bytes)
-            .map_err(|e| CustomError::Custom(e.to_string()))
+            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))
     }
 
-    fn get_request_body(&self, key: &str) -> Result<crate::common::RequestBody, CustomError> {
+    fn get_request_body(&self, key: &str) -> Result<crate::common::RequestBody, RuntimeError> {
         let res = self
             .db
             .get(key)
-            .map_err(|e| CustomError::Custom(e.to_string()))?;
+            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
         match res {
             Some(bytes) => {
                 let value = serde_json::from_slice(&bytes)
-                    .map_err(|e| CustomError::Custom(e.to_string()))?;
+                    .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
                 Ok(value)
             }
-            None => Err(CustomError::Custom("Data not found".to_string())),
+            None => Err(RuntimeError::AppError(AppError::new(
+                "Data not found".to_string(),
+            ))),
         }
     }
 
     fn get_value<T: serde::de::DeserializeOwned>(
         &self,
         key: &str,
-    ) -> Result<Option<T>, CustomError> {
+    ) -> Result<Option<T>, RuntimeError> {
         let res = self
             .db
             .get(key)
-            .map_err(|e| CustomError::Custom(e.to_string()))?;
+            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
         match res {
             Some(bytes) => {
                 let value = serde_json::from_slice(&bytes)
-                    .map_err(|e| CustomError::Custom(e.to_string()))?;
+                    .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
                 Ok(Some(value))
             }
             None => Ok(None),
         }
     }
-    fn insert_value<T: Serialize>(&self, key: &str, value: T) -> Result<(), CustomError> {
-        let bytes = serde_json::to_vec(&value).map_err(|e| CustomError::Custom(e.to_string()))?;
+    fn insert_value<T: Serialize>(&self, key: &str, value: T) -> Result<(), RuntimeError> {
+        let bytes = serde_json::to_vec(&value)
+            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
         self.db
             .put(key, bytes)
-            .map_err(|e| CustomError::Custom(e.to_string()))
+            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))
     }
 }
