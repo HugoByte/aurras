@@ -112,9 +112,6 @@ async fn handle_client(
                 let timestamp = connect_feed[1].value.get("timestamp").unwrap();
                 db.insert_value(&format!("{}offset", body.pub_id), timestamp)
                     .unwrap();
-
-                dbg!(&connect_feed[1].timestamp);
-
                 db.insert_value(FOLLOW_LIST_KEY, list).unwrap();
                 logger.info(&format!("Following the publisher {}", body.pub_id));
             }
