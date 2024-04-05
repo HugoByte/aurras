@@ -17,8 +17,8 @@ use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Eq)]
 pub struct EventId {
-    event: Value,           // Store event data
-    sender_address: String, // Store sender's wallet address
+    event: Value,          
+    sender_address: String, 
 }
 
 impl Hash for EventId {
@@ -27,9 +27,8 @@ impl Hash for EventId {
         match serde_json::to_string(&self.event) {
             Ok(event_string) => event_string.hash(state),
             Err(err) => {
-                // Handle serialization error (e.g., log the error)
+                // Handle serialization error
                 eprintln!("Error serializing event data: {}", err);
-                // You can choose to return or panic here based on your requirements.
             }
         }
     }
