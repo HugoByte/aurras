@@ -1,13 +1,18 @@
 use kuska_ssb::keystore::read_patchwork_config;
 use runtime::{
-    common::RequestBody,
+    common::{
+        constants::{
+            DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, FOLLOW_LIST_KEY, HTTP_SERVER_ADDRESS,
+        },
+        RequestBody,
+    },
     logger::CoreLogger,
     modules::kuska_ssb_client::client::Client,
+    state_manager::GlobalState,
     storage::{CoreStorage, Storage},
     Ctx, Logger,
 };
 use std::{
-    borrow::{Borrow, BorrowMut},
     net::{TcpListener, TcpStream},
     sync::{Arc, Mutex},
 };
@@ -19,44 +24,60 @@ use dotenv::dotenv;
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let db = CoreStorage::new("runtime").unwrap();
-    let context = Arc::new(Mutex::new(Context::new(
-        CoreLogger::new(Some("./workflow")),
-        db,
-    )));
+    let db = CoreStorage::new("runtime-db").unwrap();
+    let logger = CoreLogger::new(Some("./ssb-consumer.log"));
+    let state_manager = GlobalState::new(logger.clone());
 
-    let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+    logger.info("starting consumer...");
+
+    let context = Arc::new(Mutex::new(Context::new(logger.clone(), db, state_manager)));
+
+    let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
         let home_dir = dirs::home_dir().unwrap();
         std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
     });
-    let port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
+    let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
+    let ip = std::env::var("CONSUMER_IP").unwrap_or(DEFAULT_CONSUMER_IP.to_string());
     let mut file = async_std::fs::File::open(secret).await.unwrap();
     let key = read_patchwork_config(&mut file).await.unwrap();
 
     let ssb_context = context.clone();
+    let (channel_invite_tx, mut channel_invite_rx) = tokio::sync::mpsc::channel::<String>(10);
+
+    let mut client = Client::new(Some(key.clone()), ip.clone(), port.clone())
+        .await
+        .unwrap();
+
     // Spawn the SSB feed listener task
-    tokio::spawn(async {
-        let mut client = Client::new(Some(key), "0.0.0.0".to_string(), port)
+    tokio::spawn(async move {
+        client
+            .live_feed_with_execution_of_workflow(true, ssb_context.clone())
             .await
             .unwrap();
-        client.live_feed_with_execution_of_workflow(true, ssb_context).await.unwrap();
+    });
+
+    tokio::spawn(async move {
+        let mut client = Client::new(Some(key.clone()), ip.clone(), port.clone())
+            .await
+            .unwrap();
+        while let Some(msg) = channel_invite_rx.recv().await {
+            let _res = client.accept_invite(&msg).await;
+        }
     });
 
     // Spawn the HTTP server task
-    tokio::spawn(async move {
-        let listener = TcpListener::bind("127.0.0.1:8080").expect("Failed to bind to address");
-        println!("Listening on 127.0.0.1:8080...");
-        for stream in listener.incoming() {
-            match stream {
-                Ok(stream) => {
-                    handle_client(stream, context.clone());
-                }
-                Err(e) => {
-                    eprintln!("Error accepting connection: {}", e);
-                }
+    let listener = TcpListener::bind(HTTP_SERVER_ADDRESS).expect("Failed to bind to address");
+    logger.info(&format!("Listening on {HTTP_SERVER_ADDRESS}..."));
+    for stream in listener.incoming() {
+        match stream {
+            Ok(stream) => {
+                handle_client(stream, context.clone(), channel_invite_tx.clone()).await;
+            }
+            Err(e) => {
+                logger.error(&format!("Error accepting connection: {}", e));
             }
         }
-    });
+    }
 
     // Keep the main thread alive
     tokio::signal::ctrl_c().await.unwrap();
@@ -64,7 +85,11 @@ async fn main() {
 
 use std::io::{Read, Write};
 
-fn handle_client(mut stream: TcpStream, ctx: Arc<Mutex<dyn Ctx>>) {
+async fn handle_client(
+    mut stream: TcpStream,
+    ctx: Arc<Mutex<dyn Ctx>>,
+    channel_invite_tx: tokio::sync::mpsc::Sender<String>,
+) {
     let mut buffer = Vec::new();
     stream.read_to_end(&mut buffer).expect("Error reading data");
 
@@ -72,13 +97,32 @@ fn handle_client(mut stream: TcpStream, ctx: Arc<Mutex<dyn Ctx>>) {
 
     let ctx = ctx.lock().unwrap();
     let logger = ctx.get_logger().clone();
-    logger.info("Data Deseriased");
+    logger.info("Data Deserialized");
     let db = ctx.get_db();
 
-    db.insert(&body.pub_id.clone(), body).unwrap();
+    let get_follow_list = db.get_value::<Vec<String>>(FOLLOW_LIST_KEY).unwrap();
+    match get_follow_list {
+        Some(mut list) => {
+            if list.contains(&body.pub_id) {
+                logger.info("Already Following the publisher");
+            } else {
+                list.push(body.pub_id.clone());
+                let _res = channel_invite_tx.send(body.invite.clone()).await;
+                db.insert_value(FOLLOW_LIST_KEY, list).unwrap();
+                logger.info(&format!("Following the publisher {}", body.pub_id));
+            }
+        }
+        None => {
+            let _res = channel_invite_tx.send(body.invite.clone()).await;
+            db.insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()])
+                .unwrap();
+            logger.info(&format!("Following the publisher {}", body.pub_id));
+        }
+    }
+
+    db.insert_value(&body.pub_id.clone(), body).unwrap();
     logger.info("Data inserted successfully");
-    
-    // println!("Received data: {:?}", body);
+
     // Respond to the client (optional)
     let response = "Data received!";
     stream

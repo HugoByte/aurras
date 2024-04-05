@@ -3,7 +3,6 @@ extern crate kuska_ssb;
 
 extern crate base64;
 
-
 use std::fmt::Debug;
 
 use async_std::net::TcpStream;
@@ -16,11 +15,12 @@ use kuska_ssb::{
     api::ApiCaller,
     crypto::ed25519::PublicKey,
     discovery::ssb_net_id,
-    feed::{is_privatebox, privatebox_decipher, Feed, Message},
+    feed::{Feed, Message},
     keystore::{from_patchwork_local, OwnedIdentity},
     rpc::{RecvMsg, RequestNo, RpcReader, RpcWriter},
 };
 
+#[allow(clippy::module_inception)]
 mod client;
 mod errors;
 mod response_parser;

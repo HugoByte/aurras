@@ -1,11 +1,16 @@
 #[cfg(test)]
 mod tests {
-    use crate::modules::kuska_ssb_client::client::{types, Client, UserConfig};
+    use crate::common::constants::{
+        DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, DEFAULT_PRODUCER_IP, DEFAULT_PRODUCER_PORT,
+    };
+    use crate::constants::{DEFAULT_PUB_IP, DEFAULT_PUB_PORT};
+    use crate::modules::kuska_ssb_client::client::Client;
     use dotenv::dotenv;
     use kuska_ssb::keystore::read_patchwork_config;
+    use serde_json::{json, Value};
 
     // ssb-server should keep running for testing
-    /* configure the env variables such as ssb-sercret file path, ip and port where
+    /* configure the env variables such as ssb-secret file path, ip and port where
     ssb-server is running in .env file */
     // use `cargo test -- --ignored` command for testing
 
@@ -14,12 +19,16 @@ mod tests {
     async fn test_client() {
         dotenv().ok();
 
-        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+        dbg!(std::env::current_dir().unwrap());
+
+        let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
             let home_dir = dirs::home_dir().unwrap();
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
-        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_port =
+            std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
+        let ssb_ip =
+            std::env::var("CONSUMER_IP").unwrap_or_else(|_| DEFAULT_CONSUMER_IP.to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -31,12 +40,14 @@ mod tests {
     async fn test_client_with_config() {
         dotenv().ok();
 
-        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+        let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
             let home_dir = dirs::home_dir().unwrap();
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
-        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_port =
+            std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
+        let ssb_ip =
+            std::env::var("CONSUMER_IP").unwrap_or_else(|_| DEFAULT_CONSUMER_IP.to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -49,12 +60,14 @@ mod tests {
     async fn test_get_secret_key() {
         dotenv().ok();
 
-        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+        let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
             let home_dir = dirs::home_dir().unwrap();
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
-        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_port =
+            std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
+        let ssb_ip =
+            std::env::var("CONSUMER_IP").unwrap_or_else(|_| DEFAULT_CONSUMER_IP.to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -72,12 +85,14 @@ mod tests {
     async fn test_whoami() {
         dotenv().ok();
 
-        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+        let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
             let home_dir = dirs::home_dir().unwrap();
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
-        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_port =
+            std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
+        let ssb_ip =
+            std::env::var("CONSUMER_IP").unwrap_or_else(|_| DEFAULT_CONSUMER_IP.to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -93,15 +108,16 @@ mod tests {
     #[ignore]
     // returns list of feeds posted by particular user
     async fn test_user_method() {
-        use types::Event;
         dotenv().ok();
 
-        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+        let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
             let home_dir = dirs::home_dir().unwrap();
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
-        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_port =
+            std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
+        let ssb_ip =
+            std::env::var("CONSUMER_IP").unwrap_or_else(|_| DEFAULT_CONSUMER_IP.to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -109,10 +125,10 @@ mod tests {
             .await
             .unwrap();
 
-        let old_event = Event {
-            id: "1".to_string(),
-            body: "hello_world_event".to_string(),
-        };
+        let old_event = json!({
+            "id": "1".to_string(),
+            "body": "hello_world_event".to_string(),
+        });
 
         let value = serde_json::to_value(old_event.clone()).unwrap();
 
@@ -121,7 +137,7 @@ mod tests {
         // wait for server to publish
         async_std::task::sleep(std::time::Duration::from_secs(1)).await;
 
-        let feed = client.user(false, &config.id).await.unwrap();
+        let feed = client.get_feed_by_user(false, &config.id).await.unwrap();
 
         let event = feed.last().unwrap().value.clone();
         let message = event.get("content").unwrap();
@@ -134,8 +150,7 @@ mod tests {
         let feed_text = message.get("text").unwrap();
         let feed_text: String = serde_json::from_value(feed_text.clone()).unwrap();
 
-        let new_event: Event = serde_json::from_str(&feed_text).unwrap();
-        // let event = serde_json::from_value(event).unwrap();
+        let new_event: Value = serde_json::from_str(&feed_text).unwrap();
         assert_eq!(old_event, new_event);
     }
 
@@ -145,12 +160,14 @@ mod tests {
     async fn test_close() {
         dotenv().ok();
 
-        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+        let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
             let home_dir = dirs::home_dir().unwrap();
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
-        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_port =
+            std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
+        let ssb_ip =
+            std::env::var("CONSUMER_IP").unwrap_or_else(|_| DEFAULT_CONSUMER_IP.to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -165,12 +182,14 @@ mod tests {
     async fn test_feed() {
         dotenv().ok();
 
-        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+        let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
             let home_dir = dirs::home_dir().unwrap();
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
-        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_port =
+            std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
+        let ssb_ip =
+            std::env::var("CONSUMER_IP").unwrap_or_else(|_| DEFAULT_CONSUMER_IP.to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -184,12 +203,14 @@ mod tests {
     async fn test_publish() {
         dotenv().ok();
 
-        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+        let secret = std::env::var("PRODUCER_SECRET").unwrap_or_else(|_| {
             let home_dir = dirs::home_dir().unwrap();
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
-        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_port =
+            std::env::var("PRODUCER_PORT").unwrap_or_else(|_| DEFAULT_PRODUCER_PORT.to_string());
+        let ssb_ip =
+            std::env::var("PRODUCER_IP").unwrap_or_else(|_| DEFAULT_PRODUCER_IP.to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
@@ -197,10 +218,10 @@ mod tests {
         let feed = client.feed(false).await.unwrap();
         let prev_len = feed.len();
 
-        let old_event = types::Event {
-            id: "1".to_string(),
-            body: "hello_world_event".to_string(),
-        };
+        let old_event = json!({
+            "id": "1".to_string(),
+            "body": "hello_world_event".to_string(),
+        });
 
         let value = serde_json::to_value(old_event.clone()).unwrap();
 
@@ -223,23 +244,23 @@ mod tests {
         let feed_text = message.get("text").unwrap();
         let feed_text: String = serde_json::from_value(feed_text.clone()).unwrap();
 
-        let new_event: types::Event = serde_json::from_str(&feed_text).unwrap();
+        let new_event: Value = serde_json::from_str(&feed_text).unwrap();
         assert_eq!(old_event, new_event);
     }
 
     #[tokio::test]
     #[ignore]
     async fn test_event_subscription() {
-        use super::*;
-
         dotenv().ok();
 
-        let secret = std::env::var("SECRET").unwrap_or_else(|_| {
+        let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
             let home_dir = dirs::home_dir().unwrap();
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
         });
-        let ssb_port = std::env::var("PORT").unwrap_or_else(|_| 8008.to_string());
-        let ssb_ip = std::env::var("IP").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let ssb_port =
+            std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
+        let ssb_ip =
+            std::env::var("CONSUMER_IP").unwrap_or_else(|_| DEFAULT_CONSUMER_IP.to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
         //TODO
@@ -270,11 +291,6 @@ mod tests {
             let block = block.unwrap();
 
             let block_number = block.header().number;
-            let block_hash = block.hash();
-
-            println!("Block #{block_number}:");
-            println!("  Hash: {block_hash}");
-            println!("  Extrinsics:");
 
             if block_number == 10 {
                 let dest = dev::bob().public_key().into();
@@ -301,7 +317,6 @@ mod tests {
                         let from_addr = transfer.from.to_string();
                         let to_addr = transfer.from.to_string();
                         let amount = transfer.amount;
-                        println!("{from_addr:?}");
 
                         let value = format!(
                             "{{\"from\":\"{}\",\"to\":\"{}\",\"amount\":\"{}\"}}",
@@ -316,5 +331,23 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[async_std::test]
+    #[ignore]
+    async fn test_create_invite() {
+        dotenv::dotenv().ok();
+        let secret = std::env::var("PUB_SECRET").unwrap_or_else(|_| {
+            let home_dir = dirs::home_dir().unwrap();
+            std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+        });
+        let port = std::env::var("PUB_PORT").unwrap_or_else(|_| DEFAULT_PUB_PORT.to_string());
+        let mut file = async_std::fs::File::open(secret).await.unwrap();
+        let key = read_patchwork_config(&mut file).await.unwrap();
+        let mut client = Client::new(Some(key), DEFAULT_PUB_IP.to_string(), port)
+            .await
+            .unwrap();
+        let res = client.create_invite().await;
+        assert!(res.is_ok())
     }
 }
