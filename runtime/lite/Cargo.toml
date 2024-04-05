@@ -67,8 +67,9 @@ features = [
 ]
 
 [dependencies.test_util]
-git = "https://github.com/HugoByte/aurras.git"
+git = "https://github.com/HugoByte/aurras"
 branch = "aurras-runtime-lite-dev"
+package = "test_util"
 
 [dev-dependencies]
 subxt = '0.34.0'
