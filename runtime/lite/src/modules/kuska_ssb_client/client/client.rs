@@ -10,6 +10,30 @@ use crate::{
 
 use super::*;
 use kuska_ssb::api::dto::content::{Mention, Post};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Eq)]
+pub struct EventId {
+    event: Value,           // Store event data
+    sender_address: String, // Store sender's wallet address
+}
+
+impl Hash for EventId {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.sender_address.hash(state);
+        match serde_json::to_string(&self.event) {
+            Ok(event_string) => event_string.hash(state),
+            Err(err) => {
+                // Handle serialization error (e.g., log the error)
+                eprintln!("Error serializing event data: {}", err);
+                // You can choose to return or panic here based on your requirements.
+            }
+        }
+    }
+}
 
 impl Client {
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
@@ -231,10 +255,11 @@ impl Client {
         req_no: RequestNo,
         ctx: Arc<Mutex<dyn Ctx>>,
     ) -> Result<()> {
+        let mut processed_events = HashSet::new();
         let mut is_synced = false;
 
         loop {
-            let (id, msg) =  self.rpc_reader.recv().await?;
+            let (id, msg) = self.rpc_reader.recv().await?;
             let ctx = match ctx.lock() {
                 Ok(ctx) => ctx,
                 Err(err) => {
@@ -264,17 +289,28 @@ impl Client {
                                             {
                                                 Ok(mut event) => {
                                                     logger.info(&format!("Event: {:#?}", event));
+                                                    let sender_address =
+                                                        x.mentions.as_ref().unwrap()[0]
+                                                            .link
+                                                            .clone();
+                                                    let event_id = EventId {
+                                                        event: event.clone(),
+                                                        sender_address,
+                                                    };
 
-                                                    match db.get_request_body(
-                                                        &x.mentions.unwrap()[0].link,
-                                                    ) {
-                                                        Ok(body) => {
-                                                            let data = serde_json::json!({
-                                                                "data" : crate::common::combine_values(&mut event, &body.input),
-                                                                "allowed_hosts": body.allowed_hosts
-                                                            });
+                                                    if !processed_events.contains(&event_id) {
+                                                        processed_events.insert(event_id.clone());
 
-                                                            let data_value =
+                                                        match db.get_request_body(
+                                                            &x.mentions.unwrap()[0].link,
+                                                        ) {
+                                                            Ok(body) => {
+                                                                let data = serde_json::json!({
+                                                                    "data" : crate::common::combine_values(&mut event, &body.input),
+                                                                    "allowed_hosts": body.allowed_hosts
+                                                                });
+
+                                                                let data_value =
                                                                 serde_json::to_value(data.clone())
                                                                     .map_err(|err| {
                                                                         Box::new(AppError::new(
@@ -285,10 +321,10 @@ impl Client {
                                                                         ))
                                                                     })?;
 
-                                                            let workflow_index = state_manager
-                                                                .new_workflow(0, "hello");
+                                                                let workflow_index = state_manager
+                                                                    .new_workflow(0, "hello");
 
-                                                            let _ =
+                                                                let _ =
                                                                 wasmtime_wasi_module::run_workflow(
                                                                     state_manager,
                                                                     logger,
@@ -297,8 +333,9 @@ impl Client {
                                                                     workflow_index,
                                                                     false,
                                                                 );
+                                                            }
+                                                            Err(e) => logger.trace(&e.to_string()),
                                                         }
-                                                        Err(e) => logger.trace(&e.to_string()),
                                                     }
                                                 }
                                                 Err(e) => logger.trace(&e.to_string()),
