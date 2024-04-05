@@ -5,7 +5,7 @@ use crate::{
         logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
         wasmtime_wasi_module,
     },
-    Ctx,
+    AppError, Ctx,
 };
 
 use super::*;
@@ -51,7 +51,16 @@ impl Client {
                         match display {
                             Ok(display) => response.push(display),
                             Err(err) => {
-                                let body = std::str::from_utf8(&body).unwrap();
+                                let body = match std::str::from_utf8(&body) {
+                                    Ok(body_str) => body_str,
+                                    Err(err) => {
+                                        eprintln!(
+                                            "Error converting response body to string: {}",
+                                            err
+                                        );
+                                        continue;
+                                    }
+                                };
 
                                 if body == "{\"sync\":true}" {
                                     println!("Syncing Successful");
@@ -204,6 +213,7 @@ impl Client {
                 event: event.to_string(),
                 section: section.to_string(),
                 content: content.to_string(),
+
                 mentions,
             })
             .await?;
@@ -225,7 +235,15 @@ impl Client {
 
         loop {
             let (id, msg) = self.rpc_reader.recv().await?;
-            let ctx = ctx.lock().unwrap();
+            let ctx = match ctx.lock() {
+                Ok(ctx) => ctx,
+                Err(err) => {
+                    return Err(Box::new(AppError::new(format!(
+                        "Failed to acquire lock on context: {}",
+                        err
+                    ))));
+                }
+            };
             let db = ctx.get_db();
             let logger = ctx.get_logger();
             let mut state_manager = ctx.get_state_manager();
@@ -246,17 +264,43 @@ impl Client {
                                                 &content.text,
                                             ) {
                                                 Ok(mut event) => {
-                                                    let pub_id = &content.mentions.unwrap()[0].link;
+                                                    let mentions =
+                                                        &content.mentions.unwrap_or(vec![]);
+
+                                                    let pub_id = if !mentions.is_empty() {
+                                                        &mentions[0].link
+                                                    } else {
+                                                        return Err(Box::new(AppError::new(
+                                                            format!("No mentions found in the event: {}", event)
+                                                        )));
+                                                    };
 
                                                     let offset = db
                                                         .get_value::<f64>(&format!(
                                                             "{}offset",
                                                             pub_id
                                                         ))
-                                                        .unwrap()
-                                                        .unwrap();
+                                                        .map_err(|err| {
+                                                            Box::new(AppError::new(
+                                                                format!(
+                                                            "offset timestamp not present in the database: {}",
+                                                                err
+                                                            ),
+                                                            ))
+                                                        })?
+                                                        .unwrap_or(0.0);
 
-                                                    if offset < display.rts.unwrap() {
+                                                    let feed_rts = match display.rts {
+                                                        Some(rts) => rts,
+                                                        None => {
+                                                            return Err(Box::new(AppError::new(
+                                                                "feed received timestamp is none"
+                                                                    .to_string(),
+                                                            )))
+                                                        }
+                                                    };
+
+                                                    if offset < feed_rts {
                                                         logger
                                                             .info(&format!("Event: {:#?}", event));
 
@@ -274,8 +318,7 @@ impl Client {
                                                                 wasmtime_wasi_module::run_workflow(
                                                                     state_manager,
                                                                     logger,
-                                                                    serde_json::to_value(data)
-                                                                        .unwrap(),
+                                                                    data,
                                                                     body.wasm,
                                                                     workflow_index,
                                                                     false,
@@ -288,13 +331,22 @@ impl Client {
                                                             &format!("{}offset", pub_id),
                                                             display.timestamp,
                                                         )
-                                                        .unwrap();
+                                                        .map_err(
+                                                            |err| {
+                                                                Box::new(AppError::new(
+                                                                    format!(
+                                                                    "not able to insert offset timestamp to the database: {}",
+                                                                    err
+                                                                ),
+                                                                ))
+                                                            },
+                                                        )?;
                                                     }
                                                 }
-                                                Err(e) => logger.error(&e.to_string()),
+                                                Err(e) => logger.trace(&e.to_string()),
                                             }
                                         }
-                                        Err(e) => logger.error(&e.to_string()),
+                                        Err(e) => logger.trace(&e.to_string()),
                                     }
                                 }
                             }
@@ -305,13 +357,13 @@ impl Client {
                                     logger.info("Syncing Successful");
                                     is_synced = true;
                                 } else {
-                                    return std::result::Result::Err(err);
+                                    return Err(err);
                                 }
                             }
                         }
                     }
                     RecvMsg::ErrorResponse(message) => {
-                        return std::result::Result::Err(Box::new(AppError::new(message)))
+                        return Err(AppError::new(message).into());
                     }
                     _ => {}
                 }
