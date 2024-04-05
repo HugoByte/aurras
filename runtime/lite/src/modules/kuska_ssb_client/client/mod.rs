@@ -22,11 +22,9 @@ use kuska_ssb::{
 
 #[allow(clippy::module_inception)]
 mod client;
-mod errors;
 mod response_parser;
 
 pub use client::*;
-pub use errors::*;
 pub use response_parser::*;
 
 pub mod types;
