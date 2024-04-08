@@ -1,13 +1,15 @@
+use std::str::FromStr;
+
 use async_std::stream::StreamExt;
+use dotenv::dotenv;
+use kuska_ssb::{api::dto::content::Mention, keystore::read_patchwork_config};
+use runtime::common::constants::{DEFAULT_PRODUCER_IP, DEFAULT_PRODUCER_PORT};
+use runtime::kuska_ssb_client::client::Client;
+use runtime::logger::{CoreLogger, Logger};
 use web3::futures::StreamExt as _;
 use web3::transports::{Http, WebSocket};
 use web3::types::{FilterBuilder, Log, H160, H256};
 use web3::Web3;
-use dotenv::dotenv;
-use kuska_ssb::{api::dto::content::Mention, keystore::read_patchwork_config};
-use runtime::kuska_ssb_client::client::Client;
-use runtime::logger::{CoreLogger, Logger};
-use runtime::common::constants::{DEFAULT_PRODUCER_IP, DEFAULT_PRODUCER_PORT};
 
 #[tokio::main]
 async fn main() {
@@ -40,19 +42,54 @@ async fn main() {
     logger.info("Producer successfully started✅");
 
     // Initialize Ethereum connection
-    let transport = WebSocket::new("wss://sepolia.infura.io/ws/v3/97ce164640fd49fc84626007a30c5589").await.expect("Ethereum node connection failed");
+    let transport =
+        WebSocket::new("wss://sepolia.infura.io/ws/v3/97ce164640fd49fc84626007a30c5589")
+            .await
+            .expect("Ethereum node connection failed");
     let web3 = Web3::new(transport);
+
+    // Insert the 20-byte "from" address in hex format (prefix with 0x)
+    let from = H160::from_str("0x9A8c541540950FfdecbBD93B8999261ED4C99a6F").unwrap();
+
+    // Insert the 20-byte "to" address in hex format (prefix with 0x)
+    let to = H160::from_str("0xa7BC0FAbBc38A7CEdB68aA70C79f8Bbc5057B6Bb").unwrap();
+
+    // Build the tx object
+    let tx_object = web3::types::TransactionRequest {
+        from,
+        to: Some(to),
+        value: Some(web3::types::U256::exp10(17)), //0.1 eth
+        ..Default::default()
+    };
+
+    // Send the tx to sepolia testnet (replace with your desired network)
+    let result = web3
+        .eth()
+        .send_transaction(tx_object)
+        .await
+        .expect("error in sending");
+
+    println!("Tx succeeded with hash: {}", result);
 
     // Ethereum filter to monitor transactions
     let filter = FilterBuilder::default()
         .from_block(0.into())
-        .address(vec!["0xa86B7F9f891E23fbE7938c8d96b9dB178D5512d9".parse().unwrap()])
+        .address(vec!["0xa86B7F9f891E23fbE7938c8d96b9dB178D5512d9"
+            .parse()
+            .unwrap()])
         .build();
 
     // Subscribe to Ethereum new block headers
-    let mut subscription = web3.eth_subscribe().subscribe_new_heads().await.expect("Ethereum subscription failed");
+    let mut subscription = web3
+        .eth_subscribe()
+        .subscribe_new_heads()
+        .await
+        .expect("Ethereum subscription failed");
 
-    logger.info(&format!("Subscribed to Ethereum logs with filter: {:?}", &filter));
+    logger.info(&format!(
+        "Subscribed to Ethereum logs with filter: {:?}",
+        &filter
+    ));
 
     while let Some(log) = async_std::stream::StreamExt::next(&mut subscription).await {
         match log {
@@ -60,14 +97,20 @@ async fn main() {
                 // Extract relevant information from the log entry
                 let transaction_hash = log.author;
                 let block_number = log.hash.unwrap();
-    
+
                 // Prepare SSB message content with Ethereum log information
-                let content = Mention { link: pub_address.clone(), name: None };
-                let value = format!("{{\"transaction_hash\":\"{}\", \"block_number\":{}}}", transaction_hash, block_number);
-    
+                let content = Mention {
+                    link: pub_address.clone(),
+                    name: None,
+                };
+                let value = format!(
+                    "{{\"transaction_hash\":\"{}\", \"block_number\":{}}}",
+                    transaction_hash, block_number
+                );
+
                 // Publish the message to SSB
                 let publish_event = client.publish(&value, Some(vec![content])).await;
-                match publish_event{
+                match publish_event {
                     Ok(_) => logger.info("Successfully published Ethereum log event to SSB"),
                     Err(err) => eprintln!("Error publishing Ethereum log event to SSB: {:?}", err),
                 }
@@ -77,24 +120,4 @@ async fn main() {
         // Deliberate delay to illustrate asynchronous processing
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
     }
-
 }
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
