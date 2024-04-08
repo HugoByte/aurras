@@ -258,7 +258,6 @@ impl Client {
         ctx: Arc<Mutex<dyn Ctx>>,
     ) -> Result<()> {
         let mut is_synced = false;
-        let mut workflow_data_list: Vec<RequestBody> = Vec::new();
 
         loop {
             let (id, msg) = self.rpc_reader.recv().await?;
@@ -331,39 +330,35 @@ impl Client {
                                                         logger
                                                             .info(&format!("Event: {:#?}", event));
 
-                                                        let workflow_data = match db
-                                                            .get_request_body(pub_id)
-                                                        {
-                                                            Ok(body) => {
-                                                                workflow_data_list
-                                                                    .push(body.clone());
-                                                                body
-                                                            }
-                                                            Err(err) => {
-                                                                logger.error(&format!("Error fetching workflow data for pub_id {}: {}", pub_id, err));
-                                                                continue;
-                                                            }
-                                                        };
-
                                                         match db.get_request_body(pub_id) {
-                                                            Ok(body) => {
-                                                                let data = serde_json::json!({
-                                                                    "data" : crate::common::combine_values(&mut event, &body.input),
-                                                                    "allowed_hosts": workflow_data.allowed_hosts
-                                                                });
+                                                            Ok(mut bodies) => {
+                                                                for body in bodies.iter_mut() {
+                                                                    if &body.pub_id == pub_id {
+                                                                        let data = serde_json::json!({
+                                                                            "data" : crate::common::combine_values(&mut event, &body.input),
+                                                                            "allowed_hosts": body.allowed_hosts
+                                                                        });
 
-                                                                let workflow_index = state_manager
-                                                                    .new_workflow(0, "hello");
+                                                                        let workflow_index =
+                                                                            state_manager
+                                                                                .new_workflow(
+                                                                                    0, "hello",
+                                                                                );
 
-                                                                let _ =
-                                                                wasmtime_wasi_module::run_workflow(
-                                                                    state_manager,
-                                                                    logger,
-                                                                    data,
-                                                                    body.wasm,
-                                                                    workflow_index,
-                                                                    false,
-                                                                );
+                                                                        let _ = wasmtime_wasi_module::run_workflow(
+                                                                            state_manager,
+                                                                            logger,
+                                                                            data,
+                                                                            body.wasm.clone(),
+                                                                            workflow_index,
+                                                                            false,
+                                                                        );
+                                                                        return Ok(());
+                                                                    }
+                                                                }
+                                                                // where pub_id is not found
+                                                                logger.error(&format!("pub_id: {} not found in request bodies", pub_id));
+                                                                return Err(Box::new(AppError::new(format!("pub_id not found in request bodies"))));
                                                             }
                                                             Err(e) => logger.error(&e.to_string()),
                                                         }
