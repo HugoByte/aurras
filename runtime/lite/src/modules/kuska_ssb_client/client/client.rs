@@ -286,54 +286,89 @@ impl Client {
                                     match serde_json::from_value::<Post>(
                                         display.value.get("content").unwrap().clone(),
                                     ) {
-                                        Ok(x) => {
-                                            match serde_json::from_str::<serde_json::Value>(&x.text)
-                                            {
+                                        Ok(content) => {
+                                            match serde_json::from_str::<serde_json::Value>(
+                                                &content.text,
+                                            ) {
                                                 Ok(mut event) => {
-                                                    logger.info(&format!("Event: {:#?}", event));
-                                                    let pub_id = &x.mentions.unwrap()[0].link;
+                                                    let mentions =
+                                                        &content.mentions.unwrap_or(vec![]);
 
-                                                    let workflow_data = match db
-                                                        .get_request_body(&pub_id.to_string())
-                                                    {
-                                                        Ok(data) => {
-                                                            workflow_data_list.push(data.clone()); // Add to temporary list
-                                                            data
-                                                        }
-                                                        Err(e) => {
-                                                            logger.trace(&e.to_string());
-                                                            return Err(Box::new(AppError::new(format!(
-                                                                "Failed to handle database error: {}",
-                                                                e
-                                                            ))));
+                                                    let pub_id = if !mentions.is_empty() {
+                                                        &mentions[0].link
+                                                    } else {
+                                                        return Err(Box::new(AppError::new(
+                                                            format!("No mentions found in the event: {}", event)
+                                                        )));
+                                                    };
+
+                                                    let offset = db
+                                                        .get_value::<f64>(&format!(
+                                                            "{}offset",
+                                                            pub_id
+                                                        ))
+                                                        .map_err(|err| {
+                                                            Box::new(AppError::new(
+                                                                format!(
+                                                            "offset timestamp not present in the database: {}",
+                                                                err
+                                                            ),
+                                                            ))
+                                                        })?
+                                                        .unwrap_or(0.0);
+
+                                                    let feed_rts = match display.rts {
+                                                        Some(rts) => rts,
+                                                        None => {
+                                                            return Err(Box::new(AppError::new(
+                                                                "feed received timestamp is none"
+                                                                    .to_string(),
+                                                            )))
                                                         }
                                                     };
 
-                                                    let data = serde_json::json!({
-                                                        "data": crate::common::combine_values(&mut event, &workflow_data.input),
-                                                        "allowed_hosts": workflow_data.allowed_hosts
-                                                    });
+                                                    if offset < feed_rts {
+                                                        logger
+                                                            .info(&format!("Event: {:#?}", event));
 
-                                                    let data_value =
-                                                        serde_json::to_value(data.clone())
-                                                            .map_err(|err| {
-                                                                Box::new(AppError::new(format!(
-                                                            "Error converting data to JSON: {}",
-                                                            err
-                                                        )))
-                                                            })?;
+                                                        match db.get_request_body(pub_id) {
+                                                            Ok(body) => {
+                                                                let data = serde_json::json!({
+                                                                    "data" : crate::common::combine_values(&mut event, &body.input),
+                                                                    "allowed_hosts": body.allowed_hosts
+                                                                });
 
-                                                    let workflow_index =
-                                                        state_manager.new_workflow(0, "hello");
+                                                                let workflow_index = state_manager
+                                                                    .new_workflow(0, "hello");
 
-                                                    let _ = wasmtime_wasi_module::run_workflow(
-                                                        state_manager,
-                                                        logger,
-                                                        data_value,
-                                                        workflow_data.wasm.clone(),
-                                                        workflow_index,
-                                                        false,
-                                                    );
+                                                                let _ =
+                                                                wasmtime_wasi_module::run_workflow(
+                                                                    state_manager,
+                                                                    logger,
+                                                                    data,
+                                                                    body.wasm,
+                                                                    workflow_index,
+                                                                    false,
+                                                                );
+                                                            }
+                                                            Err(e) => logger.error(&e.to_string()),
+                                                        }
+
+                                                        db.insert_value(
+                                                            &format!("{}offset", pub_id),
+                                                            display.timestamp,
+                                                        )
+                                                        .map_err(
+                                                            |err| {
+                                                                Box::new(AppError::new(
+                                                                    format!(
+                                                                    "not able to insert offset timestamp to the database: {}",
+                                                                    err
+                                                                ),
+                                                                ))
+                                                            },
+                                                        )?;
+                                                    }
                                                 }
                                                 Err(e) => logger.trace(&e.to_string()),
                                             }
@@ -349,7 +384,7 @@ impl Client {
                                     logger.info("Syncing Successful");
                                     is_synced = true;
                                 } else {
-                                    return Err(err.into());
+                                    return Err(err);
                                 }
                             }
                         }

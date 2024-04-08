@@ -19,8 +19,6 @@ mod tests {
     async fn test_client() {
         dotenv().ok();
 
-        dbg!(std::env::current_dir().unwrap());
-
         let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
             let home_dir = dirs::home_dir().unwrap();
             std::format!("{}/.ssb/secret", home_dir.to_string_lossy())

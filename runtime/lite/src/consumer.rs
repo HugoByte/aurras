@@ -1,4 +1,4 @@
-use kuska_ssb::keystore::read_patchwork_config;
+use kuska_ssb::keystore::{read_patchwork_config, OwnedIdentity};
 use runtime::{
     common::{
         constants::{
@@ -17,6 +17,8 @@ use std::{
     net::{TcpListener, TcpStream},
     sync::{Arc, Mutex},
 };
+
+use std::io::{Read, Write};
 
 pub use runtime;
 use runtime::Context;
@@ -49,7 +51,6 @@ async fn main() -> Result<(), RuntimeError> {
     })?;
 
     let ssb_context = context.clone();
-    let (channel_invite_tx, mut channel_invite_rx) = tokio::sync::mpsc::channel::<String>(10);
 
     let mut client = match Client::new(Some(key.clone()), ip.clone(), port.clone()).await {
         Ok(client) => client,
@@ -75,26 +76,20 @@ async fn main() -> Result<(), RuntimeError> {
             })
     });
 
-    tokio::spawn(async move {
-        let mut client = match Client::new(Some(key.clone()), ip.clone(), port.clone()).await {
-            Ok(client) => client,
-            Err(err) => {
-                eprintln!("Error creating client: {}", err);
-                return; // Exit the spawned task on error
-            }
-        };
-        while let Some(msg) = channel_invite_rx.recv().await {
-            let _res = client.accept_invite(&msg).await;
-        }
-    });
-
     // Spawn the HTTP server task
     let listener = TcpListener::bind(HTTP_SERVER_ADDRESS).expect("Failed to bind to address");
     logger.info(&format!("Listening on {HTTP_SERVER_ADDRESS}..."));
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                handle_client(stream, context.clone(), channel_invite_tx.clone()).await?;
+                handle_client(
+                    stream,
+                    context.clone(),
+                    key.clone(),
+                    ip.clone(),
+                    port.clone(),
+                )
+                .await?;
             }
             Err(e) => {
                 logger.error(&format!("Error accepting connection: {}", e));
@@ -107,24 +102,28 @@ async fn main() -> Result<(), RuntimeError> {
     Ok(())
 }
 
-use std::io::{Read, Write};
-
 async fn handle_client(
     mut stream: TcpStream,
     ctx: Arc<Mutex<dyn Ctx>>,
-    channel_invite_tx: tokio::sync::mpsc::Sender<String>,
+    key: OwnedIdentity,
+    ip: String,
+    port: String,
 ) -> Result<(), RuntimeError> {
-    let ctx = ctx.lock()?;
-
-    let logger = ctx.get_logger().clone();
+    let mut client = Client::new(Some(key), ip, port).await.map_err(|err| {
+        RuntimeError::AppError(AppError::new(format!("Error creating SSB client: {}", err)))
+    })?;
 
     let mut buffer = Vec::new();
+    stream.read_to_end(&mut buffer).expect("Error reading data");
+
+    let ctx = ctx.lock()?;
+    let logger = ctx.get_logger().clone();
+
     if let Err(err) = stream.read_to_end(&mut buffer) {
         logger.error(&format!("Error reading data: {}", err));
     };
 
     let body = serde_json::from_slice::<RequestBody>(&buffer)?;
-
     logger.info("Data Deserialized");
     let db = ctx.get_db();
 
@@ -134,19 +133,31 @@ async fn handle_client(
         Some(mut list) => {
             if list.contains(&body.pub_id) {
                 logger.info("Already Following the publisher");
+                return Ok(());
             } else {
                 list.push(body.pub_id.clone());
-                let _res = channel_invite_tx.send(body.invite.clone()).await;
                 db.insert_value(FOLLOW_LIST_KEY, list)?;
-                logger.info(&format!("Following the publisher {}", body.pub_id));
             }
         }
         None => {
-            let _res = channel_invite_tx.send(body.invite.clone()).await;
             db.insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()])?;
-            logger.info(&format!("Following the publisher {}", body.pub_id));
         }
     }
+
+    let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
+        RuntimeError::AppError(AppError::new(format!("Error accepting invite: {}", err)))
+    })?;
+    let timestamp = match connect_feed[1].value.get("timestamp") {
+        Some(timestamp) => timestamp,
+        None => {
+            return Err(RuntimeError::AppError(AppError::new(format!(
+                "Error getting timestamp from the accepted invite-contact feed",
+            ))));
+        }
+    };
+
+    db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
+    logger.info(&format!("Following the publisher {}", body.pub_id));
 
     db.insert_value(&body.pub_id.clone(), body)?;
     logger.info("Data inserted successfully");
