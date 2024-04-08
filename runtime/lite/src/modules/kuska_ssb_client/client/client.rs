@@ -331,11 +331,25 @@ impl Client {
                                                         logger
                                                             .info(&format!("Event: {:#?}", event));
 
+                                                        let workflow_data = match db
+                                                            .get_request_body(pub_id)
+                                                        {
+                                                            Ok(body) => {
+                                                                workflow_data_list
+                                                                    .push(body.clone());
+                                                                body
+                                                            }
+                                                            Err(err) => {
+                                                                logger.error(&format!("Error fetching workflow data for pub_id {}: {}", pub_id, err));
+                                                                continue;
+                                                            }
+                                                        };
+
                                                         match db.get_request_body(pub_id) {
                                                             Ok(body) => {
                                                                 let data = serde_json::json!({
                                                                     "data" : crate::common::combine_values(&mut event, &body.input),
-                                                                    "allowed_hosts": body.allowed_hosts
+                                                                    "allowed_hosts": workflow_data.allowed_hosts
                                                                 });
 
                                                                 let workflow_index = state_manager
