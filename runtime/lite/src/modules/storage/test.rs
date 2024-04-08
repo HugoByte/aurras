@@ -103,6 +103,8 @@ mod tests {
             pub_id: "todo!()".to_string(),
             allowed_hosts: Some(vec!["todo!()".to_string()]),
             input: serde_json::json!({ "test": "test"}),
+            workflow_id: "1".to_string(),
+            workflow_name: "hello".to_string(),
         };
 
         let key = "test";

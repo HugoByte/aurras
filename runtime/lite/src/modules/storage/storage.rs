@@ -21,12 +21,6 @@ pub struct CoreStorage {
     pub db: rocksdb::DB,
 }
 
-// #[derive(Serialize, Deserialize)] // Define the WasmData struct for serialization
-// struct WasmData {
-//     id: Uuid,
-//     wasm: Vec<u8>,
-// }
-
 impl CoreStorage {
     pub fn new(db_name: &str) -> Result<Self, RuntimeError> {
         let db = DB::open_default(db_name).map_err(RuntimeError::RocksDB)?;
@@ -149,6 +143,19 @@ impl Storage for CoreStorage {
         }
     }
 
+/// The above Rust code defines functions for getting and inserting values into a database using serde
+/// for serialization and deserialization.
+/// 
+/// Arguments:
+/// 
+/// * `key`: The `key` parameter in the provided code snippets is a reference to a string (`&str`). It
+/// is used as a unique identifier to retrieve or insert values into a database.
+/// 
+/// Returns:
+/// 
+/// The `get_value` function returns a `Result` containing an `Option` of the deserialized value of type
+/// `T`. The `insert_value` function returns a `Result` indicating success or an error of type
+/// `RuntimeError`.
     fn get_value<T: serde::de::DeserializeOwned>(
         &self,
         key: &str,
@@ -166,6 +173,21 @@ impl Storage for CoreStorage {
             None => Ok(None),
         }
     }
+
+    /// The function `insert_value` serializes a value to JSON and stores it in a database with a
+    /// specified key.
+    /// 
+    /// Arguments:
+    /// 
+    /// * `key`: The `key` parameter in the `insert_value` function is a reference to a string (`&str`).
+    /// It is used as the key to store the serialized value in the database.
+    /// * `value`: The `value` parameter in the `insert_value` function is of type `T`, which is
+    /// required to implement the `Serialize` trait. This means that the value must be serializable to
+    /// JSON using serde.
+    /// 
+    /// Returns:
+    /// 
+    /// The `insert_value` function is returning a `Result<(), RuntimeError>`.
     fn insert_value<T: Serialize>(&self, key: &str, value: T) -> Result<(), RuntimeError> {
         let bytes = serde_json::to_vec(&value)
             .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;

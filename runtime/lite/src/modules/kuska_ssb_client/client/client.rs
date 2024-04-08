@@ -258,7 +258,7 @@ impl Client {
         ctx: Arc<Mutex<dyn Ctx>>,
     ) -> Result<()> {
         let mut is_synced = false;
-        let mut workflow_map: HashMap<String, RequestBody> = HashMap::new();
+        let mut workflow_data_list: Vec<RequestBody> = Vec::new();
 
         loop {
             let (id, msg) = self.rpc_reader.recv().await?;
@@ -293,37 +293,35 @@ impl Client {
                                                     logger.info(&format!("Event: {:#?}", event));
                                                     let pub_id = &x.mentions.unwrap()[0].link;
 
-                                                    // Check if workflow data exists for this pub_id
-                                                    if !workflow_map.contains_key(pub_id) {
-                                                        match db.get_request_body(pub_id) {
-                                                            Ok(body) => {
-                                                                workflow_map.insert(
-                                                                    pub_id.to_string(),
-                                                                    body,
-                                                                );
-                                                            }
-                                                            Err(e) => logger.trace(&e.to_string()),
+                                                    let workflow_data = match db
+                                                        .get_request_body(&pub_id.to_string())
+                                                    {
+                                                        Ok(data) => {
+                                                            workflow_data_list.push(data.clone()); // Add to temporary list
+                                                            data
                                                         }
-                                                    }
-
-                                                    // Get workflow data for this pub_id
-                                                    let workflow_data =
-                                                        workflow_map.get(pub_id).unwrap();
+                                                        Err(e) => {
+                                                            logger.trace(&e.to_string());
+                                                            return Err(Box::new(AppError::new(format!(
+                                                                "Failed to handle database error: {}",
+                                                                e
+                                                            ))));
+                                                        }
+                                                    };
 
                                                     let data = serde_json::json!({
                                                         "data": crate::common::combine_values(&mut event, &workflow_data.input),
                                                         "allowed_hosts": workflow_data.allowed_hosts
                                                     });
 
-                                                    let data_value = serde_json::to_value(
-                                                        data.clone(),
-                                                    )
-                                                    .map_err(|err| {
-                                                        Box::new(AppError::new(format!(
+                                                    let data_value =
+                                                        serde_json::to_value(data.clone())
+                                                            .map_err(|err| {
+                                                                Box::new(AppError::new(format!(
                                                             "Error converting data to JSON: {}",
                                                             err
                                                         )))
-                                                    })?;
+                                                            })?;
 
                                                     let workflow_index =
                                                         state_manager.new_workflow(0, "hello");
