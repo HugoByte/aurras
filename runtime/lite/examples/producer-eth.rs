@@ -5,7 +5,6 @@ use web3::types::{FilterBuilder, Log, H160, H256};
 use web3::Web3;
 use dotenv::dotenv;
 use kuska_ssb::{api::dto::content::Mention, keystore::read_patchwork_config};
-use runtime::constants::DEFAULT_PRODUCER_SECRET_DIR;
 use runtime::kuska_ssb_client::client::Client;
 use runtime::logger::{CoreLogger, Logger};
 use runtime::common::constants::{DEFAULT_PRODUCER_IP, DEFAULT_PRODUCER_PORT};
@@ -19,7 +18,10 @@ async fn main() {
     logger.info("starting producer...");
 
     // Load producer secret
-    let secret = std::env::var("PRODUCER_SECRET").unwrap_or_else(|_| DEFAULT_PRODUCER_SECRET_DIR.to_string());
+    let secret = std::env::var("PRODUCER_SECRET").unwrap_or_else(|_| {
+        let home_dir = dirs::home_dir().unwrap();
+        std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
+    });
     let mut file = async_std::fs::File::open(secret).await.unwrap();
     let key = read_patchwork_config(&mut file).await.unwrap();
 
