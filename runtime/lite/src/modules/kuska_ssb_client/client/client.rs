@@ -1,21 +1,17 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use crate::{
     modules::{
         logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
         wasmtime_wasi_module,
     },
-    AppError, Ctx, RequestBody,
+    AppError, Ctx,
 };
 
 use super::*;
 use kuska_ssb::api::dto::content::{Mention, Post};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Eq)]

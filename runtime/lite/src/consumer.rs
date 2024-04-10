@@ -137,16 +137,21 @@ async fn handle_client(
                 let existing_data = db.get_request_body(&body.pub_id.to_string());
                 match existing_data {
                     Ok(mut existing_body) => {
-                        let found_item = existing_body.iter_mut().find(|item| item.pub_id == body.pub_id);
+                        let found_item = existing_body
+                            .iter_mut()
+                            .find(|item| item.pub_id == body.pub_id);
                         if let Some(mut item) = found_item {
                             // Update the specific item
-                            item.pub_id = body.pub_id.clone(); 
+                            item.pub_id = body.pub_id.clone();
                             db.insert_value(&body.pub_id.clone(), existing_body)?;
                             logger.info("Existing data updated successfully");
                         } else {
-                            logger.warn(&format!("pub_id {} not found in existing data", body.pub_id));
+                            logger.warn(&format!(
+                                "pub_id {} not found in existing data",
+                                body.pub_id
+                            ));
                         }
-                    },
+                    }
                     Err(err) => {
                         logger.error(&format!("Error getting existing data for pub_id: {}", err));
                     }
@@ -158,7 +163,10 @@ async fn handle_client(
 
                 // Now proceed with accepting the invite and other actions for a new publisher
                 let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
-                    RuntimeError::AppError(AppError::new(format!("Error accepting invite: {}", err)))
+                    RuntimeError::AppError(AppError::new(format!(
+                        "Error accepting invite: {}",
+                        err
+                    )))
                 })?;
                 let timestamp = match connect_feed[1].value.get("timestamp") {
                     Some(timestamp) => timestamp,
@@ -177,7 +185,6 @@ async fn handle_client(
         }
     }
 
-    db.insert_value(&body.pub_id.clone(), body)?;
     logger.info("Data inserted successfully");
 
     // Respond to the client (optional)
@@ -187,17 +194,3 @@ async fn handle_client(
         .expect("Error writing response");
     Ok(())
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
