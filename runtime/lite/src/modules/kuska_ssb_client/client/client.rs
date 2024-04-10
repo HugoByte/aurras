@@ -1,5 +1,4 @@
-use std::sync::{Arc, Mutex};
-
+use super::*;
 use crate::{
     modules::{
         logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
@@ -7,31 +6,8 @@ use crate::{
     },
     AppError, Ctx,
 };
-
-use super::*;
 use kuska_ssb::api::dto::content::{Mention, Post};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::hash::{Hash, Hasher};
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Eq)]
-pub struct EventId {
-    event: Value,
-    sender_address: String,
-}
-
-impl Hash for EventId {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.sender_address.hash(state);
-        match serde_json::to_string(&self.event) {
-            Ok(event_string) => event_string.hash(state),
-            Err(err) => {
-                // Handle serialization error
-                eprintln!("Error serializing event data: {}", err);
-            }
-        }
-    }
-}
+use std::sync::{Arc, Mutex};
 
 impl Client {
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
