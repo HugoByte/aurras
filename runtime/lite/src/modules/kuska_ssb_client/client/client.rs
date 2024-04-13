@@ -301,23 +301,37 @@ impl Client {
                                                     if offset < feed_rts {
                                                         logger
                                                             .info(&format!("Event: {:#?}", event));
+                                                        println!("{}", pub_id);
 
                                                         match db.get_request_body(pub_id) {
-                                                            Ok(mut bodies) => {
+                                                            Ok(bodies) => {
+                                                                // Handle the case where bodies is None (no request bodies found)
+                                                                if bodies.is_none() {
+                                                                    logger.error(&format!(
+                                                                        "No request bodies found"
+                                                                    ));
+                                                                    return Err(Box::new(AppError::new(format!(
+                                                                        "No request bodies found for pub_id: {}", pub_id
+                                                                    ))));
+                                                                }
+
+                                                                // Unwrap the Option<Vec<RequestBody>> to get the actual Vec<RequestBody>
+                                                                let mut bodies = bodies.unwrap();
+
+                                                                let mut found_pub_id = false; // Flag to track if pub_id is found
+
+                                                                // Iterate through bodies, searching for matching pub_id
                                                                 for body in bodies.iter_mut() {
-                                                                    if &body.pub_id == pub_id {
-                                                                        let data = serde_json::json!({
-                                                                            "data" : crate::common::combine_values(&mut event, &body.input),
-                                                                            "allowed_hosts": body.allowed_hosts
-                                                                        });
+                                                                    let data = serde_json::json!({
+                                                                        "data": crate::common::combine_values(&mut event, &body.input),
+                                                                        "allowed_hosts": body.allowed_hosts.as_ref(),
+                                                                    });
 
-                                                                        let workflow_index =
-                                                                            state_manager
-                                                                                .new_workflow(
-                                                                                    0, "hello",
-                                                                                );
-
-                                                                        let _ = wasmtime_wasi_module::run_workflow(
+                                                                    let workflow_index =
+                                                                        state_manager.new_workflow(
+                                                                            0, "hello",
+                                                                        );
+                                                                    let _ = wasmtime_wasi_module::run_workflow(
                                                                             state_manager,
                                                                             logger,
                                                                             data,
@@ -325,30 +339,31 @@ impl Client {
                                                                             workflow_index,
                                                                             false,
                                                                         );
-                                                                        return Ok(());
-                                                                    }
+                                                                    found_pub_id = true; // Set flag if pub_id is found
+                                                                    return Ok(());
                                                                 }
-                                                                // where pub_id is not found
-                                                                logger.error(&format!("pub_id: {} not found in request bodies", pub_id));
-                                                                return Err(Box::new(AppError::new(format!("pub_id not found in request bodies"))));
+
+                                                                // Handle pub_id not found case
+                                                                if !found_pub_id {
+                                                                    logger.error(&format!("pub_id: {} not found in request bodies", pub_id));
+                                                                    return Err(Box::new(AppError::new(format!(
+                                                                        "Request body with pub_id: {} not found", pub_id
+                                                                    ))));
+                                                                }
                                                             }
-                                                            Err(e) => logger.error(&e.to_string()),
+                                                            Err(e) => logger.error(&format!(
+                                                                "Error type: {}",
+                                                                e
+                                                            )),
                                                         }
 
-                                                        db.insert_value(
-                                                            &format!("{}offset", pub_id),
-                                                            display.timestamp,
-                                                        )
-                                                        .map_err(
-                                                            |err| {
-                                                                Box::new(AppError::new(
-                                                                    format!(
-                                                                    "not able to insert offset timestamp to the database: {}",
-                                                                    err
-                                                                ),
-                                                                ))
-                                                            },
-                                                        )?;
+                                                        // Perform database insertion (assuming display.timestamp is defined)
+                                                        db.insert_value(&format!("{}offset", pub_id), display.timestamp)
+                                                            .map_err(|err| {
+                                                                Box::new(AppError::new(format!(
+                                                                    "not able to insert offset timestamp to the database: {}", err
+                                                                )))
+                                                            })?;
                                                     }
                                                 }
                                                 Err(e) => logger.trace(&e.to_string()),
