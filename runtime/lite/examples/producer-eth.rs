@@ -2,12 +2,12 @@ use std::str::FromStr;
 
 use async_std::stream::StreamExt;
 use dotenv::dotenv;
+use ethers::prelude::*;
+use eyre::Result;
 use kuska_ssb::{api::dto::content::Mention, keystore::read_patchwork_config};
 use runtime::common::constants::{DEFAULT_PRODUCER_IP, DEFAULT_PRODUCER_PORT};
 use runtime::kuska_ssb_client::client::Client;
 use runtime::logger::{CoreLogger, Logger};
-use ethers::prelude::*;
-use eyre::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -51,27 +51,27 @@ async fn main() -> Result<()> {
     logger.info(&format!("{:?}", invite_res));
     logger.info("Producer successfully started✅");
 
-
     let provider = Provider::<Ws>::connect(WSS_URL).await?;
     let provider = Arc::new(provider);
     let event = Transfer::new::<_, Provider<Ws>>(Filter::new(), Arc::clone(&provider));
     let mut transfers = event.subscribe().await?;
 
     while let Some(log) = transfers.next().await {
-        logger.info(&format!("{:?}", log)); 
-    
+        logger.info(&format!("{:?}", log));
+
         // Extract the Transfer data from the Result
         match log {
             Ok(transfer) => {
-                let message = format!("Transfer: from: {}, to: {}, tokens: {}", transfer.from, transfer.to, transfer.tokens);
+                let message = format!(
+                    "Transfer: from: {}, to: {}, tokens: {}",
+                    transfer.from, transfer.to, transfer.tokens
+                );
                 let mention = Mention {
                     link: pub_address.clone(),
                     name: None,
                 };
-                let _ = client
-                    .publish(&message, Some(vec![mention]))
-                    .await;
-            },
+                let _ = client.publish(&message, Some(vec![mention])).await;
+            }
             Err(err) => {
                 // Handle the error case (optional)
                 println!("Error processing transfer: {}", err);
@@ -80,8 +80,4 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
-
 }
-
-
-  
