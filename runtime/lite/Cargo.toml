@@ -74,6 +74,6 @@ package = "test_util"
 [dev-dependencies]
 subxt = '0.34.0'
 subxt-signer = '0.34.0'
-web3 = "0.19.0"
-ethers = "2.0.14"
+ethers = {version = "2.0.14", features = ["rustls", "ws"]}
 eyre = "0.6.12"
+tokio = "1.37.0"
