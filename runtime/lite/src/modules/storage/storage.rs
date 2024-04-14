@@ -126,7 +126,10 @@ impl Storage for CoreStorage {
             .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))
     }
 
-    fn get_request_body(&self, key: &str) -> Result<Option<Vec<crate::common::RequestBody>>, RuntimeError> {
+    fn get_request_body(
+        &self,
+        key: &str,
+    ) -> Result<Option<Vec<crate::common::RequestBody>>, RuntimeError> {
         let res = self
             .db
             .get(key)
@@ -141,7 +144,6 @@ impl Storage for CoreStorage {
                 "Data not found".to_string(),
             ))),
         }
-      
     }
 
     /// The above Rust code defines functions for getting and inserting values into a database using serde
