@@ -163,7 +163,6 @@ async fn handle_client(
     logger.info(&format!("Following the publisher {}", body.pub_id));
 
     let existing_data = db.get_request_body(&body.pub_id.to_string())?;
-    println!("Before get_request_body");
 
     match existing_data {
         Some(mut existing_body) => {

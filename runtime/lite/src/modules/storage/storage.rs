@@ -140,9 +140,7 @@ impl Storage for CoreStorage {
                     .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
                 Ok(value)
             }
-            None => Err(RuntimeError::AppError(AppError::new(
-                "Data not found".to_string(),
-            ))),
+            None => Ok(None),
         }
     }
 
