@@ -12,16 +12,16 @@ pub enum ExecutionState {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct WorkflowState {
-    workflow_id: usize,
+    workflow_id: String,
     workflow_name: String,
     execution_state: ExecutionState,
     result: Option<Value>,
 }
 
 impl WorkflowState {
-    pub fn new(workflow_id: usize, workflow_name: &str) -> Self {
+    pub fn new(workflow_id: &str, workflow_name: &str) -> Self {
         Self {
-            workflow_id,
+            workflow_id: workflow_id.to_string(),
             workflow_name: workflow_name.to_string(),
             execution_state: ExecutionState::Init,
             result: None,
@@ -90,8 +90,8 @@ impl WorkflowStateManager for WorkflowState {
         }
     }
 
-    fn get_id(&self) -> usize {
-        self.workflow_id
+    fn get_id(&self) -> String {
+        self.workflow_id.clone()
     }
 
     fn get_workflow_name(&self) -> String {

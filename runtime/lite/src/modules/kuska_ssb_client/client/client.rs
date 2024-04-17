@@ -7,7 +7,7 @@ use crate::{
     AppError, Ctx,
 };
 use kuska_ssb::api::dto::content::{Mention, Post};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 impl Client {
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
@@ -243,7 +243,7 @@ impl Client {
                 }
             };
             let db = ctx.get_db();
-            let logger = ctx.get_logger();
+            let mut logger = ctx.get_logger();
             let mut state_manager = ctx.get_state_manager();
 
             if id == req_no {
@@ -310,10 +310,12 @@ impl Client {
                                                                     logger.error(&format!(
                                                                         "No request bodies found"
                                                                     ));
-                                                                    return Err(Box::new(AppError::new(format!(
-                                                                        "No request bodies found for pub_id: {}", pub_id
-                                                                    ))));
+                                                                    // return Err(Box::new(AppError::new(format!(
+                                                                    //     "No request bodies found for pub_id: {}", pub_id
+                                                                    // ))));
                                                                 }
+
+                                                                // 
 
                                                                 // Unwrap the Option<Vec<RequestBody>> to get the actual Vec<RequestBody>
                                                                 let mut bodies = bodies.unwrap();
@@ -322,33 +324,29 @@ impl Client {
 
                                                                 // Iterate through bodies, searching for matching pub_id
                                                                 for body in bodies.iter_mut() {
+                                                                    crate::common::combine_values(&mut body.input, &event);
                                                                     let data = serde_json::json!({
-                                                                        "data": crate::common::combine_values(&mut event, &body.input),
+                                                                        "data": body.input,
                                                                         "allowed_hosts": body.allowed_hosts.as_ref(),
                                                                     });
 
+                                                                    println!("data: {:#?}", data);
+                                                                    use std::borrow::BorrowMut;
+                                                                    use std::borrow::Borrow;
                                                                     let workflow_index =
                                                                         state_manager.new_workflow(
-                                                                            0, "hello",
+                                                                            &body.workflow_id,
+                                                                            &body.workflow_name,
                                                                         );
                                                                     let _ = wasmtime_wasi_module::run_workflow(
-                                                                            state_manager,
-                                                                            logger,
+                                                                            state_manager.borrow_mut(),
+                                                                            logger.borrow_mut(),
                                                                             data,
                                                                             body.wasm.clone(),
                                                                             workflow_index,
                                                                             false,
                                                                         );
-                                                                    found_pub_id = true; // Set flag if pub_id is found
-                                                                    return Ok(());
-                                                                }
-
-                                                                // Handle pub_id not found case
-                                                                if !found_pub_id {
-                                                                    logger.error(&format!("pub_id: {} not found in request bodies", pub_id));
-                                                                    return Err(Box::new(AppError::new(format!(
-                                                                        "Request body with pub_id: {} not found", pub_id
-                                                                    ))));
+                                                                    // return Ok(());
                                                                 }
                                                             }
                                                             Err(e) => logger.error(&format!(

@@ -136,42 +136,57 @@ async fn handle_client(
                 // let ctx = ctx.lock()?;
                 let logger = ctx.get_logger().clone();
                 logger.info("Already Following the publisher");
-                return Ok(());
+                // return Ok(());
             } else {
+                let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
+                    RuntimeError::AppError(AppError::new(format!("Error accepting invite: {}", err)))
+                })?;
+                let timestamp = match connect_feed[1].value.get("timestamp") {
+                    Some(timestamp) => timestamp,
+                    None => {
+                        return Err(RuntimeError::AppError(AppError::new(format!(
+                            "Error getting timestamp from the accepted invite-contact feed",
+                        ))));
+                    }
+                };
                 list.push(body.pub_id.clone());
+                db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
                 db.insert_value(FOLLOW_LIST_KEY, list)?;
             }
         }
         None => {
+            let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
+                RuntimeError::AppError(AppError::new(format!("Error accepting invite: {}", err)))
+            })?;
+            let timestamp = match connect_feed[1].value.get("timestamp") {
+                Some(timestamp) => timestamp,
+                None => {
+                    return Err(RuntimeError::AppError(AppError::new(format!(
+                        "Error getting timestamp from the accepted invite-contact feed",
+                    ))));
+                }
+            };
+            db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
             db.insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()])?;
         }
     }
 
-    let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
-        RuntimeError::AppError(AppError::new(format!("Error accepting invite: {}", err)))
-    })?;
-    let timestamp = match connect_feed[1].value.get("timestamp") {
-        Some(timestamp) => timestamp,
-        None => {
-            return Err(RuntimeError::AppError(AppError::new(format!(
-                "Error getting timestamp from the accepted invite-contact feed",
-            ))));
-        }
-    };
-
-    db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
+   
     logger.info(&format!("Following the publisher {}", body.pub_id));
 
     let existing_data = db.get_request_body(&body.pub_id.to_string())?;
 
     match existing_data {
         Some(mut existing_body) => {
-            if let Some(position) = existing_body.iter().position(|r| r == &body) {
+            if let Some(position) = existing_body.iter().position(|r| r.workflow_id == body.workflow_id) {
                 existing_body.remove(position);
-            } else {
                 existing_body.push(body.clone());
                 db.insert_value(&body.pub_id.clone(), existing_body)?;
                 logger.info("Existing data updated successfully");
+            } else {
+                existing_body.push(body.clone());
+                db.insert_value(&body.pub_id.clone(), existing_body)?;
+                logger.info("Data updated successfully");
             }
         }
         None => {
