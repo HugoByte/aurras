@@ -7,7 +7,8 @@ use crate::{
     AppError, Ctx,
 };
 use kuska_ssb::api::dto::content::{Mention, Post};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::borrow::BorrowMut;
+use std::sync::{Arc, Mutex};
 
 impl Client {
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
@@ -261,7 +262,7 @@ impl Client {
                                             match serde_json::from_str::<serde_json::Value>(
                                                 &content.text,
                                             ) {
-                                                Ok(mut event) => {
+                                                Ok(event) => {
                                                     let mentions =
                                                         &content.mentions.unwrap_or(vec![]);
 
@@ -301,7 +302,6 @@ impl Client {
                                                     if offset < feed_rts {
                                                         logger
                                                             .info(&format!("Event: {:#?}", event));
-                                                        println!("{}", pub_id);
 
                                                         match db.get_request_body(pub_id) {
                                                             Ok(bodies) => {
@@ -310,29 +310,21 @@ impl Client {
                                                                     logger.error(&format!(
                                                                         "No request bodies found"
                                                                     ));
-                                                                    // return Err(Box::new(AppError::new(format!(
-                                                                    //     "No request bodies found for pub_id: {}", pub_id
-                                                                    // ))));
                                                                 }
 
-                                                                // 
-
-                                                                // Unwrap the Option<Vec<RequestBody>> to get the actual Vec<RequestBody>
                                                                 let mut bodies = bodies.unwrap();
-
-                                                                let mut found_pub_id = false; // Flag to track if pub_id is found
 
                                                                 // Iterate through bodies, searching for matching pub_id
                                                                 for body in bodies.iter_mut() {
-                                                                    crate::common::combine_values(&mut body.input, &event);
+                                                                    crate::common::combine_values(
+                                                                        &mut body.input,
+                                                                        &event,
+                                                                    );
                                                                     let data = serde_json::json!({
                                                                         "data": body.input,
                                                                         "allowed_hosts": body.allowed_hosts.as_ref(),
                                                                     });
 
-                                                                    println!("data: {:#?}", data);
-                                                                    use std::borrow::BorrowMut;
-                                                                    use std::borrow::Borrow;
                                                                     let workflow_index =
                                                                         state_manager.new_workflow(
                                                                             &body.workflow_id,
@@ -346,7 +338,6 @@ impl Client {
                                                                             workflow_index,
                                                                             false,
                                                                         );
-                                                                    // return Ok(());
                                                                 }
                                                             }
                                                             Err(e) => logger.error(&format!(
@@ -355,7 +346,7 @@ impl Client {
                                                             )),
                                                         }
 
-                                                        // Perform database insertion (assuming display.timestamp is defined)
+                                                        // Perform database insertion
                                                         db.insert_value(&format!("{}offset", pub_id), display.timestamp)
                                                             .map_err(|err| {
                                                                 Box::new(AppError::new(format!(

@@ -133,13 +133,14 @@ async fn handle_client(
     match get_follow_list {
         Some(mut list) => {
             if list.contains(&body.pub_id) {
-                // let ctx = ctx.lock()?;
                 let logger = ctx.get_logger().clone();
                 logger.info("Already Following the publisher");
-                // return Ok(());
             } else {
                 let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
-                    RuntimeError::AppError(AppError::new(format!("Error accepting invite: {}", err)))
+                    RuntimeError::AppError(AppError::new(format!(
+                        "Error accepting invite: {}",
+                        err
+                    )))
                 })?;
                 let timestamp = match connect_feed[1].value.get("timestamp") {
                     Some(timestamp) => timestamp,
@@ -171,14 +172,16 @@ async fn handle_client(
         }
     }
 
-   
     logger.info(&format!("Following the publisher {}", body.pub_id));
 
     let existing_data = db.get_request_body(&body.pub_id.to_string())?;
 
     match existing_data {
         Some(mut existing_body) => {
-            if let Some(position) = existing_body.iter().position(|r| r.workflow_id == body.workflow_id) {
+            if let Some(position) = existing_body
+                .iter()
+                .position(|r| r.workflow_id == body.workflow_id)
+            {
                 existing_body.remove(position);
                 existing_body.push(body.clone());
                 db.insert_value(&body.pub_id.clone(), existing_body)?;
