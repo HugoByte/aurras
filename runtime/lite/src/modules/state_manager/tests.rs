@@ -3,8 +3,8 @@ use super::*;
 fn test_new_workflow() {
     let logger = CoreLogger::new(Some("./test_log_1.log"));
     let mut global_state = GlobalState::new(logger);
-    global_state.new_workflow(0, "test_workflow");
-    let new_workflow_state = WorkflowState::new(0, "test_workflow");
+    global_state.new_workflow("0", "test_workflow");
+    let new_workflow_state = WorkflowState::new("0", "test_workflow");
     assert_eq!(global_state.workflows[0], new_workflow_state);
     std::fs::remove_file("./test_log_1.log").unwrap()
 }
@@ -14,16 +14,16 @@ fn test_get_state_data_pass() {
     let logger = CoreLogger::new(Some("./test_log_2.log"));
     let mut global_state = GlobalState::new(logger);
 
-    global_state.new_workflow(0, "test_workflow");
+    global_state.new_workflow("0", "test_workflow");
     let state_data = global_state.get_state_data(0).unwrap();
-    assert_eq!(state_data.get_id(), 0);
+    assert_eq!(state_data.get_id(), 0.to_string());
     assert_eq!(state_data.get_workflow_name(), "test_workflow");
     assert_eq!(state_data.get_execution_state(), ExecutionState::Init);
     assert!(state_data.get_result().is_err());
 
     global_state.update_running(0).unwrap();
     let state_data = global_state.get_state_data(0).unwrap();
-    assert_eq!(state_data.get_id(), 0);
+    assert_eq!(state_data.get_id(), 0.to_string());
     assert_eq!(state_data.get_workflow_name(), "test_workflow");
     assert_eq!(state_data.get_execution_state(), ExecutionState::Running);
     assert!(state_data.get_result().is_err());
@@ -31,7 +31,7 @@ fn test_get_state_data_pass() {
     // without result
     global_state.update_paused(0, None).unwrap();
     let state_data = global_state.get_state_data(0).unwrap();
-    assert_eq!(state_data.get_id(), 0);
+    assert_eq!(state_data.get_id(), 0.to_string());
     assert_eq!(state_data.get_workflow_name(), "test_workflow");
     assert_eq!(state_data.get_execution_state(), ExecutionState::Paused);
     assert!(state_data.get_result().is_err());
@@ -41,7 +41,7 @@ fn test_get_state_data_pass() {
     let data = Value::String("some result".to_string());
     global_state.update_paused(0, Some(data.clone())).unwrap();
     let state_data = global_state.get_state_data(0).unwrap();
-    assert_eq!(state_data.get_id(), 0);
+    assert_eq!(state_data.get_id(), 0.to_string());
     assert_eq!(state_data.get_workflow_name(), "test_workflow");
     assert_eq!(state_data.get_execution_state(), ExecutionState::Paused);
     assert_eq!(state_data.get_result().unwrap(), data);
@@ -49,7 +49,7 @@ fn test_get_state_data_pass() {
     global_state.update_running(0).unwrap();
     global_state.update_result(0, data.clone(), true).unwrap();
     let state_data = global_state.get_state_data(0).unwrap();
-    assert_eq!(state_data.get_id(), 0);
+    assert_eq!(state_data.get_id(), 0.to_string());
     assert_eq!(state_data.get_workflow_name(), "test_workflow");
     assert_eq!(state_data.get_execution_state(), ExecutionState::Success);
     assert_eq!(state_data.get_result().unwrap(), data);
@@ -61,7 +61,7 @@ fn test_get_state_data_pass() {
 fn test_get_state_data_fail() {
     let logger = CoreLogger::new(Some("./test_log_3.log"));
     let mut global_state = GlobalState::new(logger);
-    global_state.new_workflow(0, "test_workflow");
+    global_state.new_workflow("0", "test_workflow");
     std::fs::remove_file("./test_log_3.log").unwrap();
     global_state.get_state_data(1).unwrap();
 }
@@ -70,7 +70,7 @@ fn test_get_state_data_fail() {
 fn test_update_running_pass() {
     let logger = CoreLogger::new(Some("./test_log_4.log"));
     let mut global_state = GlobalState::new(logger);
-    global_state.new_workflow(0, "test_workflow");
+    global_state.new_workflow("0", "test_workflow");
     global_state.update_running(0).unwrap();
     let state_data = global_state.get_state_data(0).unwrap();
     assert_eq!(state_data.get_execution_state(), ExecutionState::Running);
@@ -82,7 +82,7 @@ fn test_update_running_pass() {
 fn test_update_running_fail() {
     let logger = CoreLogger::new(Some("./test_log_5.log"));
     let mut global_state = GlobalState::new(logger);
-    global_state.new_workflow(0, "test_workflow");
+    global_state.new_workflow("0", "test_workflow");
     std::fs::remove_file("./test_log_5.log").unwrap();
     global_state.update_running(1).unwrap();
 }
@@ -91,7 +91,7 @@ fn test_update_running_fail() {
 fn test_update_paused_pass() {
     let logger = CoreLogger::new(Some("./test_log_6.log"));
     let mut global_state = GlobalState::new(logger);
-    global_state.new_workflow(0, "test_workflow");
+    global_state.new_workflow("0", "test_workflow");
     global_state.update_paused(0, None).unwrap();
     let state_data = global_state.get_state_data(0).unwrap();
     assert_eq!(state_data.get_execution_state(), ExecutionState::Paused);
@@ -103,7 +103,7 @@ fn test_update_paused_pass() {
 fn test_update_paused_fail() {
     let logger = CoreLogger::new(Some("./test_log_7.log"));
     let mut global_state = GlobalState::new(logger);
-    global_state.new_workflow(0, "test_workflow");
+    global_state.new_workflow("0", "test_workflow");
     std::fs::remove_file("./test_log_7.log").unwrap();
     global_state.update_paused(1, None).unwrap();
 }
@@ -112,7 +112,7 @@ fn test_update_paused_fail() {
 fn test_update_result_pass() {
     let logger = CoreLogger::new(Some("./test_log_8.log"));
     let mut global_state = GlobalState::new(logger);
-    global_state.new_workflow(0, "test_workflow");
+    global_state.new_workflow("0", "test_workflow");
     global_state.update_running(0).unwrap();
     let data = Value::String("some result".to_string());
     global_state.update_result(0, data.clone(), true).unwrap();
@@ -126,7 +126,7 @@ fn test_update_result_pass() {
 fn test_update_result_fail() {
     let logger = CoreLogger::new(Some("./test_log_9.log"));
     let mut global_state = GlobalState::new(logger);
-    global_state.new_workflow(0, "test_workflow");
+    global_state.new_workflow("0", "test_workflow");
     std::fs::remove_file("./test_log_9.log").unwrap();
     global_state.update_result(1, Value::Null, true).unwrap();
 }

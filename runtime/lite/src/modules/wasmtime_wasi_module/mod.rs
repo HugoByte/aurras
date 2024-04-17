@@ -22,8 +22,8 @@ use wasmtime_wasi::sync::WasiCtxBuilder;
 use super::logger;
 
 pub fn run_workflow<U: Logger + Clone + std::marker::Send + 'static>(
-    mut state_manager: MutexGuard<GlobalState<WorkflowState, U>>,
-    logger: MutexGuard<U>,
+    mut state_manager: &mut MutexGuard<GlobalState<WorkflowState, U>>,
+    logger: &mut MutexGuard<U>,
     data: Value,
     wasm_file: Vec<u8>,
     workflow_index: usize,
