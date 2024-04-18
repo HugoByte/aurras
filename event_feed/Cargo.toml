@@ -19,10 +19,3 @@ icon-sdk = '1.2.0'
 [dependencies.tokio]
 version = '1.36.0'
 features = ['macros', 'time', 'rt-multi-thread']
-
-[dependencies.async-std]
-version = '1.12.0'
-features = [
-    'unstable',
-    'attributes',
-]
