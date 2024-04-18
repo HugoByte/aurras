@@ -2,8 +2,8 @@ use super::*;
 
 pub struct IconFeed {
     icon_service: IconService,
-    filter: Filter,
-    logger: Box<dyn Logger>,
+    events: Vec<String>,
+    score: Vec<String>,
 }
 
 impl IconFeed {
@@ -22,27 +22,64 @@ impl IconFeed {
             .filter(|evt| !evt.is_empty())
             .collect::<Vec<String>>();
 
-        let logger = CoreLogger::new(Some("./icon-feed.log"));
-
-        logger.info("Connecting to producer...");
-        logger.info("Producer successfully connected✅");
-
         let icon_service = icon_service::IconService::new(Some(config.node_url));
-
-        let filter = Filter { events, score };
 
         let icon_feed = IconFeed {
             icon_service,
-            filter,
-            logger: Box::new(logger),
+            events,
+            score,
         };
 
         Ok(icon_feed)
     }
 
-    pub async fn event_feed(&self, cb: fn(events: Vec<serde_json::Value>)) -> Result<()> {
-        self.logger.info("Listening to icon chain for events...");
+    pub async fn filter(&self, transaction: &Value) -> Result<bool> {
+        let mut events_filter = false;
+        let mut score_filter = false;
 
+        if !self.events.is_empty() || !self.score.is_empty() {
+            let tx_hash: String =
+                serde_json::from_value(transaction.get("txHash").unwrap().clone()).unwrap();
+
+            let event_logs = get_event_logs_by_tx_hash(&self.icon_service, &tx_hash).await?;
+
+            for event_log in event_logs {
+                if !&self.score.is_empty() {
+                    for filter_score in &self.score {
+                        if filter_score == &event_log.score_address {
+                            score_filter = true;
+                            break;
+                        }
+                    }
+                } else {
+                    score_filter = true;
+                }
+
+                if !&self.events.is_empty() {
+                    for filter_event in &self.events {
+                        if event_log.indexed_events[0].starts_with(&format!("{filter_event}(")) {
+                            events_filter = true;
+                            break;
+                        }
+                    }
+                } else {
+                    events_filter = true;
+                }
+
+                if events_filter && score_filter {
+                    events_filter = true;
+                    break;
+                }
+            }
+        } else {
+            events_filter = true;
+            score_filter = true;
+        }
+
+        Ok(events_filter & score_filter)
+    }
+
+    pub async fn event_feed(&self, cb: fn(events: Vec<serde_json::Value>)) -> Result<()> {
         let mut latest_height = get_icon_block_height(&self.icon_service).await?;
         let mut old_height = latest_height - 1;
 
@@ -71,8 +108,7 @@ impl IconFeed {
                 let mut filtered_tx = Vec::<Value>::new();
 
                 for transaction in transactions {
-                    if self.filter.filter(&self.icon_service, &transaction).await? {
-                        self.logger.info("ICON event found!");
+                    if self.filter(&transaction).await? {
                         filtered_tx.push(transaction);
                     }
                 }

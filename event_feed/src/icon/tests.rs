@@ -3,10 +3,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_filter_events_true() {
-        let filter = Filter {
-            events: Some(vec!["ICXTransfer".to_string()]),
-            score: None,
+        let config = ChainConfig {
+            node_url: "https://api.icon.community/api/v3".to_string(),
+            event_filter: "ICXTransfer".to_string(),
+            contract_filter: "".to_string(),
         };
+        let icon_feed = IconFeed::new(config).unwrap();
 
         let icon_service = IconService::new(None);
 
@@ -22,15 +24,17 @@ mod tests {
         )
         .unwrap();
 
-        assert!(filter.filter(&icon_service, &tx_list[1]).await.unwrap());
+        assert!(icon_feed.filter(&tx_list[1]).await.unwrap());
     }
 
     #[tokio::test]
     async fn test_filter_events_false() {
-        let filter = Filter {
-            events: Some(vec!["ICXIssued".to_string()]),
-            score: None,
+        let config = ChainConfig {
+            node_url: "https://api.icon.community/api/v3".to_string(),
+            event_filter: "ICXIssued".to_string(),
+            contract_filter: "".to_string(),
         };
+        let icon_feed = IconFeed::new(config).unwrap();
 
         let icon_service = IconService::new(None);
 
@@ -42,20 +46,17 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(!filter
-            .filter(&icon_service, &tx.get("result").unwrap())
-            .await
-            .unwrap());
+        assert!(!icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
 
     #[tokio::test]
     async fn test_filter_score_true() {
-        let filter = Filter {
-            events: None,
-            score: Some(vec![
-                "cx21e94c08c03daee80c25d8ee3ea22a20786ec231".to_string()
-            ]),
+        let config = ChainConfig {
+            node_url: "https://api.icon.community/api/v3".to_string(),
+            event_filter: "".to_string(),
+            contract_filter: "cx21e94c08c03daee80c25d8ee3ea22a20786ec231".to_string(),
         };
+        let icon_feed = IconFeed::new(config).unwrap();
 
         let icon_service = IconService::new(None);
 
@@ -66,20 +67,17 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(filter
-            .filter(&icon_service, &tx.get("result").unwrap())
-            .await
-            .unwrap());
+        assert!(icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
 
     #[tokio::test]
     async fn test_filter_score_false() {
-        let filter = Filter {
-            events: None,
-            score: Some(vec![
-                "cx21e94c08c03daee80c25d8ee3ea22a20786ec231".to_string()
-            ]),
+        let config = ChainConfig {
+            node_url: "https://api.icon.community/api/v3".to_string(),
+            event_filter: "".to_string(),
+            contract_filter: "cx21e94c08c03daee80c25d8ee3ea22a20786ec231".to_string(),
         };
+        let icon_feed = IconFeed::new(config).unwrap();
 
         let icon_service = IconService::new(None);
 
@@ -90,20 +88,17 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(!filter
-            .filter(&icon_service, &tx.get("result").unwrap())
-            .await
-            .unwrap());
+        assert!(!icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
 
     #[tokio::test]
     async fn test_filter_event_and_score_true() {
-        let filter = Filter {
-            events: Some(vec!["Transfer".to_string()]),
-            score: Some(vec![
-                "cx88fd7df7ddff82f7cc735c871dc519838cb235bb".to_string()
-            ]),
+        let config = ChainConfig {
+            node_url: "https://api.icon.community/api/v3".to_string(),
+            event_filter: "Transfer".to_string(),
+            contract_filter: "cx88fd7df7ddff82f7cc735c871dc519838cb235bb".to_string(),
         };
+        let icon_feed = IconFeed::new(config).unwrap();
 
         let icon_service = IconService::new(None);
 
@@ -114,20 +109,17 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(filter
-            .filter(&icon_service, &tx.get("result").unwrap())
-            .await
-            .unwrap());
+        assert!(icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
 
     #[tokio::test]
     async fn test_filter_event_and_score_false() {
-        let filter = Filter {
-            events: Some(vec!["ICXIssued".to_string()]),
-            score: Some(vec![
-                "cx88fd7df7ddff82f7cc735c871dc519838cb235bb".to_string()
-            ]),
+        let config = ChainConfig {
+            node_url: "https://api.icon.community/api/v3".to_string(),
+            event_filter: "ICXIssued".to_string(),
+            contract_filter: "cx88fd7df7ddff82f7cc735c871dc519838cb235bb".to_string(),
         };
+        let icon_feed = IconFeed::new(config).unwrap();
 
         let icon_service = IconService::new(None);
 
@@ -138,10 +130,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(!filter
-            .filter(&icon_service, &tx.get("result").unwrap())
-            .await
-            .unwrap());
+        assert!(!icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
 
     #[tokio::test]
