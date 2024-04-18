@@ -1,27 +1,47 @@
 use super::*;
+use crate::common::ChainConfig;
 
 pub struct IconFeed {
-    producer_client: Producer,
     icon_service: IconService,
+    filter: Filter,
     logger: Box<dyn Logger>,
 }
 
 impl IconFeed {
-    pub async fn new(
-        icon_api_endpoint: &str,
-        producer_client: Producer,
-        logger: Box<dyn Logger>,
-    ) -> Result<Self> {
-        let icon_service = icon_service::IconService::new(Some(icon_api_endpoint.to_string()));
+    pub fn new(config: ChainConfig) -> Result<IconFeed> {
+        let events = config
+            .event_filter
+            .split(',')
+            .map(|evt| evt.to_string())
+            .filter(|evt| !evt.is_empty())
+            .collect::<Vec<String>>();
 
-        Ok(Self {
-            producer_client,
+        let score = config
+            .contract_filter
+            .split(',')
+            .map(|evt| evt.to_string())
+            .filter(|evt| !evt.is_empty())
+            .collect::<Vec<String>>();
+
+        let logger = CoreLogger::new(Some("./icon-feed.log"));
+
+        logger.info("Connecting to producer...");
+        logger.info("Producer successfully connected✅");
+
+        let icon_service = icon_service::IconService::new(Some(config.node_url));
+
+        let filter = Filter { events, score };
+
+        let icon_feed = IconFeed {
             icon_service,
-            logger,
-        })
+            filter,
+            logger: Box::new(logger),
+        };
+
+        Ok(icon_feed)
     }
 
-    pub async fn get_event(&mut self, filter: Filter, publish_to: &str) -> Result<()> {
+    pub async fn event_feed(&self, cb: fn(events: Vec<serde_json::Value>)) -> Result<()> {
         self.logger.info("Listening to icon chain for events...");
 
         let mut latest_height = get_icon_block_height(&self.icon_service).await?;
@@ -49,14 +69,17 @@ impl IconFeed {
                         .clone(),
                 )?;
 
+                let mut filtered_tx = Vec::<Value>::new();
+
                 for transaction in transactions {
-                    if filter.filter(&self.icon_service, &transaction).await? {
+                    if self.filter.filter(&self.icon_service, &transaction).await? {
                         self.logger.info("ICON event found!");
-                        self.producer_client
-                            .publish_feed(publish_to, transaction)
-                            .await?;
-                        self.logger.info("Event published to the pub");
+                        filtered_tx.push(transaction);
                     }
+                }
+
+                if !filtered_tx.is_empty() {
+                    cb(filtered_tx)
                 }
 
                 old_height += 1;

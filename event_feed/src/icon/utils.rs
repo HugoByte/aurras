@@ -46,28 +46,3 @@ pub async fn get_event_logs_by_tx_hash(
     Ok(event_logs)
 }
 
-pub fn get_list_env_var(var: &str) -> Option<Vec<String>> {
-    match env::var(var) {
-        Ok(events) => Some(
-            events
-                .split(',')
-                .map(|evt| evt.to_string())
-                .filter(|evt| !evt.is_empty())
-                .collect::<Vec<String>>(),
-        ),
-        Err(_) => None,
-    }
-}
-
-pub fn get_ssb_pub_address_from_invite(invite: &str) -> Result<String> {
-    let pub_address = invite
-        .split('@')
-        .skip(1)
-        .next()
-        .unwrap()
-        .split("=.ed25519")
-        .next()
-        .unwrap();
-
-    Ok(format!("@{pub_address}=.ed25519"))
-}

@@ -1,4 +1,4 @@
-// pub mod types;
+pub mod types;
 
 use dotenv::dotenv;
 use subxt::{Config, OnlineClient, PolkadotConfig};
