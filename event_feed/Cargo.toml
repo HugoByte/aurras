@@ -16,13 +16,6 @@ envy = "0.4"
 anyhow = "1.0.82"
 icon-sdk = '1.2.0'
 
-[dependencies.runtime]
-path="../runtime/lite"
-
-[dependencies.kuska-ssb]
-git = 'https://github.com/shanithkk/ssb.git'
-branch = 'fix-invite-accept-issue'
-
 [dependencies.tokio]
 version = '1.36.0'
 features = ['macros', 'time', 'rt-multi-thread']
