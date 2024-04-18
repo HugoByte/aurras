@@ -46,18 +46,29 @@ impl<T: subxt::Config> PolkadotFeed<T> {
                         let data = format!("{}", s);
 
                         let pallet_name = event.pallet_name().to_lowercase();
-                        if filter.contains_key(pallet_name.as_str()) {
-                            if let Some(values) = filter.get(pallet_name.as_str()) {
-                                if values.contains(&event.variant_name()) || values.is_empty() {
-                                    let decode_event = Events {
-                                        pallet: event.pallet_name().to_string(),
-                                        method: event.variant_name().to_string(),
-                                        field_value: data,
-                                    };
-                                    let serialize_event = serde_json::to_value(&decode_event);
-                                    fetched_events.push(serialize_event.unwrap());
+
+                        if !self.chain_config.filter.is_empty() {
+                            if filter.contains_key(pallet_name.as_str()) {
+                                if let Some(values) = filter.get(pallet_name.as_str()) {
+                                    if values.contains(&event.variant_name()) || values.is_empty() {
+                                        let decode_event = Events {
+                                            pallet: event.pallet_name().to_string(),
+                                            method: event.variant_name().to_string(),
+                                            field_value: data,
+                                        };
+                                        let serialize_event = serde_json::to_value(&decode_event);
+                                        fetched_events.push(serialize_event.unwrap());
+                                    }
                                 }
                             }
+                        } else {
+                            let decode_event = Events {
+                                pallet: event.pallet_name().to_string(),
+                                method: event.variant_name().to_string(),
+                                field_value: data,
+                            };
+                            let serialize_event = serde_json::to_value(&decode_event);
+                            fetched_events.push(serialize_event.unwrap());
                         }
                     }
                 }
@@ -67,13 +78,13 @@ impl<T: subxt::Config> PolkadotFeed<T> {
         }
     }
 
-    pub fn split_filter(&self) -> std::collections::HashMap<&str, Vec<&str>> {
-        let mut filter_map: std::collections::HashMap<&str, Vec<&str>> =
+    pub fn split_filter(&self) -> std::collections::HashMap<String, Vec<&str>> {
+        let mut filter_map: std::collections::HashMap<String, Vec<&str>> =
             std::collections::HashMap::new();
         if !self.chain_config.filter.is_empty() {
             for pair in self.chain_config.filter.split(';') {
                 if !pair.contains("=") {
-                    filter_map.insert(pair, vec![]);
+                    filter_map.insert(pair.to_string(), vec![]);
                 }
                 if pair.is_empty() {
                     continue;
@@ -83,7 +94,7 @@ impl<T: subxt::Config> PolkadotFeed<T> {
                 if let Some(key) = iter.next() {
                     if let Some(values) = iter.next() {
                         let values_vec: Vec<&str> = values.split(',').collect();
-                        filter_map.insert(key, values_vec);
+                        filter_map.insert(key.to_string(), values_vec);
                     }
                 }
             }
