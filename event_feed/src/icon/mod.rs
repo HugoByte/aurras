@@ -1,3 +1,4 @@
+use crate::common::ChainConfig;
 use anyhow::{anyhow, Result};
 use icon_sdk::icon_service;
 use icon_sdk::icon_service::IconService;
@@ -17,5 +18,3 @@ pub use feeder::*;
 pub use filter::*;
 pub use types::*;
 pub use utils::*;
-
-

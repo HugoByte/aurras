@@ -45,4 +45,3 @@ pub async fn get_event_logs_by_tx_hash(
 
     Ok(event_logs)
 }
-
