@@ -21,8 +21,6 @@ impl<T: subxt::Config> PolkadotFeed<T> {
 }
 
 impl<T: subxt::Config> PolkadotFeed<T> {
-
-
     /// The `event_feed` function in the code snippet is a method of the `PolkadotFeed` struct. It is an
     /// asynchronous function that takes a callback function `cb` as a parameter. This function
     /// subscribes to finalized blocks on the Polkadot chain and processes the extrinsics and events
@@ -41,22 +39,56 @@ impl<T: subxt::Config> PolkadotFeed<T> {
                     let events = ext.events().await.unwrap();
                     let event_details = events.iter().collect::<Result<Vec<_>, _>>().unwrap();
 
+                    let filter = self.split_filter();
+
                     for event in event_details.iter() {
                         let s = event.field_values().unwrap();
                         let data = format!("{}", s);
-                        let decode_event = Events {
-                            pallet: event.pallet_name().to_string(),
-                            method: event.variant_name().to_string(),
-                            field_value: data,
-                        };
-                        let serialize_event = serde_json::to_value(&decode_event);
-                        fetched_events.push(serialize_event.unwrap());
+
+                        let pallet_name = event.pallet_name().to_lowercase();
+                        if filter.contains_key(pallet_name.as_str()) {
+                            if let Some(values) = filter.get(pallet_name.as_str()) {
+                                if values.contains(&event.variant_name()) || values.is_empty() {
+                                    let decode_event = Events {
+                                        pallet: event.pallet_name().to_string(),
+                                        method: event.variant_name().to_string(),
+                                        field_value: data,
+                                    };
+                                    let serialize_event = serde_json::to_value(&decode_event);
+                                    fetched_events.push(serialize_event.unwrap());
+                                }
+                            }
+                        }
                     }
                 }
                 // Returning the events by callback function
                 cb(fetched_events);
             }
         }
+    }
+
+    pub fn split_filter(&self) -> std::collections::HashMap<&str, Vec<&str>> {
+        let mut filter_map: std::collections::HashMap<&str, Vec<&str>> =
+            std::collections::HashMap::new();
+        if !self.chain_config.filter.is_empty() {
+            for pair in self.chain_config.filter.split(';') {
+                if !pair.contains("=") {
+                    filter_map.insert(pair, vec![]);
+                }
+                if pair.is_empty() {
+                    continue;
+                }
+
+                let mut iter = pair.split('=');
+                if let Some(key) = iter.next() {
+                    if let Some(values) = iter.next() {
+                        let values_vec: Vec<&str> = values.split(',').collect();
+                        filter_map.insert(key, values_vec);
+                    }
+                }
+            }
+        }
+        filter_map
     }
 }
 

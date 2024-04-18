@@ -5,13 +5,14 @@ use serde::Deserialize;
 
 
 pub trait EventFeeder{
-    fn event_feed(&self) -> impl std::future::Future<Output = Value> + Send;
+    fn event_feed(&self, cb: fn(events: Vec<serde_json::Value>));
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ChainConfig{
     pub node_url: String,
-    pub filter : Option<Vec<String>>
+    #[serde(default)]
+    pub filter : String,
 }
 
 #[derive(Deserialize, Debug)]
