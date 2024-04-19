@@ -2,13 +2,15 @@ pub mod constants;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct RequestBody {
     pub wasm: Vec<u8>,
     pub invite: String,
     pub pub_id: String,
     pub allowed_hosts: Option<Vec<String>>,
     pub input: Value,
+    pub workflow_id : String,
+    pub workflow_name : String
 }
 
 pub fn combine_values(dest: &mut serde_json::Value, src: &serde_json::Value) {

@@ -1,5 +1,4 @@
-use std::sync::{Arc, Mutex};
-
+use super::*;
 use crate::{
     modules::{
         logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
@@ -7,9 +6,9 @@ use crate::{
     },
     AppError, Ctx,
 };
-
-use super::*;
 use kuska_ssb::api::dto::content::{Mention, Post};
+use std::borrow::BorrowMut;
+use std::sync::{Arc, Mutex};
 
 impl Client {
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
@@ -226,7 +225,7 @@ impl Client {
         Ok(())
     }
 
-    async fn execute_workflow_by_event(
+    pub async fn execute_workflow_by_event(
         &mut self,
         req_no: RequestNo,
         ctx: Arc<Mutex<dyn Ctx>>,
@@ -245,7 +244,7 @@ impl Client {
                 }
             };
             let db = ctx.get_db();
-            let logger = ctx.get_logger();
+            let mut logger = ctx.get_logger();
             let mut state_manager = ctx.get_state_manager();
 
             if id == req_no {
@@ -263,7 +262,7 @@ impl Client {
                                             match serde_json::from_str::<serde_json::Value>(
                                                 &content.text,
                                             ) {
-                                                Ok(mut event) => {
+                                                Ok(event) => {
                                                     let mentions =
                                                         &content.mentions.unwrap_or(vec![]);
 
@@ -305,42 +304,55 @@ impl Client {
                                                             .info(&format!("Event: {:#?}", event));
 
                                                         match db.get_request_body(pub_id) {
-                                                            Ok(body) => {
-                                                                let data = serde_json::json!({
-                                                                    "data" : crate::common::combine_values(&mut event, &body.input),
-                                                                    "allowed_hosts": body.allowed_hosts
-                                                                });
+                                                            Ok(bodies) => {
+                                                                // Handle the case where bodies is None (no request bodies found)
+                                                                if bodies.is_none() {
+                                                                    logger.error(&format!(
+                                                                        "No request bodies found"
+                                                                    ));
+                                                                }
 
-                                                                let workflow_index = state_manager
-                                                                    .new_workflow(0, "hello");
+                                                                let mut bodies = bodies.unwrap();
 
-                                                                let _ =
-                                                                wasmtime_wasi_module::run_workflow(
-                                                                    state_manager,
-                                                                    logger,
-                                                                    data,
-                                                                    body.wasm,
-                                                                    workflow_index,
-                                                                    false,
-                                                                );
+                                                                // Iterate through bodies, searching for matching pub_id
+                                                                for body in bodies.iter_mut() {
+                                                                    crate::common::combine_values(
+                                                                        &mut body.input,
+                                                                        &event,
+                                                                    );
+                                                                    let data = serde_json::json!({
+                                                                        "data": body.input,
+                                                                        "allowed_hosts": body.allowed_hosts.as_ref(),
+                                                                    });
+
+                                                                    let workflow_index =
+                                                                        state_manager.new_workflow(
+                                                                            &body.workflow_id,
+                                                                            &body.workflow_name,
+                                                                        );
+                                                                    let _ = wasmtime_wasi_module::run_workflow(
+                                                                            state_manager.borrow_mut(),
+                                                                            logger.borrow_mut(),
+                                                                            data,
+                                                                            body.wasm.clone(),
+                                                                            workflow_index,
+                                                                            false,
+                                                                        );
+                                                                }
                                                             }
-                                                            Err(e) => logger.error(&e.to_string()),
+                                                            Err(e) => logger.error(&format!(
+                                                                "Error type: {}",
+                                                                e
+                                                            )),
                                                         }
 
-                                                        db.insert_value(
-                                                            &format!("{}offset", pub_id),
-                                                            display.timestamp,
-                                                        )
-                                                        .map_err(
-                                                            |err| {
-                                                                Box::new(AppError::new(
-                                                                    format!(
-                                                                    "not able to insert offset timestamp to the database: {}",
-                                                                    err
-                                                                ),
-                                                                ))
-                                                            },
-                                                        )?;
+                                                        // Perform database insertion
+                                                        db.insert_value(&format!("{}offset", pub_id), display.timestamp)
+                                                            .map_err(|err| {
+                                                                Box::new(AppError::new(format!(
+                                                                    "not able to insert offset timestamp to the database: {}", err
+                                                                )))
+                                                            })?;
                                                     }
                                                 }
                                                 Err(e) => logger.trace(&e.to_string()),

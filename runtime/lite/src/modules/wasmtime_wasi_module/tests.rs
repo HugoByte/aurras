@@ -27,12 +27,12 @@ mod tests {
             }
         });
 
-        let logger = ctx.get_logger();
+        let mut logger = ctx.get_logger();
         let mut state_manager = ctx.get_state_manager();
 
-        let index = state_manager.new_workflow(1, "hello_world");
+        let index = state_manager.new_workflow("1", "hello_world");
 
-        let result = run_workflow(state_manager, logger, input.clone(), wasm, index, true).unwrap();
+        let result = run_workflow(&mut state_manager, &mut logger, input.clone(), wasm, index, true).unwrap();
 
         assert!(result.result.to_string().contains("Hello"));
     }
@@ -60,12 +60,12 @@ mod tests {
             }
         });
 
-        let logger = ctx.get_logger();
+        let mut logger = ctx.get_logger();
         let mut state_manager = ctx.get_state_manager();
 
-        let index = state_manager.new_workflow(2, "employee_salary");
+        let index = state_manager.new_workflow("2", "employee_salary");
 
-        let result = run_workflow(state_manager, logger, input.clone(), wasm, index, true).unwrap();
+        let result = run_workflow(&mut state_manager, &mut logger, input.clone(), wasm, index, true).unwrap();
         assert!(result
             .result
             .to_string()
