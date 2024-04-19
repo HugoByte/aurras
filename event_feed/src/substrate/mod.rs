@@ -1,4 +1,6 @@
 pub mod types;
+use types::*;
+mod tests;
 use serde::{Deserialize, Serialize};
 use subxt::{Config, OnlineClient, PolkadotConfig};
 

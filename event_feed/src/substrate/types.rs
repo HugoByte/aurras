@@ -43,11 +43,10 @@ impl<T: subxt::Config> PolkadotFeed<T> {
 
                     for event in event_details.iter() {
                         let s = event.field_values().unwrap();
-                        let data = format!("{}", s);
+                        let data = format!("{}", s).replace("((", "[").replace("))", "]");
 
                         let pallet_name = event.pallet_name().to_lowercase();
-
-                        if !self.chain_config.filter.is_empty() {
+                        if !self.chain_config.event_filter.is_empty() {
                             if filter.contains_key(pallet_name.as_str()) {
                                 if let Some(values) = filter.get(pallet_name.as_str()) {
                                     if values.contains(&event.variant_name()) || values.is_empty() {
@@ -81,8 +80,8 @@ impl<T: subxt::Config> PolkadotFeed<T> {
     pub fn split_filter(&self) -> std::collections::HashMap<String, Vec<&str>> {
         let mut filter_map: std::collections::HashMap<String, Vec<&str>> =
             std::collections::HashMap::new();
-        if !self.chain_config.filter.is_empty() {
-            for pair in self.chain_config.filter.split(';') {
+        if !self.chain_config.event_filter.is_empty() {
+            for pair in self.chain_config.event_filter.split(';') {
                 if !pair.contains("=") {
                     filter_map.insert(pair.to_string(), vec![]);
                 }
