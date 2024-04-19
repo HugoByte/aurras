@@ -1,6 +1,7 @@
 use super::*;
 use crate::common::ChainConfig;
 
+#[derive(Debug,Clone)]
 pub struct PolkadotFeed<T: subxt::Config> {
     chain_config: ChainConfig,
 
@@ -25,7 +26,7 @@ impl<T: subxt::Config> PolkadotFeed<T> {
     /// asynchronous function that takes a callback function `cb` as a parameter. This function
     /// subscribes to finalized blocks on the Polkadot chain and processes the extrinsics and events
     /// within those blocks.
-    pub async fn event_feed(&self, cb: fn(events: Vec<serde_json::Value>)) {
+    pub async fn event_feed(&self, cb: &dyn Fn( Vec<serde_json::Value>)) {
         let mut blocks_sub = self.client.blocks().subscribe_finalized().await.unwrap();
 
         // For each block, print a bunch of information about it:

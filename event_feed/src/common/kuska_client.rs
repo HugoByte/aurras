@@ -1,9 +1,10 @@
 use super::*;
 use anyhow::anyhow;
 use anyhow::Result;
-use runtime::kuska_ssb_client::client::Client;
 use runtime::api::dto::content::Mention;
 use runtime::kuska_ssb_client::client::owned_identity_from_patchwork_config;
+use runtime::kuska_ssb_client::client::Client;
+
 pub struct Producer {
     config: ProducerConfig,
     client: Client,

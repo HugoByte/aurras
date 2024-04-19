@@ -15,14 +15,21 @@ async fn main() {
     let chain_config = envy::from_env::<ChainConfig>().unwrap();
     let producer_config = envy::from_env::<ProducerConfig>().unwrap();
 
-    let mut ssb_client = Producer::new(producer_config).await.unwrap();
+    let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
     ssb_client.accept_invite().await.unwrap();
 
     let polkadot = PolkadotFeed::<PolkadotConfig>::new(chain_config).await;
     polkadot
-        .event_feed(|e| {
+        .event_feed(&|e| {
             for i in e {
-                // ssb_client.publish_feed(i).await.unwrap();
+                tokio::spawn(async move {
+                    let producer_config = envy::from_env::<ProducerConfig>().unwrap();
+                    let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
+                    ssb_client
+                        .publish_feed(i)
+                        .await
+                        .expect("Failed to send event");
+                });
             }
         })
         .await;
