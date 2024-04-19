@@ -2,6 +2,8 @@ pub mod constants;
 pub use constants::*;
 use serde::Deserialize;
 use serde_json::Value;
+mod kuska_client;
+pub use kuska_client::*;
 
 
 pub trait EventFeeder{
@@ -25,4 +27,6 @@ pub struct ProducerConfig {
     pub ssb_port: String,
     #[serde(default = "default_secret")]
     pub ssb_secret: String,
+    #[serde(default)]
+    pub ssb_invite: String,
 }

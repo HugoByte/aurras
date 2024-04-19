@@ -1,4 +1,5 @@
-use common::{ChainConfig, EventFeeder};
+use crate::common::Producer;
+use common::{ChainConfig, EventFeeder, ProducerConfig};
 use substrate::types::PolkadotFeed;
 use subxt::PolkadotConfig;
 
@@ -11,12 +12,17 @@ mod substrate;
 #[tokio::main]
 async fn main() {
     dotenv::dotenv().ok();
-    let config = envy::from_env::<ChainConfig>().unwrap();
-    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config).await;
+    let chain_config = envy::from_env::<ChainConfig>().unwrap();
+    let producer_config = envy::from_env::<ProducerConfig>().unwrap();
+
+    let mut ssb_client = Producer::new(producer_config).await.unwrap();
+    ssb_client.accept_invite().await.unwrap();
+
+    let polkadot = PolkadotFeed::<PolkadotConfig>::new(chain_config).await;
     polkadot
         .event_feed(|e| {
             for i in e {
-                println!("{}", i);
+                // ssb_client.publish_feed(i).await.unwrap();
             }
         })
         .await;
