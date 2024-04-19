@@ -2,12 +2,15 @@ pub mod constants;
 pub use constants::*;
 use serde::Deserialize;
 use serde_json::Value;
+mod kuska_client;
+pub use kuska_client::*;
 
-pub trait EventFeeder {
-    fn event_feed(&self) -> impl std::future::Future<Output = Value> + Send;
+
+pub trait EventFeeder{
+    fn event_feed(&self, cb: fn(events: Vec<serde_json::Value>));
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ChainConfig {
     pub node_url: String,
     #[serde(default)]
@@ -16,7 +19,7 @@ pub struct ChainConfig {
     pub contract_filter: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ProducerConfig {
     #[serde(default = "default_host")]
     pub ssb_ip: String,
@@ -24,4 +27,6 @@ pub struct ProducerConfig {
     pub ssb_port: String,
     #[serde(default = "default_secret")]
     pub ssb_secret: String,
+    #[serde(default)]
+    pub ssb_invite: String,
 }

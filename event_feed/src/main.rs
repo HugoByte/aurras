@@ -1,4 +1,5 @@
-use common::{ChainConfig, EventFeeder};
+use crate::common::Producer;
+use common::{ChainConfig, EventFeeder, ProducerConfig};
 use substrate::types::PolkadotFeed;
 use subxt::PolkadotConfig;
 
@@ -10,17 +11,25 @@ mod substrate;
 
 #[tokio::main]
 async fn main() {
-    let config = ChainConfig {
-        node_url: "ws://127.0.0.1:9944".to_string(),
-        event_filter: String::new(),
-        contract_filter: String::new(),
-    };
+    dotenv::dotenv().ok();
+    let chain_config = envy::from_env::<ChainConfig>().unwrap();
+    let producer_config = envy::from_env::<ProducerConfig>().unwrap();
 
-    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config).await;
+    let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
+    ssb_client.accept_invite().await.unwrap();
+
+    let polkadot = PolkadotFeed::<PolkadotConfig>::new(chain_config).await;
     polkadot
-        .event_feed(|e| {
+        .event_feed(&|e| {
             for i in e {
-                println!("{}", i);
+                tokio::spawn(async move {
+                    let producer_config = envy::from_env::<ProducerConfig>().unwrap();
+                    let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
+                    ssb_client
+                        .publish_feed(i)
+                        .await
+                        .expect("Failed to send event");
+                });
             }
         })
         .await;
