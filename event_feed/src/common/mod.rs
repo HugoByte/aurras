@@ -7,7 +7,8 @@ pub trait EventFeeder {
     fn event_feed(&self) -> impl std::future::Future<Output = Value> + Send;
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
+#[derive(PartialEq)]
 pub struct ChainConfig {
     pub node_url: String,
     #[serde(default)]
