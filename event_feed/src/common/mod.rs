@@ -5,8 +5,7 @@ use serde_json::Value;
 mod kuska_client;
 pub use kuska_client::*;
 
-
-pub trait EventFeeder{
+pub trait EventFeeder {
     fn event_feed(&self, cb: fn(events: Vec<serde_json::Value>));
 }
 
@@ -29,4 +28,14 @@ pub struct ProducerConfig {
     pub ssb_secret: String,
     #[serde(default)]
     pub ssb_invite: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct FeederEvent {
+    pub name: String,
+    pub contract: String,
+    pub data: Value,
+    pub block_number: usize,
+    pub tx_hash: Option<String>,
+    pub log_index: usize,
 }
