@@ -3,6 +3,7 @@ use crate::ChainConfig;
 #[tokio::test]
 async fn test_filter_events() {
     let config = ChainConfig {
+        chain:"Susbtrate".to_string(),
         node_url: "wss://rococo-rpc.polkadot.io".to_string(),
         event_filter: "balances=Transfer".to_string(),
         contract_filter: "".to_string(),
@@ -17,6 +18,7 @@ async fn test_filter_events() {
 #[tokio::test]
 async fn test_filter_events_argument_with_no_method() {
     let config = ChainConfig {
+        chain:"Susbtrate".to_string(),
         node_url: "wss://rococo-rpc.polkadot.io".to_string(),
         event_filter: "balances=Transfer;system".to_string(),
         contract_filter: "".to_string(),

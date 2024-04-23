@@ -4,14 +4,16 @@ use serde::Deserialize;
 use serde_json::Value;
 mod kuska_client;
 pub use kuska_client::*;
+mod context;
+pub use context::*;
 
-
-pub trait EventFeeder{
-    fn event_feed(&self, cb: fn(events: Vec<serde_json::Value>));
+pub trait EventFeeder: Send + 'static {
+    fn event_feeder(&self, cb: &dyn Fn(Vec<serde_json::Value>));
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ChainConfig {
+    pub chain: String,
     pub node_url: String,
     #[serde(default)]
     pub event_filter: String,

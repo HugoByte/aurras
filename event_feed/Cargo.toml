@@ -16,6 +16,7 @@ envy = "0.4"
 anyhow = "1.0.82"
 icon-sdk = '1.2.0'
 runtime = {path = "../runtime/lite"}
+async-trait = '0.1.80'
 
 [dependencies.tokio]
 version = '1.36.0'

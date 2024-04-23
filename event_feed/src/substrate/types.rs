@@ -1,5 +1,5 @@
 use super::*;
-use crate::common::ChainConfig;
+use crate::common::{ChainConfig, EventFeeder};
 
 #[derive(Debug,Clone)]
 pub struct PolkadotFeed<T: subxt::Config> {
@@ -110,4 +110,17 @@ macro_rules! events {
             .find::<polkadot::$pallet::events::$method>()
             .collect::<Result<Vec<_>, _>>();
     };
+}
+
+
+impl EventFeeder for PolkadotFeed<PolkadotConfig>{
+    fn event_feeder(&self, cb: &dyn Fn( Vec<serde_json::Value>))  {
+        let r = async {
+            // Simulate an async operation that resolves to a value
+            self.event_feed(cb).await;
+            
+        };
+    }
+    
+    
 }
