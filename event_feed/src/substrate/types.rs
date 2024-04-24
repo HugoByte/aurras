@@ -10,14 +10,14 @@ pub struct PolkadotFeed<T: subxt::Config> {
 }
 
 impl<T: subxt::Config> PolkadotFeed<T> {
-    pub async fn new(chain_config: ChainConfig) -> PolkadotFeed<PolkadotConfig> {
+    pub async fn new(chain_config: ChainConfig) -> Result<PolkadotFeed<PolkadotConfig>> {
         let client = OnlineClient::<PolkadotConfig>::from_url(&chain_config.node_url)
             .await
-            .unwrap();
-        PolkadotFeed {
+            ?;
+        Ok(PolkadotFeed {
             chain_config,
             client,
-        }
+        })
     }
 }
 
@@ -26,8 +26,8 @@ impl<T: subxt::Config> PolkadotFeed<T> {
     /// asynchronous function that takes a callback function `cb` as a parameter. This function
     /// subscribes to finalized blocks on the Polkadot chain and processes the extrinsics and events
     /// within those blocks.
-    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) {
-        let mut blocks_sub = self.client.blocks().subscribe_finalized().await.unwrap();
+    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()>{
+        let mut blocks_sub = self.client.blocks().subscribe_finalized().await?;
 
         // For each block, print a bunch of information about it:
         loop {
@@ -67,8 +67,8 @@ impl<T: subxt::Config> PolkadotFeed<T> {
                                 method: event.variant_name().to_string(),
                                 field_value: data,
                             };
-                            let serialize_event = serde_json::to_value(&decode_event);
-                            fetched_events.push(serialize_event.unwrap());
+                            let serialize_event = serde_json::to_value(&decode_event)?;
+                            fetched_events.push(serialize_event);
                         }
                     }
                 }

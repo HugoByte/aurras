@@ -11,7 +11,7 @@ async fn test_filter_events() {
         event_filter: "balances=Transfer".to_string(),
         contract_filter: "".to_string(),
     };
-    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config).await;
+    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config).await.unwrap();
     let result = polkadot.split_filter();
 
     assert_eq!(
@@ -28,7 +28,7 @@ async fn test_filter_events_argument_with_no_method() {
         event_filter: "balances=Transfer;system".to_string(),
         contract_filter: "".to_string(),
     };
-    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config).await;
+    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config).await.unwrap();
     let result = polkadot.split_filter();
 
     assert_eq!(

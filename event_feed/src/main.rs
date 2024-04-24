@@ -22,7 +22,7 @@ async fn main() {
 
     let feed: Context = match chain_config.clone().chain.to_lowercase().as_str() {
         "substrate" => {
-            let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone()).await;
+            let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone()).await.unwrap();
             Context::PolkadotFeed(polkadot_client)
         }
         "icon" => {
@@ -32,7 +32,7 @@ async fn main() {
         _ => panic!("Invalid Chain"),
     };
 
-    feed.feed_events(&|e| {
+    let _ = feed.feed_events(&|e| {
         for i in e {
             tokio::spawn(async move {
                 let producer_config = envy::from_env::<ProducerConfig>().unwrap();
