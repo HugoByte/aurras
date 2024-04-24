@@ -32,7 +32,7 @@ impl EthFeed {
         Ok(eth_feed)
     }
 
-    pub async fn event_feed(&self, cb: &dyn Fn(Vec<FeederEvent>)) -> Result<()> {
+    pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<()> {
         let client = Arc::new(&self.eth_service);
 
         let last_block = client
@@ -56,14 +56,15 @@ impl EthFeed {
                     None => {
                         let event = self.events.iter().find(|e| e.1 == log.topics[0]);
 
-                        cb(vec![FeederEvent {
+                        cb(vec![serde_json::to_value(FeederEvent {
                             name: event.unwrap().0.clone(),
                             contract: format!("{:?}", &log.address),
                             data: json!({ "topics": log.topics, "data": log.data.to_vec() }),
                             block_number: log.block_number.unwrap_or_default().as_usize(),
                             tx_hash: None,
                             log_index: log.log_index.unwrap_or_default().as_usize(),
-                        }]);
+                        })
+                        .unwrap()]);
                         continue;
                     }
                 };
@@ -71,7 +72,7 @@ impl EthFeed {
                 let tx_receipt = client.get_transaction_receipt(tx_hash).await;
 
                 if let Ok(Some(tx_receipt)) = tx_receipt {
-                    let mut logs = Vec::<FeederEvent>::new();
+                    let mut logs = Vec::<Value>::new();
 
                     for log in tx_receipt.logs.iter() {
                         if self.contracts.is_empty()
@@ -79,15 +80,17 @@ impl EthFeed {
                         {
                             for evt in self.events.iter() {
                                 if log.topics[0] == evt.1 {
-                                    logs.push(FeederEvent {
+                                    logs.push(
+                                        serde_json::to_value(
+                                        FeederEvent {
                                         name: evt.0.clone(),
                                         contract: format!("{:?}", &log.address),
                                         data: json!({ "topics": log.topics, "data": log.data.to_vec() }),
                                         block_number: log.block_number.unwrap_or_default().as_usize(),
                                         tx_hash: Some(format!("{:?}", tx_hash)),
                                         log_index: log.log_index.unwrap_or_default().as_usize(),
-                                    });
-
+                                        }).unwrap()
+                                    );
                                     break;
                                 }
                             }
