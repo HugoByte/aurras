@@ -30,3 +30,13 @@ pub struct ProducerConfig {
     #[serde(default)]
     pub ssb_invite: String,
 }
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct FeederEvent {
+    pub name: String,
+    pub contract: String,
+    pub data: Value,
+    pub block_number: usize,
+    pub tx_hash: Option<String>,
+    pub log_index: usize,
+}
