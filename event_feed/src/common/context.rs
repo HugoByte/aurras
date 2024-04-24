@@ -1,14 +1,20 @@
 
-use std::sync::Arc;
+use crate::IconFeed;
+use crate::PolkadotFeed;
+use subxt::PolkadotConfig;
 
-use super::*;
-
-pub struct Context<T : EventFeeder + ?Sized>{
-    pub feed_client: Arc<T>,
+pub enum Context {
+    PolkadotFeed(PolkadotFeed<PolkadotConfig>),
+    IconFeed(IconFeed),
 }
 
-impl<T: EventFeeder+ ?Sized> Context<T> {
-    pub fn new(client: Arc<T>) -> Self{
-        Context { feed_client: client }
+impl Context {
+    pub async fn feed_events(&self, cb: &dyn Fn(Vec<serde_json::Value>)) {
+        match self {
+            Context::PolkadotFeed(feed) => feed.event_feed(cb).await,
+            Context::IconFeed(feed) => {
+                let _ =feed.event_feed(cb).await;
+            }
+        }
     }
 }

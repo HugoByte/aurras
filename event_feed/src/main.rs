@@ -1,9 +1,6 @@
-use std::borrow::BorrowMut;
-use std::sync::Arc;
-
 use crate::common::Context;
 use crate::common::Producer;
-use common::{ChainConfig, EventFeeder, ProducerConfig};
+use common::{ChainConfig, ProducerConfig};
 use icon::IconFeed;
 use substrate::types::PolkadotFeed;
 use subxt::PolkadotConfig;
@@ -23,56 +20,29 @@ async fn main() {
     let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
     ssb_client.accept_invite().await.unwrap();
 
-    match chain_config.clone().chain.to_lowercase().as_str() {
+    let feed: Context = match chain_config.clone().chain.to_lowercase().as_str() {
         "substrate" => {
-            let s = Arc::new(PolkadotFeed::<PolkadotConfig>::new(chain_config.clone()).await);
-            let feed = Context::new(s);
-            feed.feed_client
-                .event_feed(&|e| {
-                    for i in e {
-                        tokio::spawn(async move {
-                            let producer_config = envy::from_env::<ProducerConfig>().unwrap();
-                            let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
-                            ssb_client
-                                .publish_feed(i)
-                                .await
-                                .expect("Failed to send event");
-                        });
-                    }
-                })
-                .await;
+            let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone()).await;
+            Context::PolkadotFeed(polkadot_client)
         }
         "icon" => {
-            let s = Arc::new(IconFeed::new(chain_config.clone()).unwrap());
-            let feed = Context::new(s);
-            feed.feed_client
-                .event_feed(&|e| {
-                    for i in e {
-                        tokio::spawn(async move {
-                            let producer_config = envy::from_env::<ProducerConfig>().unwrap();
-                            let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
-                            ssb_client
-                                .publish_feed(i)
-                                .await
-                                .expect("Failed to send event");
-                        });
-                    }
-                })
-                .await.unwrap();
+            let icon_client = IconFeed::new(chain_config.clone()).unwrap();
+            Context::IconFeed(icon_client)
         }
-        _ => todo!(),
+        _ => panic!("Invalid Chain"),
     };
 
-    let feed: Context<dyn EventFeeder> = match chain_config.clone().chain.to_lowercase().as_str() {
-        "substrate" => {
-            let s = Arc::new(PolkadotFeed::<PolkadotConfig>::new(chain_config.clone()).await);
-            Context::new(s)
+    feed.feed_events(&|e| {
+        for i in e {
+            tokio::spawn(async move {
+                let producer_config = envy::from_env::<ProducerConfig>().unwrap();
+                let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
+                ssb_client
+                    .publish_feed(i)
+                    .await
+                    .expect("Failed to send event");
+            });
         }
-        "icon" => {
-            let s = Arc::new(IconFeed::new(chain_config.clone()).unwrap());
-            Context::new(s)
-        }
-        _ => todo!(),
-    };
-
+    })
+    .await;
 }

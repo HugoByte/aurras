@@ -7,9 +7,7 @@ pub use kuska_client::*;
 mod context;
 pub use context::*;
 
-pub trait EventFeeder: Send + 'static {
-    fn event_feeder(&self, cb: &dyn Fn(Vec<serde_json::Value>));
-}
+pub use super::*;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ChainConfig {

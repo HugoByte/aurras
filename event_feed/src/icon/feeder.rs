@@ -1,5 +1,3 @@
-use crate::common::EventFeeder;
-
 use super::*;
 
 pub struct IconFeed {
@@ -126,15 +124,5 @@ impl IconFeed {
 
             latest_height = get_icon_block_height(&self.icon_service).await?;
         }
-    }
-}
-
-impl EventFeeder for IconFeed {
-    fn event_feeder(&self, cb: &dyn Fn(Vec<serde_json::Value>)) {
-        let r = async {
-            // Simulate an async operation that resolves to a value
-            self.event_feed(cb).await.unwrap();
-        };
-  
     }
 }
