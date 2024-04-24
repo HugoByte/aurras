@@ -20,6 +20,8 @@ members = [
     # "workflow/workflow_apis",
     "workflow/test_util",
     "workflow/hello_world_macro",
+    "runtime/lite",
+    "event_feed"
 ]
 
 [workspace.package]
