@@ -10,6 +10,7 @@ pub use context::*;
 pub use super::*;
 
 #[derive(Deserialize, Debug, Clone)]
+#[derive(PartialEq)]
 pub struct ChainConfig {
     pub chain: String,
     pub node_url: String,
