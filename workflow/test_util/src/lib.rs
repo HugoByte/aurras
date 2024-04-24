@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+mod types;
 #[cfg(test)]
 mod wasi_http;
-mod types;
 
 pub mod helper;
 pub use helper::*;
@@ -218,7 +218,6 @@ mod tests {
             fn get_json_string(&self) -> String;
         }
 
-
         clone_trait_object!(Execute);
         #[derive(Debug, Flow)]
         #[allow(dead_code)]
@@ -233,7 +232,7 @@ mod tests {
                 WorkflowGraph {
                     nodes: Vec::with_capacity(size),
                     edges: Vec::new(),
-                    state_manager: types::StateManager::init(),
+                    state_manager: types::StateManager::default(),
                 }
             }
         }
@@ -265,14 +264,14 @@ mod tests {
                     todo!()
                 }
 
-                fn get_action_name(&self) -> String{
+                fn get_action_name(&self) -> String {
                     todo!()
                 }
-    
-                fn get_json_string(&self) -> String{
+
+                fn get_json_string(&self) -> String {
                     todo!()
                 }
-    
+
                 fn set_result_output(&mut self, inp: Value) {
                     todo!()
                 }
