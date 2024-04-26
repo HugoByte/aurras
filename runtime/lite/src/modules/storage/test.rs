@@ -3,7 +3,7 @@ mod tests {
     use crate::common::RequestBody;
     use crate::modules::storage::CoreStorage;
     use crate::modules::storage::Storage;
-    pub use rocksdb::DB;
+    pub use rocksdb::{Options, DB};
     use std::time::Duration;
     use std::{fs, thread};
 
@@ -113,5 +113,22 @@ mod tests {
         let result = core_storage.get_value::<RequestBody>(key).unwrap();
         fs::remove_dir_all(std::path::Path::new("test10")).unwrap();
         assert_eq!(result, Some(req));
+    }
+
+    #[test]
+    fn test_db_with_ttl() {
+        let core_storage = CoreStorage::new_with_ttl("test11", 1, false).unwrap();
+        let key = "test_key";
+        let value = vec![1, 2, 3];
+        core_storage.set_data(key, value.clone()).unwrap();
+        let result = core_storage.get_data(key).unwrap();
+        assert_eq!(result, value);
+
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        let result = core_storage.get_data(key);
+        assert!(result.is_err());
+
+        drop(core_storage);
+        DB::destroy(&Options::default(), "test11").unwrap();
     }
 }
