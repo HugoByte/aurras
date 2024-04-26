@@ -1,5 +1,6 @@
 use crate::common::Context;
 use crate::common::Producer;
+use common::cosmos::CosmosFeed;
 use common::{ChainConfig, ProducerConfig};
 use icon::IconFeed;
 use substrate::types::PolkadotFeed;
@@ -10,6 +11,7 @@ mod cosmos;
 mod eth;
 mod icon;
 mod substrate;
+// pub use cosmos;
 
 #[tokio::main]
 async fn main() {
@@ -45,4 +47,5 @@ async fn main() {
         }
     })
     .await;
+   
 }
