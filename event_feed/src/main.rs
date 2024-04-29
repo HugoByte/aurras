@@ -5,6 +5,7 @@ use common::{ChainConfig, ProducerConfig};
 use icon::IconFeed;
 use substrate::types::PolkadotFeed;
 use subxt::PolkadotConfig;
+use eth::EthFeed;
 
 pub mod common;
 mod cosmos;
@@ -32,6 +33,10 @@ async fn main() {
         "icon" => {
             let icon_client = IconFeed::new(chain_config.clone()).unwrap();
             Context::IconFeed(icon_client)
+        }
+        "eth" => {
+            let eth_client = EthFeed::new(chain_config.clone()).await.unwrap();
+            Context::EthFeed(eth_client)
         }
         _ => panic!("Invalid Chain"),
     };

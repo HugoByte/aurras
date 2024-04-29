@@ -32,7 +32,7 @@ pub struct ProducerConfig {
     pub ssb_invite: String,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FeederEvent {
     pub name: String,
     pub contract: String,
