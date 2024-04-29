@@ -27,7 +27,7 @@ impl CosmosFeed {
         cosmos
     }
 
-    pub async fn event_feed(&self, cb: &dyn Fn(Vec<common::FeederEvent>)) -> Result<(), Error> {
+    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<(), Error> {
         let (client, driver) = WebSocketClient::new(&*self.chain_config.node_url)
             .await
             .unwrap();
@@ -40,55 +40,99 @@ impl CosmosFeed {
             let ev = res.unwrap();
             events.push(ev.clone());
 
+            // Check if event filter is empty (listen to all events)
             if self.chain_config.event_filter.is_empty() {
-                println!("Event for latest block: {:#?}", ev);
-            } else {
+                // Convert all events to Value and call the callback directly
                 let filter_events = events
-                    .clone()
-                    .into_iter()
+                    .iter()
                     .map(|tendermint_event| {
                         let cloned_data = tendermint_event.data.clone();
-                        let (block, event_kinds, hash_string) = match cloned_data {
+                        match cloned_data {
                             EventData::LegacyNewBlock {
                                 ref block,
                                 result_begin_block,
                                 result_end_block: _,
                             } => {
-                                let b = block.as_ref().unwrap();
-                                let block = b.header.version.block;
-                                let hash = b.header.last_commit_hash;
+                                let block = block.as_ref().unwrap();
+                                let block_number = block.header.version.block as usize;
+                                let hash_string =
+                                    block.header.last_commit_hash.map(|h| h.to_string());
 
-                                let hash_string = hash.map(|hash| hash.to_string());
+                                // Similar to filtered events, construct FeederEvents with details
+                                let events = result_begin_block
+                                    .unwrap()
+                                    .events
+                                    .iter()
+                                    .map(|event| common::FeederEvent {
+                                        name: event.kind.to_string(),
+                                        contract: String::default(),
+                                        data: serde_json::Value::Null,
+                                        block_number,
+                                        tx_hash: hash_string.clone(),
+                                        log_index: 0,
+                                    })
+                                    .map(|e| serde_json::to_value(e).unwrap()) // Convert to Value directly
+                                    .collect::<Vec<serde_json::Value>>();
+                                // Return the converted events directly
+                                return events;
+                            }
+                            _ => unreachable!(),
+                        }
+                    })
+                    .flatten()
+                    .collect::<Vec<serde_json::Value>>();
+                // Call the callback with all events
+                cb(filter_events);
+            } else {
+                // logic for handling filtered events
+                let filter_events = events
+                    .clone()
+                    .into_iter()
+                    .filter_map(|tendermint_event| {
+                        let cloned_data = tendermint_event.data.clone();
+                        match cloned_data {
+                            EventData::LegacyNewBlock {
+                                ref block,
+                                result_begin_block,
+                                result_end_block: _,
+                            } => {
+                                let block = block.as_ref().unwrap();
+                                let block_number = block.header.version.block as usize;
+                                let hash_string =
+                                    block.header.last_commit_hash.map(|h| h.to_string());
 
-                                let event_kinds = result_begin_block
+                                let filtered_events = result_begin_block
                                     .unwrap()
                                     .events
                                     .iter()
                                     .filter(|event| event.kind == self.chain_config.event_filter)
-                                    .map(|event| event.kind.to_string())
-                                    .collect::<Vec<String>>()
-                                    .join(",");
+                                    .map(|event| common::FeederEvent {
+                                        name: event.kind.to_string(),
+                                        contract: String::default(),
+                                        data: serde_json::Value::Null,
+                                        block_number,
+                                        tx_hash: hash_string.clone(),
+                                        log_index: 0,
+                                    })
+                                    .collect::<Vec<common::FeederEvent>>();
 
-                                (block as usize, event_kinds, hash_string)
+                                if !filtered_events.is_empty() {
+                                    Some(filtered_events)
+                                } else {
+                                    None
+                                }
                             }
-
                             _ => unreachable!(),
-                        };
-
-                        common::FeederEvent {
-                            name: event_kinds,
-                            contract: String::default(),
-                            data: serde_json::Value::Null,
-                            block_number: block,
-                            tx_hash: hash_string,
-                            log_index: 0,
                         }
                     })
-                    .collect::<Vec<common::FeederEvent>>();
+                    .flatten();
 
-                // Call the callback function with the filtered FeederEvents
-                cb(filter_events);
-            }
+                // Call the callback function with the filtered events
+                cb(filter_events
+                    .into_iter()
+                    .map(|e| serde_json::to_value(e).unwrap())
+                    .collect());
+            };
         }
 
         drop(subs);

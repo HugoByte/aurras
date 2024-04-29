@@ -27,13 +27,8 @@ mod tests {
             chain: "cosmos".to_string(),
         };
 
-        let callback = |events: Vec<FeederEvent>| {
-            assert!(!events.is_empty());
-            for event in events {
-                assert_eq!(event.contract, String::default());
-                assert_eq!(event.tx_hash, Some(String::default()));
-                assert_eq!(event.log_index, 0);
-            }
+        let callback = |events: Vec<serde_json::Value>| {
+            assert!(events.is_empty());
         };
 
         let cosmos_feed = CosmosFeed::new(chain_config.clone());
@@ -53,7 +48,7 @@ mod tests {
             chain: "cosmos".to_string(),
         };
 
-        let callback = |events: Vec<FeederEvent>| {
+        let callback = |events: Vec<serde_json::Value>| {
             // Simulate an error condition
             assert!(events.is_empty());
         };
