@@ -1,6 +1,6 @@
 pub mod constants;
 pub use constants::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 mod kuska_client;
 pub use kuska_client::*;
@@ -31,7 +31,7 @@ pub struct ProducerConfig {
     pub ssb_invite: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FeederEvent {
     pub name: String,
     pub contract: String,

@@ -2,10 +2,12 @@ use crate::IconFeed;
 use crate::PolkadotFeed;
 use subxt::PolkadotConfig;
 use anyhow::Result;
+use super::EthFeed;
 
 pub enum Context {
     PolkadotFeed(PolkadotFeed<PolkadotConfig>),
     IconFeed(IconFeed),
+    EthFeed(EthFeed),
 }
 
 impl Context {
@@ -13,6 +15,9 @@ impl Context {
         match self {
             Context::PolkadotFeed(feed) => feed.event_feed(cb).await,
             Context::IconFeed(feed) => {
+                feed.event_feed(cb).await
+            },
+            Context::EthFeed(feed) => {
                 feed.event_feed(cb).await
             }
         }
