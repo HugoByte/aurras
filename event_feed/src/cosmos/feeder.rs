@@ -1,18 +1,39 @@
-use ethers::types::BlockId::Hash;
-use std::any::Any;
-
 use super::*;
-use crate::substrate::polkadot::offences::events::offence::Kind;
 use crate::{common, cosmos};
-use tendermint_rpc::dialect::v0_37::Event as DialectEvent;
+use anyhow::*;
 use tendermint_rpc::event::{Event, EventData};
 
+/// The `CosmosFeed` struct in Rust defines a feed for handling Cosmos blockchain events with filtering
+/// capabilities.
+///
+/// Properties:
+///
+/// * `chain_config`: The `chain_config` property in the `CosmosFeed` struct represents the
+/// configuration settings for a specific blockchain network. It includes parameters such as the node
+/// URL, event filters, and other relevant details needed to interact with the blockchain network.
+/// * `events`: The `events` property in the `CosmosFeed` struct is a vector of strings that stores the
+/// event filters for the Cosmos blockchain feed. These event filters are used to specify which types of
+/// events the feed should listen to and process. The events are parsed from the `event_filter` string
+/// provided
 pub struct CosmosFeed {
     pub chain_config: ChainConfig,
     pub events: Vec<String>,
 }
 
+/// The above Rust code defines an implementation for a `CosmosFeed` struct. Here is a breakdown of what
+/// the code is doing:
 impl CosmosFeed {
+    /// The function `new` creates a new `CosmosFeed` instance based on the provided `ChainConfig` with
+    /// event filtering.
+    ///
+    /// Arguments:
+    ///
+    /// * `chain_config`: The `chain_config` parameter is of type `common::ChainConfig` and is used to
+    /// configure the chain settings for the CosmosFeed struct.
+    ///
+    /// Returns:
+    ///
+    /// A `CosmosFeed` struct instance is being returned.
     pub fn new(chain_config: common::ChainConfig) -> CosmosFeed {
         let events = chain_config
             .event_filter
@@ -27,7 +48,21 @@ impl CosmosFeed {
         cosmos
     }
 
-    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<(), Error> {
+    /// The function `event_feed` in Rust asynchronously subscribes to new block events, processes and
+    /// filters the events based on certain conditions, and calls a callback function with the filtered
+    /// events.
+    ///
+    /// Arguments:
+    ///
+    /// * `cb`: The `cb` parameter in the `event_feed` function is a callback function that takes a
+    /// vector of `serde_json::Value` as input. This callback function is called with the events
+    /// received from the WebSocket subscription either directly or after filtering based on the event
+    /// filter specified in the `chain_config`.
+    ///
+    /// Returns:
+    ///
+    /// The `event_feed` function returns a `Result<()>`.
+    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
         let (client, driver) = WebSocketClient::new(&*self.chain_config.node_url)
             .await
             .unwrap();

@@ -2,10 +2,10 @@ use crate::common::Context;
 use crate::common::Producer;
 use common::cosmos::CosmosFeed;
 use common::{ChainConfig, ProducerConfig};
+use eth::EthFeed;
 use icon::IconFeed;
 use substrate::types::PolkadotFeed;
 use subxt::PolkadotConfig;
-use eth::EthFeed;
 
 pub mod common;
 mod cosmos;
@@ -37,6 +37,10 @@ async fn main() {
         "eth" => {
             let eth_client = EthFeed::new(chain_config.clone()).await.unwrap();
             Context::EthFeed(eth_client)
+        }
+        "cosmos" => {
+            let cosmos_client = CosmosFeed::new(chain_config.clone());
+            Context::CosmosFeed(cosmos_client)
         }
         _ => panic!("Invalid Chain"),
     };
