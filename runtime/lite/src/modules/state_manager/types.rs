@@ -1,5 +1,9 @@
 use super::*;
 
+/// The above Rust code defines an enum type `ExecutionState` with variants `Init`, `Running`, `Paused`,
+/// `Failed`, and `Success`. The enum is derived with various traits like `Debug`, `Clone`, `Serialize`,
+/// `Deserialize`, `Default`, and `PartialEq`. The `#[default]` attribute is used to specify the default
+/// variant when the enum is initialized without specifying a variant explicitly.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub enum ExecutionState {
     #[default]
@@ -10,6 +14,23 @@ pub enum ExecutionState {
     Success,
 }
 
+/// The `WorkflowState` struct in Rust represents the state of a workflow execution with its ID, name,
+/// execution state, and optional result.
+/// 
+/// Properties:
+/// 
+/// * `workflow_id`: The `workflow_id` property in the `WorkflowState` struct represents the unique
+/// identifier of a workflow. It is of type `String` and is used to uniquely identify a specific
+/// workflow instance.
+/// * `workflow_name`: The `workflow_name` property in the `WorkflowState` struct represents the name of
+/// the workflow. It is a field of type `String` and is used to store the name associated with a
+/// particular workflow instance.
+/// * `execution_state`: The `execution_state` property in the `WorkflowState` struct represents the
+/// current state of execution for a workflow. It is of type `ExecutionState`, which is likely an enum
+/// or a custom type that defines different states that a workflow can be in, such as "Running",
+/// "Completed", "
+/// * `result`: The `result` property in the `WorkflowState` struct is an optional field of type
+/// `Option<Value>`. This means that it can either contain a value of type `Value` or be `None`.
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct WorkflowState {
     workflow_id: String,
@@ -18,6 +39,10 @@ pub struct WorkflowState {
     result: Option<Value>,
 }
 
+/// The above code is implementing a method `new` for the `WorkflowState` struct in Rust. This method
+/// takes two string parameters `workflow_id` and `workflow_name`, creates a new `WorkflowState`
+/// instance with the provided values, sets the `execution_state` to `ExecutionState::Init`, and
+/// initializes the `result` field to `None`.
 impl WorkflowState {
     pub fn new(workflow_id: &str, workflow_name: &str) -> Self {
         Self {
@@ -29,6 +54,11 @@ impl WorkflowState {
     }
 }
 
+/// The above code is implementing a workflow state manager in Rust. It defines a struct `WorkflowState`
+/// and implements the `WorkflowStateManager` trait for it. The trait defines methods for updating the
+/// state of the workflow (running, paused, result), getting information about the workflow (ID, name,
+/// execution state, success status, result), and handling error cases for different states of the
+/// workflow.
 impl WorkflowStateManager for WorkflowState {
     fn update_running(&mut self) -> Result<()> {
         match self.execution_state {

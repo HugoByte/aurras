@@ -10,7 +10,28 @@ use kuska_ssb::api::dto::content::{Mention, Post};
 use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
 
+/// This Rust code defines an implementation for a `Client` struct with various asynchronous
+/// methods for interacting with a remote server using RPC (Remote Procedure Call) communication. Here
+/// is a summary of what each method does:
 impl Client {
+    /// The `get_async` function in Rust is an asynchronous method that receives messages and processes
+    /// them based on the request number and message type.
+    /// 
+    /// Arguments:
+    /// 
+    /// * `req_no`: The `req_no` parameter in the `get_async` function represents the request number
+    /// that the function is waiting for. The function will keep looping and checking incoming messages
+    /// until it receives a response with the matching request number.
+    /// * `f`: The parameter `f` in the `get_async` function is a closure that takes a reference to a
+    /// slice of `u8` bytes as input and returns a `Result<T>`, where `T` implements the `Debug` trait.
+    /// This closure is used to process the body of the received
+    /// 
+    /// Returns:
+    /// 
+    /// The `get_async` function returns a `Result<T>`, where `T` is the type specified in the function
+    /// signature. The result can either be an `Ok` variant containing the value of type `T` if the
+    /// operation is successful, or an `Err` variant containing an error if an error occurs during the
+    /// execution of the function.
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
     where
         F: Fn(&[u8]) -> Result<T>,
@@ -32,6 +53,21 @@ impl Client {
         }
     }
 
+    /// This Rust function asynchronously receives and processes responses based on a provided closure,
+    /// handling different message types and error cases.
+    /// 
+    /// Arguments:
+    /// 
+    /// * `req_no`: The `req_no` parameter in the `get_responses` function represents the request number
+    /// that is being processed. It is used to match the incoming messages with the corresponding
+    /// request for processing.
+    /// * `f`: The `f` parameter in the `get_responses` function is a closure that takes a slice of
+    /// bytes (`&[u8]`) as input and returns a result of type `T`. The closure is used to deserialize
+    /// the byte slice into a value of type `T`. The `where F
+    /// 
+    /// Returns:
+    /// 
+    /// The function `get_responses` returns a `Result` containing a vector of type `T`.
     async fn get_responses<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<Vec<T>>
     where
         F: Fn(&[u8]) -> Result<T>,
@@ -81,6 +117,33 @@ impl Client {
         Ok(response)
     }
 
+   /// The function `ssb_handshake` establishes a secure Scuttlebutt handshake with a server using
+   /// provided keys and connection details.
+   /// 
+   /// Arguments:
+   /// 
+   /// * `pk`: PublicKey of the client
+   /// * `sk`: The `sk` parameter in the `ssb_handshake` function is the secret key used for the
+   /// handshake process. It is typically a cryptographic key that is kept secret and used for secure
+   /// communication between the client and server. In this context, it is likely an Ed25519 secret key
+   /// used for
+   /// * `id`: The `id` parameter in the `ssb_handshake` function represents the identity of the server
+   /// in the Secure Scuttlebutt (SSB) protocol. It is used to uniquely identify the server and
+   /// establish a secure connection between the client and the server. The `id` parameter is expected
+   /// to
+   /// * `ip`: The `ip` parameter in the `ssb_handshake` function represents the IP address of the
+   /// server you want to connect to. It is a string that contains the IPv4 or IPv6 address of the
+   /// server. For example, it could be something like `"192.168.1.1
+   /// * `port`: The `port` parameter in the `ssb_handshake` function represents the port number on
+   /// which the server is listening for incoming connections. Ports are used to uniquely identify
+   /// different network services running on the same host. Common ports include 80 for HTTP, 443 for
+   /// HTTPS, and 22 for
+   /// 
+   /// Returns:
+   /// 
+   /// The `ssb_handshake` function is returning a `Result` containing an instance of a struct. The
+   /// struct being returned has three fields: `api` of type `ApiCaller`, `rpc_reader` of type
+   /// `RpcReader`, and `sk` of type `SecretKey`.
     async fn ssb_handshake(
         pk: PublicKey,
         sk: SecretKey,
@@ -110,6 +173,23 @@ impl Client {
         })
     }
 
+    /// The function `new` in Rust is an asynchronous function that performs a handshake with a Secure
+    /// Scuttlebutt (SSB) server using provided configurations or local secret information.
+    /// 
+    /// Arguments:
+    /// 
+    /// * `configs`: An optional `OwnedIdentity` struct containing public key (`pk`), secret key (`sk`),
+    /// and identity (`id`) information. It can be either `Some` with the provided configuration or
+    /// `None`.
+    /// * `ip`: The `ip` parameter in the function `new` is a `String` type representing the IP address
+    /// to be used for the handshake process. It is the IP address of the server or device that the
+    /// client will be connecting to.
+    /// * `port`: The `port` parameter in the `new` function is a `String` type. It is used to specify
+    /// the port number for the connection.
+    /// 
+    /// Returns:
+    /// 
+    /// The `new` function returns a `Result<Client>`.
     pub async fn new(configs: Option<OwnedIdentity>, ip: String, port: String) -> Result<Client> {
         match configs {
             Some(config) => Self::ssb_handshake(config.pk, config.sk, config.id, ip, port).await,
@@ -121,10 +201,22 @@ impl Client {
         }
     }
 
+    /// The function `get_secret_key` returns a clone of the secret key associated with the object.
+    /// 
+    /// Returns:
+    /// 
+    /// A `SecretKey` is being returned.
     pub fn get_secret_key(&self) -> SecretKey {
         self.sk.clone()
     }
 
+    /// The `whoami` function in Rust sends a request to the API to retrieve user information and
+    /// returns the user's ID.
+    /// 
+    /// Returns:
+    /// 
+    /// The `whoami` function returns a `Result<String>`, which means it can return either a `String` if
+    /// the operation is successful, or an error if there is a problem during the execution.
     pub async fn whoami(&mut self) -> Result<String> {
         let req_id = self.api.whoami_req_send().await?;
         let whoami = self.get_async(req_id, whoami_res_parse).await?.id;
