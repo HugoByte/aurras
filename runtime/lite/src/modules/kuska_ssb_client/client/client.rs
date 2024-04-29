@@ -8,7 +8,7 @@ use crate::{
 };
 use kuska_ssb::api::dto::content::{Mention, Post};
 use std::borrow::BorrowMut;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 impl Client {
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
@@ -110,13 +110,22 @@ impl Client {
         })
     }
 
-    pub async fn new(configs: Option<OwnedIdentity>, ip: String, port: String) -> Result<Client> {
+    pub async fn new(configs: Option<&OwnedIdentity>, ip: &str, port: &str) -> Result<Client> {
         match configs {
-            Some(config) => Self::ssb_handshake(config.pk, config.sk, config.id, ip, port).await,
+            Some(config) => {
+                Self::ssb_handshake(
+                    config.pk,
+                    config.sk.clone(),
+                    config.id.clone(),
+                    ip.to_string(),
+                    port.to_string(),
+                )
+                .await
+            }
             None => {
                 let OwnedIdentity { pk, sk, id } =
                     from_patchwork_local().await.expect("read local secret");
-                Self::ssb_handshake(pk, sk, id, ip, port).await
+                Self::ssb_handshake(pk, sk, id, ip.to_string(), port.to_string()).await
             }
         }
     }
@@ -225,6 +234,99 @@ impl Client {
         Ok(())
     }
 
+    fn process_feed<T, U, V>(
+        display: Feed,
+        logger: &mut MutexGuard<T>,
+        state_manager: &mut MutexGuard<U>,
+        db: MutexGuard<V>,
+    ) -> Result<()>
+    where
+        T: Logger + Clone + std::marker::Send + 'static,
+        U: GlobalStateManager,
+        V: Storage,
+    {
+        match serde_json::from_value::<Post>(display.value.get("content").unwrap().clone()) {
+            Ok(content) => {
+                match serde_json::from_str::<serde_json::Value>(&content.text) {
+                    Ok(event) => {
+                        let mentions = &content.mentions.unwrap_or(vec![]);
+
+                        let pub_id = if !mentions.is_empty() {
+                            &mentions[0].link
+                        } else {
+                            return Err(Box::new(AppError::new(format!(
+                                "No mentions found in the event: {}",
+                                event
+                            ))));
+                        };
+
+                        let offset = db
+                            .get_value::<f64>(&format!("{}offset", pub_id))
+                            .map_err(|err| {
+                                Box::new(AppError::new(format!(
+                                    "offset timestamp not present in the database: {}",
+                                    err
+                                )))
+                            })?
+                            .unwrap_or(0.0);
+
+                        let feed_rts = match display.rts {
+                            Some(rts) => rts,
+                            None => {
+                                return Err(Box::new(AppError::new(
+                                    "feed received timestamp is none".to_string(),
+                                )))
+                            }
+                        };
+
+                        if offset < feed_rts {
+                            logger.info(&format!("Event: {:#?}", event));
+
+                            match db.get_request_body(pub_id) {
+                                Ok(Some(mut bodies)) => {
+                                    // Iterate through bodies, searching for matching pub_id
+                                    for body in bodies.iter_mut() {
+                                        crate::common::combine_values(&mut body.input, &event);
+                                        let data = serde_json::json!({
+                                            "data": body.input,
+                                            "allowed_hosts": body.allowed_hosts.as_ref(),
+                                        });
+
+                                        let workflow_index = state_manager
+                                            .new_workflow(&body.workflow_id, &body.workflow_name);
+                                        let _ = wasmtime_wasi_module::run_workflow(
+                                            state_manager.borrow_mut(),
+                                            logger.borrow_mut(),
+                                            data,
+                                            body.wasm.clone(),
+                                            workflow_index,
+                                            false,
+                                        );
+                                    }
+                                }
+                                Ok(None) => logger.error("No request bodies found"),
+                                Err(e) => logger.error(&format!("Error type: {}", e)),
+                            }
+
+                            // Perform database insertion
+                            db.insert_value(&format!("{}offset", pub_id), display.timestamp)
+                                .map_err(|err| {
+                                    Box::new(AppError::new(format!(
+                                        "not able to insert offset timestamp to the database: {}",
+                                        err
+                                    )))
+                                })?;
+                        }
+                    }
+                    Err(e) => logger.trace(&e.to_string()),
+                }
+            }
+            Err(e) => logger.trace(&e.to_string()),
+        }
+
+        Ok(())
+    }
+
     pub async fn execute_workflow_by_event(
         &mut self,
         req_no: RequestNo,
@@ -249,134 +351,24 @@ impl Client {
 
             if id == req_no {
                 match msg {
-                    RecvMsg::RpcResponse(_type, body) => {
-                        let display = feed_res_parse(&body);
-
-                        match display {
-                            Ok(display) => {
-                                if is_synced {
-                                    match serde_json::from_value::<Post>(
-                                        display.value.get("content").unwrap().clone(),
-                                    ) {
-                                        Ok(content) => {
-                                            match serde_json::from_str::<serde_json::Value>(
-                                                &content.text,
-                                            ) {
-                                                Ok(event) => {
-                                                    let mentions =
-                                                        &content.mentions.unwrap_or(vec![]);
-
-                                                    let pub_id = if !mentions.is_empty() {
-                                                        &mentions[0].link
-                                                    } else {
-                                                        return Err(Box::new(AppError::new(
-                                                            format!("No mentions found in the event: {}", event)
-                                                        )));
-                                                    };
-
-                                                    let offset = db
-                                                        .get_value::<f64>(&format!(
-                                                            "{}offset",
-                                                            pub_id
-                                                        ))
-                                                        .map_err(|err| {
-                                                            Box::new(AppError::new(
-                                                                format!(
-                                                            "offset timestamp not present in the database: {}",
-                                                                err
-                                                            ),
-                                                            ))
-                                                        })?
-                                                        .unwrap_or(0.0);
-
-                                                    let feed_rts = match display.rts {
-                                                        Some(rts) => rts,
-                                                        None => {
-                                                            return Err(Box::new(AppError::new(
-                                                                "feed received timestamp is none"
-                                                                    .to_string(),
-                                                            )))
-                                                        }
-                                                    };
-
-                                                    if offset < feed_rts {
-                                                        logger
-                                                            .info(&format!("Event: {:#?}", event));
-
-                                                        match db.get_request_body(pub_id) {
-                                                            Ok(bodies) => {
-                                                                // Handle the case where bodies is None (no request bodies found)
-                                                                if bodies.is_none() {
-                                                                    logger.error(&format!(
-                                                                        "No request bodies found"
-                                                                    ));
-                                                                }
-
-                                                                let mut bodies = bodies.unwrap();
-
-                                                                // Iterate through bodies, searching for matching pub_id
-                                                                for body in bodies.iter_mut() {
-                                                                    crate::common::combine_values(
-                                                                        &mut body.input,
-                                                                        &event,
-                                                                    );
-                                                                    let data = serde_json::json!({
-                                                                        "data": body.input,
-                                                                        "allowed_hosts": body.allowed_hosts.as_ref(),
-                                                                    });
-
-                                                                    let workflow_index =
-                                                                        state_manager.new_workflow(
-                                                                            &body.workflow_id,
-                                                                            &body.workflow_name,
-                                                                        );
-                                                                    let _ = wasmtime_wasi_module::run_workflow(
-                                                                            state_manager.borrow_mut(),
-                                                                            logger.borrow_mut(),
-                                                                            data,
-                                                                            body.wasm.clone(),
-                                                                            workflow_index,
-                                                                            false,
-                                                                        );
-                                                                }
-                                                            }
-                                                            Err(e) => logger.error(&format!(
-                                                                "Error type: {}",
-                                                                e
-                                                            )),
-                                                        }
-
-                                                        // Perform database insertion
-                                                        db.insert_value(&format!("{}offset", pub_id), display.timestamp)
-                                                            .map_err(|err| {
-                                                                Box::new(AppError::new(format!(
-                                                                    "not able to insert offset timestamp to the database: {}", err
-                                                                )))
-                                                            })?;
-                                                    }
-                                                }
-                                                Err(e) => logger.trace(&e.to_string()),
-                                            }
-                                        }
-                                        Err(e) => logger.trace(&e.to_string()),
-                                    }
-                                }
-                            }
-                            Err(err) => {
-                                let body = std::str::from_utf8(&body).unwrap();
-
-                                if body == "{\"sync\":true}" {
-                                    logger.info("Syncing Successful");
-                                    is_synced = true;
-                                } else {
-                                    return Err(err);
-                                }
+                    RecvMsg::RpcResponse(_type, body) => match feed_res_parse(&body) {
+                        Ok(display) => {
+                            if is_synced {
+                                Self::process_feed(display, &mut logger, &mut state_manager, db)?;
                             }
                         }
-                    }
-                    RecvMsg::ErrorResponse(message) => {
-                        return Err(AppError::new(message).into());
-                    }
+                        Err(err) => {
+                            let body = std::str::from_utf8(&body).unwrap();
+
+                            if body == "{\"sync\":true}" {
+                                logger.info("Syncing Successful");
+                                is_synced = true;
+                            } else {
+                                return Err(err);
+                            }
+                        }
+                    },
+                    RecvMsg::ErrorResponse(message) => return Err(AppError::new(message).into()),
                     _ => {}
                 }
             }

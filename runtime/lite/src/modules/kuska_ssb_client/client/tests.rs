@@ -30,7 +30,9 @@ mod tests {
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
-        Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
+        Client::new(Some(&config), &ssb_ip, &ssb_port)
+            .await
+            .unwrap();
     }
 
     #[async_std::test]
@@ -50,7 +52,9 @@ mod tests {
         let config = read_patchwork_config(&mut file).await.unwrap();
 
         // passing default ip and port of ssb-server for testing
-        Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
+        Client::new(Some(&config), &ssb_ip, &ssb_port)
+            .await
+            .unwrap();
     }
 
     #[async_std::test]
@@ -69,7 +73,7 @@ mod tests {
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
-        let client = Client::new(Some(config.clone()), ssb_ip, ssb_port)
+        let client = Client::new(Some(&config), &ssb_ip, &ssb_port)
             .await
             .unwrap();
 
@@ -94,7 +98,7 @@ mod tests {
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
-        let mut client = Client::new(Some(config.clone()), ssb_ip, ssb_port)
+        let mut client = Client::new(Some(&config), &ssb_ip, &ssb_port)
             .await
             .unwrap();
 
@@ -119,7 +123,7 @@ mod tests {
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
-        let mut client = Client::new(Some(config.clone()), ssb_ip, ssb_port)
+        let mut client = Client::new(Some(&config), &ssb_ip, &ssb_port)
             .await
             .unwrap();
 
@@ -169,7 +173,9 @@ mod tests {
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
-        let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
+        let mut client = Client::new(Some(&config), &ssb_ip, &ssb_port)
+            .await
+            .unwrap();
 
         client.close().await.unwrap();
         client.whoami().await.unwrap();
@@ -191,7 +197,9 @@ mod tests {
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
-        let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
+        let mut client = Client::new(Some(&config), &ssb_ip, &ssb_port)
+            .await
+            .unwrap();
 
         client.feed(false).await.unwrap();
     }
@@ -212,7 +220,9 @@ mod tests {
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let config = read_patchwork_config(&mut file).await.unwrap();
 
-        let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
+        let mut client = Client::new(Some(&config), &ssb_ip, &ssb_port)
+            .await
+            .unwrap();
         let feed = client.feed(false).await.unwrap();
         let prev_len = feed.len();
 
@@ -271,7 +281,9 @@ mod tests {
 
         //Todo
         // Change user configuration
-        let mut client = Client::new(Some(config), ssb_ip, ssb_port).await.unwrap();
+        let mut client = Client::new(Some(&config), &ssb_ip, &ssb_port)
+            .await
+            .unwrap();
 
         use subxt::{OnlineClient, PolkadotConfig};
         use subxt_signer::sr25519::dev;
@@ -342,7 +354,7 @@ mod tests {
         let port = std::env::var("PUB_PORT").unwrap_or_else(|_| DEFAULT_PUB_PORT.to_string());
         let mut file = async_std::fs::File::open(secret).await.unwrap();
         let key = read_patchwork_config(&mut file).await.unwrap();
-        let mut client = Client::new(Some(key), DEFAULT_PUB_IP.to_string(), port)
+        let mut client = Client::new(Some(&key), DEFAULT_PUB_IP, &port)
             .await
             .unwrap();
         let res = client.create_invite().await;

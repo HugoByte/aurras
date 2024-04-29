@@ -35,7 +35,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 #[cfg(test)]
 pub mod tests;
 
-pub async fn owned_identity_from_patchwork_config(file_path: String) -> Result<OwnedIdentity> {
+pub async fn owned_identity_from_patchwork_config(file_path: &str) -> Result<OwnedIdentity> {
     let mut file = async_std::fs::File::open(file_path).await?;
     Ok(kuska_ssb::keystore::read_patchwork_config(&mut file)
         .await

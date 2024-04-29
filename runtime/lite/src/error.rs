@@ -70,7 +70,7 @@ impl std::fmt::Display for RuntimeError {
 
 impl From<PoisonError<std::sync::MutexGuard<'_, (dyn Ctx + 'static)>>> for RuntimeError {
     fn from(e: PoisonError<std::sync::MutexGuard<'_, (dyn Ctx + 'static)>>) -> Self {
-        RuntimeError::AppError(AppError::new(format!("Mutex Poisoned: {}", e.to_string())))
+        RuntimeError::AppError(AppError::new(format!("Mutex Poisoned: {:?}", e)))
     }
 }
 impl From<serde_json::Error> for RuntimeError {

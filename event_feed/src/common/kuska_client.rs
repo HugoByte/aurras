@@ -12,10 +12,10 @@ pub struct Producer {
 
 impl Producer {
     pub async fn new(config: ProducerConfig) -> Result<Self> {
-        let key = owned_identity_from_patchwork_config(config.ssb_secret.clone())
+        let key = owned_identity_from_patchwork_config(&config.ssb_secret)
             .await
             .map_err(|e| anyhow!("error while creating identity: {e:?}"))?;
-        let client = Client::new(Some(key), config.ssb_ip.clone(), config.ssb_port.clone())
+        let client = Client::new(Some(&key), &config.ssb_ip, &config.ssb_port)
             .await
             .map_err(|e| anyhow!("error while creating producer client: {e:?}"))?;
 

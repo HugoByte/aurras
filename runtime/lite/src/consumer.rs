@@ -10,24 +10,17 @@ use runtime::{
     modules::kuska_ssb_client::client::Client,
     state_manager::GlobalState,
     storage::{CoreStorage, Storage},
-    AppError, Ctx, Logger, RuntimeError,
+    AppError, Context, Ctx, Logger, RuntimeError,
 };
-use std::result::Result::{Err, Ok};
-
 use std::{
+    io::{Read, Write},
     net::{TcpListener, TcpStream},
     sync::{Arc, Mutex},
 };
 
-use std::io::{Read, Write};
-
-pub use runtime;
-use runtime::Context;
-
-use dotenv::dotenv;
 #[tokio::main]
 async fn main() -> Result<(), RuntimeError> {
-    dotenv().ok();
+    dotenv::dotenv().ok();
     let db = CoreStorage::new("runtime-db")?;
     let logger = CoreLogger::new(Some("./ssb-consumer.log"));
     let state_manager = GlobalState::new(logger.clone());
@@ -53,7 +46,7 @@ async fn main() -> Result<(), RuntimeError> {
 
     let ssb_context = context.clone();
 
-    let mut client = match Client::new(Some(key.clone()), ip.clone(), port.clone()).await {
+    let mut client = match Client::new(Some(&key), &ip, &port).await {
         Ok(client) => client,
         Err(err) => {
             logger.critical(&format!("Error creating SSB client: {}", err));
@@ -110,7 +103,7 @@ async fn handle_client(
     ip: String,
     port: String,
 ) -> Result<(), RuntimeError> {
-    let mut client = Client::new(Some(key), ip, port).await.map_err(|err| {
+    let mut client = Client::new(Some(&key), &ip, &port).await.map_err(|err| {
         RuntimeError::AppError(AppError::new(format!("Error creating SSB client: {}", err)))
     })?;
 
@@ -145,9 +138,10 @@ async fn handle_client(
                 let timestamp = match connect_feed[1].value.get("timestamp") {
                     Some(timestamp) => timestamp,
                     None => {
-                        return Err(RuntimeError::AppError(AppError::new(format!(
-                            "Error getting timestamp from the accepted invite-contact feed",
-                        ))));
+                        return Err(RuntimeError::AppError(AppError::new(
+                            "Error getting timestamp from the accepted invite-contact feed"
+                                .to_string(),
+                        )));
                     }
                 };
                 list.push(body.pub_id.clone());
@@ -162,9 +156,9 @@ async fn handle_client(
             let timestamp = match connect_feed[1].value.get("timestamp") {
                 Some(timestamp) => timestamp,
                 None => {
-                    return Err(RuntimeError::AppError(AppError::new(format!(
-                        "Error getting timestamp from the accepted invite-contact feed",
-                    ))));
+                    return Err(RuntimeError::AppError(AppError::new(
+                        "Error getting timestamp from the accepted invite-contact feed".to_string(),
+                    )));
                 }
             };
             db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;

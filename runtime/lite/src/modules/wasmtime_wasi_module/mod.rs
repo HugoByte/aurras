@@ -1,6 +1,4 @@
-use crate::modules::state_manager::{
-    ExecutionState, GlobalState, GlobalStateManager, WorkflowState,
-};
+use crate::modules::state_manager::{ExecutionState, GlobalStateManager};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha256::digest;
@@ -21,14 +19,18 @@ use wasmtime_wasi::sync::WasiCtxBuilder;
 
 use super::logger;
 
-pub fn run_workflow<U: Logger + Clone + std::marker::Send + 'static>(
-    mut state_manager: &mut MutexGuard<GlobalState<WorkflowState, U>>,
-    logger: &mut MutexGuard<U>,
+pub fn run_workflow<U, V>(
+    state_manager: &mut MutexGuard<U>,
+    logger: &mut MutexGuard<V>,
     data: Value,
     wasm_file: Vec<u8>,
     workflow_index: usize,
     ignore_cache: bool, // ignores the cache
-) -> Result<Output, String> {
+) -> Result<Output, String>
+where
+    U: GlobalStateManager,
+    V: Logger + Clone + std::marker::Send + 'static,
+{
     let workflow_id = state_manager
         .get_state_data(workflow_index)
         .unwrap()
