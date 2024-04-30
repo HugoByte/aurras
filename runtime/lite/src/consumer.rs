@@ -1,7 +1,10 @@
 use kuska_ssb::keystore::{read_patchwork_config, OwnedIdentity};
 use runtime::{
     common::{
-        constants::{DEFAULT_SSB_IP, DEFAULT_SSB_PORT, FOLLOW_LIST_KEY, HTTP_SERVER_ADDRESS},
+        constants::{
+            DEFAULT_CACHE_LIFETIME, DEFAULT_SSB_IP, DEFAULT_SSB_PORT, FOLLOW_LIST_KEY,
+            HTTP_SERVER_ADDRESS,
+        },
         RequestBody,
     },
     logger::CoreLogger,
@@ -22,12 +25,25 @@ use std::{
 async fn main() -> Result<(), RuntimeError> {
     dotenv::dotenv().ok();
     let db = CoreStorage::new("runtime-db")?;
+
+    let cache_lifetime = match std::env::var("CACHE_LIFETIME") {
+        Ok(value) => value.parse::<u64>().unwrap(),
+        Err(_) => DEFAULT_CACHE_LIFETIME,
+    };
+
+    let cache_db = CoreStorage::new_with_ttl("./.cache", cache_lifetime, true).unwrap();
+
     let logger = CoreLogger::new(Some("./ssb-consumer.log"));
     let state_manager = GlobalState::new(logger.clone());
 
     logger.info("starting consumer...");
 
-    let context = Arc::new(Mutex::new(Context::new(logger.clone(), db, state_manager)));
+    let context = Arc::new(Mutex::new(Context::new(
+        logger.clone(),
+        db,
+        cache_db,
+        state_manager,
+    )));
 
     let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
         let home_dir = dirs::home_dir().unwrap();

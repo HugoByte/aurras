@@ -24,6 +24,13 @@ pub trait Ctx: Send + 'static {
     /// Returns instance of `MutexGuard<CoreStorage>` that represents the reference to the database for the runtime.
     fn get_db(&self) -> MutexGuard<CoreStorage>;
 
+    /// Returns a reference to the cache database.
+    ///
+    /// # Returns
+    ///
+    /// Returns instance of `MutexGuard<CoreStorage>` that represents the reference to the cache database for the runtime.
+    fn get_cache_db(&self) -> MutexGuard<CoreStorage>;
+
     /// Returns a reference to the state manager.
     ///
     /// # Returns
@@ -39,10 +46,12 @@ pub trait Ctx: Send + 'static {
 ///
 /// * `logger`: An instance of `MutexGuard<CoreLogger>` that represents the logger for the runtime.
 /// * `db`: An instance of `MutexGuard<CoreStorage>` that represents the database for the runtime.
+/// * `cache_db`: An instance of `MutexGuard<CoreStorage>` that represents the cache database for the runtime.
 /// * `state_manager`: An instance of `MutexGuard<GlobalStateManager>` that represents the state manager for the runtime.
 pub struct Context {
     pub logger: Mutex<CoreLogger>,
     pub db: Mutex<CoreStorage>,
+    pub cache_db: Mutex<CoreStorage>,
     pub state_manager: Mutex<GlobalStateManager>,
 }
 
@@ -64,6 +73,15 @@ impl Ctx for Context {
     /// Returns instance of `MutexGuard<CoreStorage>` that represents the reference to the database for the runtime.
     fn get_db(&self) -> MutexGuard<CoreStorage> {
         self.db.lock().unwrap()
+    }
+
+    /// Returns a reference to the cache database.
+    ///
+    /// # Returns
+    ///
+    /// Returns instance of `MutexGuard<CoreStorage>` that represents the reference to the cache database for the runtime.
+    fn get_cache_db(&self) -> MutexGuard<CoreStorage> {
+        self.cache_db.lock().unwrap()
     }
 
     /// Returns a reference to the state manager.
@@ -90,10 +108,16 @@ impl Context {
     /// # Returns
     ///
     /// Returns a new instance of the `Context` struct.
-    pub fn new(logger: CoreLogger, db: CoreStorage, state_manager: GlobalStateManager) -> Self {
+    pub fn new(
+        logger: CoreLogger,
+        db: CoreStorage,
+        cache_db: CoreStorage,
+        state_manager: GlobalStateManager,
+    ) -> Self {
         Context {
             logger: Mutex::new(logger),
             db: Mutex::new(db),
+            cache_db: Mutex::new(cache_db),
             state_manager: Mutex::new(state_manager),
         }
     }

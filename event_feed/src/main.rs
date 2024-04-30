@@ -1,16 +1,18 @@
 use crate::common::Context;
 use crate::common::Producer;
+use common::cosmos::CosmosFeed;
 use common::{ChainConfig, ProducerConfig};
+use eth::EthFeed;
 use icon::IconFeed;
 use substrate::types::PolkadotFeed;
 use subxt::PolkadotConfig;
-use eth::EthFeed;
 
 pub mod common;
 mod cosmos;
 mod eth;
 mod icon;
 mod substrate;
+// pub use cosmos;
 
 #[tokio::main]
 async fn main() {
@@ -23,7 +25,9 @@ async fn main() {
 
     let feed: Context = match chain_config.clone().chain.to_lowercase().as_str() {
         "substrate" => {
-            let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone()).await.unwrap();
+            let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone())
+                .await
+                .unwrap();
             Context::PolkadotFeed(polkadot_client)
         }
         "icon" => {
@@ -34,20 +38,25 @@ async fn main() {
             let eth_client = EthFeed::new(chain_config.clone()).await.unwrap();
             Context::EthFeed(eth_client)
         }
+        "cosmos" => {
+            let cosmos_client = CosmosFeed::new(chain_config.clone());
+            Context::CosmosFeed(cosmos_client)
+        }
         _ => panic!("Invalid Chain"),
     };
 
-    let _ = feed.feed_events(&|e| {
-        for i in e {
-            tokio::spawn(async move {
-                let producer_config = envy::from_env::<ProducerConfig>().unwrap();
-                let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
-                ssb_client
-                    .publish_feed(i)
-                    .await
-                    .expect("Failed to send event");
-            });
-        }
-    })
-    .await;
+    let _ = feed
+        .feed_events(&|e| {
+            for i in e {
+                tokio::spawn(async move {
+                    let producer_config = envy::from_env::<ProducerConfig>().unwrap();
+                    let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
+                    ssb_client
+                        .publish_feed(i)
+                        .await
+                        .expect("Failed to send event");
+                });
+            }
+        })
+        .await;
 }

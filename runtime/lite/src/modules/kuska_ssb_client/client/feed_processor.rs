@@ -25,6 +25,8 @@ impl Client {
     /// * `state_manager`: A mutable reference to a `MutexGuard<U>`, where `U` is a type
     /// that implements the `GlobalStateManager` trait. This is used to manage the state data. 
     /// * `db`: An instance of `MutexGuard<V>`, where `V` is a type that implements the `Storage` trait.
+    /// This is used to store and retrieve the workflow wasm files.
+    /// * `cache`: An instance of `MutexGuard<V>`, where `V` is a type that implements the `Storage` trait.
     /// This is used to store the state data and retrieve the workflows.
     /// 
     /// # Returns
@@ -35,6 +37,7 @@ impl Client {
         logger: &mut MutexGuard<T>,
         state_manager: &mut MutexGuard<U>,
         db: &MutexGuard<V>,
+        cache: &MutexGuard<V>
     ) -> Result<()>
     where
         T: Logger + Clone + std::marker::Send + 'static,
@@ -93,6 +96,7 @@ impl Client {
                                         let _ = wasmtime_wasi_module::run_workflow(
                                             state_manager.borrow_mut(),
                                             logger.borrow_mut(),
+                                            cache,
                                             data,
                                             body.wasm.clone(),
                                             workflow_index,
@@ -155,6 +159,7 @@ impl Client {
                 }
             };
             let db = ctx.get_db();
+            let cache_db = ctx.get_cache_db();
             let mut logger = ctx.get_logger();
             let mut state_manager = ctx.get_state_manager();
 
@@ -163,7 +168,7 @@ impl Client {
                     RecvMsg::RpcResponse(_type, body) => match feed_res_parse(&body) {
                         Ok(display) => {
                             if is_synced {
-                                Self::process_feed(display, &mut logger, &mut state_manager, &db)?;
+                                Self::process_feed(display, &mut logger, &mut state_manager, &db, &cache_db)?;
                             }
                         }
                         Err(err) => {

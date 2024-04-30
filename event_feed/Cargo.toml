@@ -13,6 +13,9 @@ dirs = '5.0.1'
 envy = '0.4'
 anyhow = '1.0.82'
 icon-sdk = '1.2.0'
+tendermint-rpc = {version = "0.35.0", features = ["http-client", "websocket-client"]}
+futures = "0.3.30"
+base64 = "0.22.0"
 
 [dependencies.ethers]
 version = '2.0.8'

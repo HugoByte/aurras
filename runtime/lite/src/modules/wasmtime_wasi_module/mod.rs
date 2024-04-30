@@ -9,15 +9,13 @@ mod tests;
 mod types;
 pub use types::*;
 
-use logger::Logger;
-use rocksdb::DB;
 use wasi_common::WasiCtx;
 use wasi_experimental_http_wasmtime::{HttpCtx, HttpState};
 use wasmtime::Linker;
 use wasmtime::*;
 use wasmtime_wasi::sync::WasiCtxBuilder;
 
-use super::logger;
+use super::{logger::Logger, storage::Storage};
 
 /// Runs the workflow wasm and manages the state of the workflow.
 /// 
@@ -27,6 +25,8 @@ use super::logger;
 /// `GlobalStateManager` trait. This is the state manager that is used to manage the state of the workflow.
 /// * `logger`: A mutable reference to a MutexGuard<V> where V is a type that implements the `Logger`
 /// trait. This is the logger that is used to log the state of the workflow.
+/// * `cache`: A mutable reference to a MutexGuard<S> where S is a type that implements the `Storage`
+/// trait. This is the cache that is used to store the state of the workflow.
 /// * `data`: The `data` parameter is of type `Value` and is an instance of the `serde_json::Value`
 /// type. It is used to pass data to the workflow.
 /// * `wasm_file`: An instance of the `Vec<u8>` type that represents the workflow wasm code.
@@ -37,9 +37,10 @@ use super::logger;
 /// 
 /// Returns a `Result<Output, String>` where `Output` is a struct that contains the output of the
 /// workflow and `String` is an error message if there is an error.
-pub fn run_workflow<U, V>(
+pub fn run_workflow<U, V, S>(
     state_manager: &mut MutexGuard<U>,
     logger: &mut MutexGuard<V>,
+    cache: &MutexGuard<S>,
     data: Value,
     wasm_file: Vec<u8>,
     workflow_index: usize,
@@ -48,6 +49,7 @@ pub fn run_workflow<U, V>(
 where
     U: GlobalStateManager,
     V: Logger + Clone + std::marker::Send + 'static,
+    S: Storage,
 {
     let workflow_id = state_manager
         .get_state_data(workflow_index)
@@ -56,12 +58,11 @@ where
 
     let hash_key = digest(format!("{:?}{:?}", data, workflow_id));
 
-    let cache = DB::open_default(format!("./.cache/{:?}", workflow_id)).unwrap();
-
     let prev_internal_state_data = if !ignore_cache {
-        let prev_internal_state_data: Value = match cache.get(hash_key.as_bytes()).unwrap() {
-            Some(data) => serde_json::from_slice(&data).unwrap(),
-            None => serde_json::json!([]),
+        let prev_internal_state_data = if let Ok(Some(data)) = cache.get_value(&hash_key) {
+            data
+        } else {
+            serde_json::json!({})
         };
 
         // returns the main output without passing the state data to the workflow
@@ -290,7 +291,7 @@ where
 
         let mut bytes: Vec<u8> = Vec::new();
         serde_json::to_writer(&mut bytes, &state_output).unwrap();
-        cache.put(hash_key.as_bytes(), bytes).unwrap();
+        cache.set_data(&hash_key, bytes).unwrap();
     } else {
         state_manager
             .update_result(workflow_index, res.result.clone(), true)
@@ -299,7 +300,7 @@ where
         let state_result = serde_json::json!({ "success" : res });
         let mut bytes: Vec<u8> = Vec::new();
         serde_json::to_writer(&mut bytes, &state_result).unwrap();
-        cache.put(hash_key.as_bytes(), bytes).unwrap();
+        cache.set_data(&hash_key, bytes).unwrap();
     }
 
     Ok(res)
