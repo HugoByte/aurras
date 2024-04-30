@@ -2,6 +2,17 @@ use super::*;
 use crate::common::ChainConfig;
 
 #[derive(Debug, Clone)]
+/// The `PolkadotFeed` struct in Rust contains a `chain_config` field of type `ChainConfig` and a
+/// `client` field of type `OnlineClient<T>`.
+/// 
+/// Properties:
+/// 
+/// * `chain_config`: The `chain_config` property is a field of type `ChainConfig` in the `PolkadotFeed`
+/// struct. It likely contains configuration settings related to the Polkadot chain that the feed is
+/// interacting with.
+/// * `client`: The `client` property in the `PolkadotFeed` struct is an instance of the `OnlineClient`
+/// struct parameterized with the type `T`, which must implement the `subxt::Config` trait. This client
+/// is used to interact with the Substrate blockchain associated with the Polkad
 pub struct PolkadotFeed<T: subxt::Config> {
     chain_config: ChainConfig,
 
@@ -78,6 +89,12 @@ impl<T: subxt::Config> PolkadotFeed<T> {
         }
     }
 
+    /// The function `split_filter` in Rust splits a string by ';' and then by '=' to create a HashMap
+    /// with keys and corresponding values as vectors.
+    /// 
+    /// Returns:
+    /// 
+    /// A `HashMap` containing keys of type `String` and values of type `Vec<&str>` is being returned.
     pub fn split_filter(&self) -> std::collections::HashMap<String, Vec<&str>> {
         let mut filter_map: std::collections::HashMap<String, Vec<&str>> =
             std::collections::HashMap::new();
@@ -103,6 +120,7 @@ impl<T: subxt::Config> PolkadotFeed<T> {
     }
 }
 
+/// The `events` macro defined with `macro_rules!` in Rust is used for generating code at compile time.
 #[macro_export]
 macro_rules! events {
     ($exp: expr, $pallet:ident, $method:ident ) => {

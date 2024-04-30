@@ -11,12 +11,30 @@ use kuska_ssb::api::dto::content::Post;
 use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex, MutexGuard};
 
+/// Defines an implementation for a `Client` struct with various asynchronous methods for processing
+/// the live feed. This implementation includes methods for fetching the live event feeds from the network
+/// and executes workflows based on the events received.
 impl Client {
+    /// Processes the feed and executes workflows based on the events received.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `display`: An instance of `Feed` that represents the feed being processed.
+    /// * `logger`: A mutable reference to a `MutexGuard<T>`, where `T` is a type that implements 
+    /// the `Logger` trait. This is used to log the events received.
+    /// * `state_manager`: A mutable reference to a `MutexGuard<U>`, where `U` is a type
+    /// that implements the `GlobalStateManager` trait. This is used to manage the state data. 
+    /// * `db`: An instance of `MutexGuard<V>`, where `V` is a type that implements the `Storage` trait.
+    /// This is used to store the state data and retrieve the workflows.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a `Result<()>` that indicates whether the connection was closed successfully or not.
     fn process_feed<T, U, V>(
         display: Feed,
         logger: &mut MutexGuard<T>,
         state_manager: &mut MutexGuard<U>,
-        db: MutexGuard<V>,
+        db: &MutexGuard<V>,
     ) -> Result<()>
     where
         T: Logger + Clone + std::marker::Send + 'static,
@@ -105,6 +123,17 @@ impl Client {
         Ok(())
     }
 
+    /// Asynchronous method for processing live feed and executing workflows based on the events received.
+    ///
+    /// # Arguments
+    ///
+    /// * `live` - A boolean indicating whether the feed is live or not. If `true` the feed will be
+    /// continuously fetched and corresponding workflows will be executed.
+    /// * `ctx` - An `Arc<Mutex<dyn Ctx>>` representing the context.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` indicating whether the operation was successful or not.
     pub async fn live_feed_with_execution_of_workflow(
         &mut self,
         live: bool,
@@ -134,7 +163,7 @@ impl Client {
                     RecvMsg::RpcResponse(_type, body) => match feed_res_parse(&body) {
                         Ok(display) => {
                             if is_synced {
-                                Self::process_feed(display, &mut logger, &mut state_manager, db)?;
+                                Self::process_feed(display, &mut logger, &mut state_manager, &db)?;
                             }
                         }
                         Err(err) => {

@@ -1,9 +1,7 @@
 use kuska_ssb::keystore::{read_patchwork_config, OwnedIdentity};
 use runtime::{
     common::{
-        constants::{
-            DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, FOLLOW_LIST_KEY, HTTP_SERVER_ADDRESS,
-        },
+        constants::{DEFAULT_SSB_IP, DEFAULT_SSB_PORT, FOLLOW_LIST_KEY, HTTP_SERVER_ADDRESS},
         RequestBody,
     },
     logger::CoreLogger,
@@ -18,6 +16,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+/// The main function of the aurras ssb consumer that receives the event feeds from the ssb network
+/// and processes them.
 #[tokio::main]
 async fn main() -> Result<(), RuntimeError> {
     dotenv::dotenv().ok();
@@ -33,8 +33,8 @@ async fn main() -> Result<(), RuntimeError> {
         let home_dir = dirs::home_dir().unwrap();
         std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
     });
-    let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
-    let ip = std::env::var("CONSUMER_IP").unwrap_or(DEFAULT_CONSUMER_IP.to_string());
+    let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_SSB_PORT.to_string());
+    let ip = std::env::var("CONSUMER_IP").unwrap_or(DEFAULT_SSB_IP.to_string());
 
     let mut file = async_std::fs::File::open(secret).await?;
     let key = read_patchwork_config(&mut file).await.map_err(|err| {
@@ -96,6 +96,19 @@ async fn main() -> Result<(), RuntimeError> {
     Ok(())
 }
 
+/// Handles the process of accepting to the event feed `pub` and storing the workflow wasm
+///
+/// # Arguments
+///
+/// * `stream`: A mutable reference to the `TcpStream` to receive the invites.
+/// * `ctx`: A instance of `Arc<Mutex<Context>>` to access the runtime context.
+/// * `key`: A reference to the `OwnedIdentity` of the consumer ssb.
+/// * `ip`: A string that represents the IP address of the consumer ssb.
+/// * `port`: A string that represents the port of the consumer ssb.
+///
+/// # Returns
+///
+/// Returns a `Result<(), RuntimeError>` that either returns an error or nothing.
 async fn handle_client(
     mut stream: TcpStream,
     ctx: Arc<Mutex<dyn Ctx>>,

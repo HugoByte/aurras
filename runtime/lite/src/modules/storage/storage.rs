@@ -15,7 +15,6 @@ use crate::AppError;
 use crate::RuntimeError;
 use rocksdb::DB;
 use serde::Serialize;
-
 #[derive(Debug)]
 pub struct CoreStorage {
     pub db: rocksdb::DB,
@@ -29,8 +28,16 @@ impl CoreStorage {
 }
 
 impl Storage for CoreStorage {
-    /// The `fn get_data(&self, key: &str) -> Result<Vec<u8>, Error>` function in the `CoreStorage`
-    /// struct is implementing the `get_data` method defined in the `Storage` trait.
+    /// Retrieves data from the database using the provided key.
+    /// 
+    /// Arguments:
+    /// 
+    /// * `key`: A string slice that is used to identify the data that needs to be retrieved.
+    /// 
+    /// Returns:
+    /// 
+    /// A `Result<Vec<u8>>` containing the data in byte format or an `AppError` if the data could not be
+    /// retrieved.
     fn get_data(&self, key: &str) -> Result<Vec<u8>, RuntimeError> {
         let datastore = self.db.get(key)?;
         let data = match datastore {
@@ -113,7 +120,6 @@ impl Storage for CoreStorage {
     ///
     /// The `get_wasm` function returns a `Result` containing either a vector of `u8` bytes or an
     /// `Error`.
-
     fn insert_request_body(
         &self,
         key: &str,
@@ -126,6 +132,17 @@ impl Storage for CoreStorage {
             .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))
     }
 
+    /// Retrieves the workflow from a database using a given key.
+    /// 
+    /// Arguments:
+    /// 
+    /// * `key`: A string slice (`&str`) that represents the key of the workflow in the database.
+    /// 
+    /// Returns:
+    /// 
+    /// Returns an `Option<Vec<RequestBody>>` if the key is found in the database, or `None` if the key
+    /// is not found. This request body contains the data of the workflow such as executive wasm file of 
+    /// the workflow, workflow name, workflow id, base input, ect.
     fn get_request_body(
         &self,
         key: &str,

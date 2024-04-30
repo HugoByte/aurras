@@ -1,8 +1,4 @@
 pub const FOLLOW_LIST_KEY: &str = "follow_list";
 pub const HTTP_SERVER_ADDRESS: &str = "0.0.0.0:8080";
-pub const DEFAULT_CONSUMER_IP: &str = "0.0.0.0";
-pub const DEFAULT_PRODUCER_IP: &str = "0.0.0.0";
-pub const DEFAULT_PUB_IP: &str = "0.0.0.0";
-pub const DEFAULT_PUB_PORT: &str = "8008";
-pub const DEFAULT_CONSUMER_PORT: &str = "8008";
-pub const DEFAULT_PRODUCER_PORT: &str = "8008";
+pub const DEFAULT_SSB_IP: &str = "0.0.0.0";
+pub const DEFAULT_SSB_PORT: &str = "8008";

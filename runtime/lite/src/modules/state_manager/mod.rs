@@ -13,13 +13,31 @@ use super::logger;
 #[cfg(test)]
 mod tests;
 
+/// Represents the global state manager which manages the state of multiple workflows.
+/// 
+/// # Properties
+/// 
+/// * `workflows`: A vector of type `T` that implements the `WorkflowState` trait. This represents the state
+/// of all workflows.
+/// * `logger`: An instance of type `U` that implements the `Logger` trait. This represents the logger.
 #[derive(Debug)]
 pub struct GlobalState<T: WorkflowStateManager, U: Logger> {
     workflows: Vec<T>,
     logger: U,
 }
 
+/// Implements the `GlobalState` struct methods.
 impl<U: Logger> GlobalState<WorkflowState, U> {
+
+    /// Creates a new `GlobalState` instance with the given logger.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `logger`: An instance of type `U` that implements the `Logger` trait.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a new `GlobalState` instance.
     pub fn new(logger: U) -> Self {
         Self {
             workflows: Vec::<WorkflowState>::new(),
@@ -28,7 +46,19 @@ impl<U: Logger> GlobalState<WorkflowState, U> {
     }
 }
 
+/// Implements the `GlobalStateManager` trait for the `GlobalState` struct.
 impl<U: Logger> GlobalStateManager for GlobalState<WorkflowState, U> {
+
+    /// Creates a new workflow to the state manager and returns its index.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `workflow_id`: A string slice that represents the ID of the workflow.
+    /// * `workflow_name`: A string slice that represents the name of the workflow.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns the index of the newly created workflow.
     fn new_workflow(&mut self, workflow_id: &str, workflow_name: &str) -> usize {
         self.workflows
             .push(WorkflowState::new(workflow_id, workflow_name));
@@ -37,6 +67,16 @@ impl<U: Logger> GlobalStateManager for GlobalState<WorkflowState, U> {
         self.workflows.len() - 1
     }
 
+    /// Returns the state data of the workflow with the given index.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `workflow_index`: An integer of type `usize` that represents the index of the workflow.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a `Result<Box<dyn WorkflowStateManager>>` that contains the state data of the workflow
+    /// or an `anyhow::Error` if the index is out of bounds.
     fn get_state_data(&self, workflow_index: usize) -> Result<Box<dyn WorkflowStateManager>> {
         if self.workflows.len() <= workflow_index {
             Err(anyhow!("index out of bound"))
@@ -45,6 +85,15 @@ impl<U: Logger> GlobalStateManager for GlobalState<WorkflowState, U> {
         }
     }
 
+    /// Updates the state data of the workflow with the given index. This method updates the state to `Running`.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `workflow_index`: An integer of type `usize` that represents the index of the workflow.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a `Result<()>` that indicates whether the update was successful or not.
     fn update_running(&mut self, workflow_index: usize) -> Result<()> {
         if self.workflows.len() <= workflow_index {
             Err(anyhow!("index out of bound"))
@@ -62,6 +111,15 @@ impl<U: Logger> GlobalStateManager for GlobalState<WorkflowState, U> {
         }
     }
 
+    /// Updates the state data of the workflow with the given index. This method updates the state to `Paused`.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `workflow_index`: An integer of type `usize` that represents the index of the workflow.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a `Result<()>` that indicates whether the update was successful or not.
     fn update_paused(&mut self, workflow_index: usize, output: Option<Value>) -> Result<()> {
         if self.workflows.len() <= workflow_index {
             Err(anyhow!("index out of bound"))
@@ -75,6 +133,18 @@ impl<U: Logger> GlobalStateManager for GlobalState<WorkflowState, U> {
         }
     }
 
+    /// Updates the state data of the workflow with the given index. This method updates the state to `Success` or `Failed`.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `workflow_index`: An integer of type `usize` that represents the index of the workflow.
+    /// * `result`: A `Value` that represents the result of the workflow.
+    /// * `is_success`: A boolean value that indicates whether the workflow was successful or not. If `true`, the state 
+    /// will be set to `Success`. Otherwise, it will be set to `Failed`.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a `Result<()>` that indicates whether the update was successful or not.
     fn update_result(
         &mut self,
         workflow_index: usize,
