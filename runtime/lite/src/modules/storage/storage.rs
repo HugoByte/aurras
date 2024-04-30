@@ -19,12 +19,86 @@ use serde::Serialize;
 #[derive(Debug)]
 pub struct CoreStorage {
     pub db: rocksdb::DB,
+    // pub cache: rocksdb::DB,
+    cache_db: bool,
+    is_refreshed: bool,
 }
 
 impl CoreStorage {
-    pub fn new(db_name: &str) -> Result<Self, RuntimeError> {
+    pub fn new(db_name: &str, ) -> Result<Self, RuntimeError> {
         let db = DB::open_default(db_name).map_err(RuntimeError::RocksDB)?;
-        Ok(Self { db })
+        Ok(Self {
+            db,
+            cache_db: false,
+            is_refreshed: false,
+        })
+    }
+
+    /// A constructor function that creates a new `CoreStorage` instance with a TTL(Time To Live)
+    /// configured.
+    ///
+    /// Arguments:
+    ///
+    /// * `db_name`: The `db_name` parameter is a string slice that represents the name of the database
+    /// to be created.
+    /// * `ttl_duration_seconds`: The `ttl_duration_seconds` parameter is an `u64` value that represents
+    /// the number of seconds that the data should be stored in the database. The data will be deleted
+    /// after the specified time.
+    ///
+    /// Returns:
+    ///
+    /// A `Result` that can either be an `Ok` variant containing a new `CoreStorage` instance or
+    /// an `Err` variant containing an `AppError` if the database could not be created.
+    pub fn new_with_ttl(
+        db_name: &str,
+        ttl_duration_seconds: u64,
+        is_refreshed: bool,
+    ) -> Result<Self, RuntimeError> {
+        let mut opts = rocksdb::Options::default();
+        opts.create_if_missing(true);
+
+        let db = DB::open_with_ttl(
+            &opts,
+            db_name,
+            std::time::Duration::from_secs(ttl_duration_seconds),
+        )
+        .map_err(RuntimeError::RocksDB)?;
+
+        Ok(Self {
+            db,
+            cache_db: true,
+            is_refreshed,
+        })
+    }
+
+    /// This function cleans the expired data from the database that is configured with ttl.
+    pub fn clean_expired_data(&self) {
+        if self.cache_db {
+            // Trigger a manual compaction, this will check the TTL filter
+            // in the database and drop all expired entries.
+            self.db.compact_range(None::<&[u8]>, None::<&[u8]>);
+        }
+    }
+
+    /// This function refreshes the lifetime of the data in the database that is configured with ttl.
+    ///
+    /// Arguments:
+    ///
+    /// * `key`: The `key` parameter is a reference to a string that represents the key of the data
+    /// in the database.
+    /// * `value`: The `value` parameter is a reference to a vector of bytes that represents the
+    /// value of the data in the database.
+    /// 
+    /// Returns:
+    /// 
+    /// This function returns a `Result` type that can either be an `Ok` variant containing a `()`
+    /// value or an `Err` variant containing an `AppError`.
+    fn refresh_lifetime(&self, key: &str, value: &Vec<u8>) -> Result<(), RuntimeError> {
+        if self.cache_db && self.is_refreshed {
+            self.db.put(key, value)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -32,9 +106,14 @@ impl Storage for CoreStorage {
     /// The `fn get_data(&self, key: &str) -> Result<Vec<u8>, Error>` function in the `CoreStorage`
     /// struct is implementing the `get_data` method defined in the `Storage` trait.
     fn get_data(&self, key: &str) -> Result<Vec<u8>, RuntimeError> {
+        self.clean_expired_data();
+
         let datastore = self.db.get(key)?;
         let data = match datastore {
-            Some(ivec) => ivec.to_vec(),
+            Some(ivec) => {
+                self.refresh_lifetime(key, &ivec)?;
+                ivec
+            }
             None => {
                 return Err(RuntimeError::AppError(AppError::new(
                     "Data not found".to_string(),
@@ -60,6 +139,7 @@ impl Storage for CoreStorage {
     ///
     /// The `set_data` function returns a `Result<(), Error>`.
     fn set_data(&self, key: &str, value: Vec<u8>) -> Result<(), RuntimeError> {
+        self.clean_expired_data();
         self.db.put(key, value)?;
         Ok(())
     }
@@ -79,6 +159,7 @@ impl Storage for CoreStorage {
     ///
     /// The `modify_data` function is returning a `Result<(), Error>`.
     fn modify_data(&self, key: &str, value: Vec<u8>) -> Result<(), RuntimeError> {
+        self.clean_expired_data();
         let _existing_data = self.get_data(key)?;
         self.db.put(key, value)?;
 
@@ -98,6 +179,7 @@ impl Storage for CoreStorage {
     /// `Result` enum where the success case contains an empty tuple `()` and the error case contains an
     /// `Error`.
     fn delete_data(&self, key: &str) -> Result<(), RuntimeError> {
+        self.clean_expired_data();
         self.db.delete(key)?;
         Ok(())
     }
@@ -119,6 +201,7 @@ impl Storage for CoreStorage {
         key: &str,
         value: crate::common::RequestBody,
     ) -> Result<(), RuntimeError> {
+        self.clean_expired_data();
         let bytes = serde_json::to_vec(&value)
             .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
         self.db
@@ -130,12 +213,15 @@ impl Storage for CoreStorage {
         &self,
         key: &str,
     ) -> Result<Option<Vec<crate::common::RequestBody>>, RuntimeError> {
+        self.clean_expired_data();
         let res = self
             .db
             .get(key)
             .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
         match res {
             Some(bytes) => {
+                self.refresh_lifetime(key, &bytes)?;
+
                 let value = serde_json::from_slice(&bytes)
                     .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
                 Ok(value)
@@ -161,12 +247,14 @@ impl Storage for CoreStorage {
         &self,
         key: &str,
     ) -> Result<Option<T>, RuntimeError> {
+        self.clean_expired_data();
         let res = self
             .db
             .get(key)
             .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
         match res {
             Some(bytes) => {
+                self.refresh_lifetime(key, &bytes)?;
                 let value = serde_json::from_slice(&bytes)
                     .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
                 Ok(Some(value))
@@ -190,6 +278,7 @@ impl Storage for CoreStorage {
     ///
     /// The `insert_value` function is returning a `Result<(), RuntimeError>`.
     fn insert_value<T: Serialize>(&self, key: &str, value: T) -> Result<(), RuntimeError> {
+        self.clean_expired_data();
         let bytes = serde_json::to_vec(&value)
             .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
         self.db

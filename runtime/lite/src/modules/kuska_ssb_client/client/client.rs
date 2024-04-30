@@ -3,8 +3,7 @@ use crate::{
     modules::{
         logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
         wasmtime_wasi_module,
-    },
-    AppError, Ctx,
+    }, AppError, Ctx
 };
 use kuska_ssb::api::dto::content::{Mention, Post};
 use std::borrow::BorrowMut;
@@ -244,6 +243,7 @@ impl Client {
                 }
             };
             let db = ctx.get_db();
+            let cache_db = ctx.get_cache_db();
             let mut logger = ctx.get_logger();
             let mut state_manager = ctx.get_state_manager();
 
@@ -333,6 +333,7 @@ impl Client {
                                                                     let _ = wasmtime_wasi_module::run_workflow(
                                                                             state_manager.borrow_mut(),
                                                                             logger.borrow_mut(),
+                                                                            &cache_db,
                                                                             data,
                                                                             body.wasm.clone(),
                                                                             workflow_index,
