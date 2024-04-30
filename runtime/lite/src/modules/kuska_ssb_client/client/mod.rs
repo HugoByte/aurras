@@ -5,6 +5,7 @@ extern crate base64;
 
 use std::fmt::Debug;
 
+use crate::AppError;
 use async_std::net::TcpStream;
 use kuska_handshake::async_std::{handshake_client, BoxStream};
 use kuska_sodiumoxide::crypto::sign::{ed25519, SecretKey};
@@ -22,9 +23,11 @@ use kuska_ssb::{
 
 #[allow(clippy::module_inception)]
 mod client;
+mod feed_processor;
 mod response_parser;
 
 pub use client::*;
+pub use feed_processor::*;
 pub use response_parser::*;
 
 pub mod types;
