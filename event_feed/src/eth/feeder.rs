@@ -1,4 +1,6 @@
 use super::*;
+use runtime::{logger::CoreLogger, Logger};
+
 pub struct EthFeed {
     eth_service: Provider<Ws>,
     events: Vec<(String, H256)>,
@@ -33,6 +35,7 @@ impl EthFeed {
     }
 
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<()> {
+        let logger = CoreLogger::new(Some("./eth-event-feed.log"));
         let client = Arc::new(&self.eth_service);
 
         let last_block = client
@@ -47,6 +50,10 @@ impl EthFeed {
         let filter = Filter::new().from_block(last_block - 25).events(events);
 
         let mut stream = client.subscribe_logs(&filter).await?;
+        logger.info(&format!(
+            "Subscribed to events with the filter : {:?}",
+            filter
+        ));
 
         while let Some(log) = stream.next().await {
             if self.contracts.is_empty() || self.contracts.contains(&format!("{:?}", &log.address))
@@ -72,6 +79,10 @@ impl EthFeed {
                 let tx_receipt = client.get_transaction_receipt(tx_hash).await;
 
                 if let Ok(Some(tx_receipt)) = tx_receipt {
+                    logger.info(&format!(
+                        "Received trabsaction receipt for the tx_hash : {:?}",
+                        tx_hash
+                    ));
                     let mut logs = Vec::<Value>::new();
 
                     for log in tx_receipt.logs.iter() {
@@ -80,6 +91,7 @@ impl EthFeed {
                         {
                             for evt in self.events.iter() {
                                 if log.topics[0] == evt.1 {
+                                    logger.info(&format!("Matched event : {:?}", evt.0.clone()));
                                     logs.push(
                                         serde_json::to_value(
                                         FeederEvent {

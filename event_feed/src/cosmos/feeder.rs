@@ -1,6 +1,7 @@
 use super::*;
 use crate::{common, cosmos};
 use anyhow::*;
+use runtime::{logger::CoreLogger, Logger};
 use serde_json::Value;
 use tendermint_rpc::event::{Event, EventData};
 
@@ -62,9 +63,14 @@ impl CosmosFeed {
     ///
     /// The `event_feed` function returns a `Result<()>`.
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
+        let logger = CoreLogger::new(Some("./cosmos-event-feed.log"));
         let (client, driver) = WebSocketClient::new(&*self.chain_config.node_url)
             .await
             .unwrap();
+        logger.info(&format!(
+            "Following the publisher {}",
+            self.chain_config.node_url
+        ));
         let driver_handle = tokio::spawn(async move { driver.run().await });
 
         let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
@@ -91,6 +97,7 @@ impl CosmosFeed {
         }
 
         drop(subs);
+        logger.info("Websocket connection closed!!");
         let _ = driver_handle.await;
         Ok(())
     }
@@ -115,6 +122,8 @@ impl CosmosFeed {
         event: &Event,
         chain_config: &ChainConfig,
     ) -> Option<Vec<serde_json::Value>> {
+        let logger = CoreLogger::new(Some("./event-feed.log"));
+        logger.debug(&format!("Processing events : {:?}", event));
         match event.data.clone() {
             EventData::LegacyNewBlock {
                 ref block,
@@ -124,8 +133,16 @@ impl CosmosFeed {
                 let block = block.as_ref().unwrap();
                 let block_number = block.header.version.block as usize;
                 let hash_string = block.header.last_commit_hash.map(|h| h.to_string());
+                logger.info(&format!(
+                    "Processing LegacyNewBlockEvent for block: {}",
+                    block.header.version.block
+                ));
 
                 let filtered_events: Vec<Value> = if chain_config.event_filter.is_empty() {
+                    logger.info(&format!(
+                        "Processing all events from block : {}",
+                        block_number
+                    ));
                     result_begin_block
                         .unwrap()
                         .events
@@ -141,6 +158,7 @@ impl CosmosFeed {
                         .map(|e| serde_json::to_value(e).unwrap())
                         .collect()
                 } else {
+                    logger.info("Filtering events based on the event name");
                     result_begin_block
                         .unwrap()
                         .events
@@ -161,8 +179,10 @@ impl CosmosFeed {
                 };
 
                 if !filtered_events.is_empty() {
+                    logger.info("returning the filtered events");
                     Some(filtered_events)
                 } else {
+                    logger.info("No events matched the filter");
                     None
                 }
             }
