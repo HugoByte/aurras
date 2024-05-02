@@ -1,9 +1,12 @@
 use super::*;
-use crate::{common, cosmos};
+use crate::common::{self, ChainConfig};
 use anyhow::*;
+use futures::StreamExt;
 use runtime::{logger::CoreLogger, Logger};
 use serde_json::Value;
 use tendermint_rpc::event::{Event, EventData};
+use tendermint_rpc::query::EventType;
+use tendermint_rpc::{SubscriptionClient, WebSocketClient};
 
 /// The `CosmosFeed` struct in Rust defines a feed for handling Cosmos blockchain events with filtering
 /// capabilities.

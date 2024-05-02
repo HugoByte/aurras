@@ -1,7 +1,6 @@
 mod tests {
-
+    use crate::common::ChainConfig;
     use super::super::*;
-    use crate::common::FeederEvent;
 
     #[tokio::test]
     async fn test_cosmos_feed_new() {
