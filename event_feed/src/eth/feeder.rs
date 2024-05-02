@@ -9,7 +9,7 @@ pub struct EthFeed {
 }
 
 impl EthFeed {
-    pub async fn new(config: ChainConfig) -> Result<EthFeed> {
+    pub async fn new(config: ChainConfig, logger: CoreLogger) -> Result<EthFeed> {
         let events = config
             .event_filter
             .split(';')
@@ -25,7 +25,6 @@ impl EthFeed {
             .collect::<Vec<String>>();
 
         let client = Provider::<Ws>::connect(config.node_url).await?;
-        let logger = CoreLogger::new(Some("./event-feed.log"));
 
         let eth_feed = EthFeed {
             eth_service: client,

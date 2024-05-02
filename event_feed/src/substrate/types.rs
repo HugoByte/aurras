@@ -14,9 +14,8 @@ pub struct PolkadotFeed<T: subxt::Config> {
 }
 
 impl<T: subxt::Config> PolkadotFeed<T> {
-    pub async fn new(chain_config: ChainConfig) -> Result<PolkadotFeed<PolkadotConfig>> {
+    pub async fn new(chain_config: ChainConfig, logger: CoreLogger) -> Result<PolkadotFeed<PolkadotConfig>> {
         let client = OnlineClient::<PolkadotConfig>::from_url(&chain_config.node_url).await?;
-        let logger = CoreLogger::new(Some("./event-feed.log"));
         Ok(PolkadotFeed {
             chain_config,
             client,

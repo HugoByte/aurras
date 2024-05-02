@@ -16,8 +16,8 @@ mod substrate;
 
 #[tokio::main]
 async fn main() {
-    let logger = CoreLogger::new(Some("./event-feed.log"));
     dotenv::dotenv().ok();
+    let logger = CoreLogger::new(Some("./event-feed.log"));
     let chain_config = envy::from_env::<ChainConfig>().unwrap();
     let producer_config = envy::from_env::<ProducerConfig>().unwrap();
 
@@ -27,24 +27,24 @@ async fn main() {
 
     let feed: Context = match chain_config.clone().chain.to_lowercase().as_str() {
         "substrate" => {
-            let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone())
+            let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone(), logger.clone())
                 .await
                 .unwrap();
             logger.info("Polkadot client got created");
             Context::PolkadotFeed(polkadot_client)
         }
         "icon" => {
-            let icon_client = IconFeed::new(chain_config.clone()).unwrap();
+            let icon_client = IconFeed::new(chain_config.clone(), logger.clone()).unwrap();
             logger.info("Icon client got created");
             Context::IconFeed(icon_client)
         }
         "eth" => {
-            let eth_client = EthFeed::new(chain_config.clone()).await.unwrap();
+            let eth_client = EthFeed::new(chain_config.clone(), logger.clone()).await.unwrap();
             logger.info("Eth client got created");
             Context::EthFeed(eth_client)
         }
         "cosmos" => {
-            let cosmos_client = CosmosFeed::new(chain_config.clone());
+            let cosmos_client = CosmosFeed::new(chain_config.clone(), logger.clone());
             logger.info("Cosmos client got created");
             Context::CosmosFeed(cosmos_client)
         }

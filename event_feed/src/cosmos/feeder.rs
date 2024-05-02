@@ -40,14 +40,14 @@ impl CosmosFeed {
     /// Returns:
     ///
     /// A `CosmosFeed` struct instance is being returned.
-    pub fn new(chain_config: common::ChainConfig) -> CosmosFeed {
+    pub fn new(chain_config: common::ChainConfig, logger: CoreLogger) -> CosmosFeed {
         let events = chain_config
             .event_filter
             .split(',')
             .map(|e| e.to_string())
             .filter(|e| !e.is_empty())
             .collect::<Vec<String>>();
-        let logger = CoreLogger::new(Some("./event-feed.log"));
+        // let logger = CoreLogger::new(Some("./event-feed.log"));
         let cosmos = CosmosFeed {
             chain_config,
             events,

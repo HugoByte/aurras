@@ -1,6 +1,7 @@
 mod tests {
-    use crate::common::ChainConfig;
     use super::super::*;
+    use crate::common::ChainConfig;
+    use runtime::{logger::CoreLogger};
 
     #[tokio::test]
     async fn test_cosmos_feed_new() {
@@ -10,8 +11,9 @@ mod tests {
             contract_filter: "".to_string(),
             chain: "cosmos".to_string(),
         };
-        let cosmos_feed = CosmosFeed::new(chain_config.clone());
+        let logger = CoreLogger::new(Some("./event-feed.log"));
 
+        let cosmos_feed = CosmosFeed::new(chain_config.clone(), logger);
         assert_eq!(cosmos_feed.chain_config, chain_config);
         assert_eq!(cosmos_feed.events.len(), 1);
         assert!(cosmos_feed.events.contains(&"transfer".to_string()));
@@ -29,8 +31,8 @@ mod tests {
         let callback = |events: Vec<serde_json::Value>| {
             assert!(events.is_empty());
         };
-
-        let cosmos_feed = CosmosFeed::new(chain_config.clone());
+        let logger = CoreLogger::new(Some("./event-feed.log"));
+        let cosmos_feed = CosmosFeed::new(chain_config.clone(), logger);
         let result = cosmos_feed.event_feed(&callback).await;
 
         assert!(result.is_ok());
@@ -51,7 +53,8 @@ mod tests {
             // Simulate an error condition
             assert!(events.is_empty());
         };
-        let cosmos_feed = CosmosFeed::new(chain_config.clone());
+        let logger = CoreLogger::new(Some("./event-feed.log"));
+        let cosmos_feed = CosmosFeed::new(chain_config.clone(), logger);
 
         let _ = cosmos_feed.event_feed(&callback).await;
     }

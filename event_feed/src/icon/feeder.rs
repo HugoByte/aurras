@@ -11,7 +11,7 @@ pub struct IconFeed {
 }
 
 impl IconFeed {
-    pub fn new(config: ChainConfig) -> Result<IconFeed> {
+    pub fn new(config: ChainConfig, logger: CoreLogger) -> Result<IconFeed> {
         let events = config
             .event_filter
             .split(',')
@@ -27,7 +27,6 @@ impl IconFeed {
             .collect::<Vec<String>>();
 
         let icon_service = icon_service::IconService::new(Some(config.node_url));
-        let logger = CoreLogger::new(Some("./event-feed.log"));
 
         let icon_feed = IconFeed {
             icon_service,
