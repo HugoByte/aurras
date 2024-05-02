@@ -6,3 +6,4 @@ pub const DEFAULT_PUB_IP: &str = "0.0.0.0";
 pub const DEFAULT_PUB_PORT: &str = "8008";
 pub const DEFAULT_CONSUMER_PORT: &str = "8008";
 pub const DEFAULT_PRODUCER_PORT: &str = "8008";
+pub const DEFAULT_CACHE_LIFETIME: u64 = 600;    // 10 minutes

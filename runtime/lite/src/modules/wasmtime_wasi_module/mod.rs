@@ -11,24 +11,27 @@ mod tests;
 mod types;
 pub use types::*;
 
-use logger::Logger;
-use rocksdb::DB;
 use wasi_common::WasiCtx;
 use wasi_experimental_http_wasmtime::{HttpCtx, HttpState};
 use wasmtime::Linker;
 use wasmtime::*;
 use wasmtime_wasi::sync::WasiCtxBuilder;
 
-use super::logger;
+use super::{logger::Logger, storage::Storage};
 
-pub fn run_workflow<U: Logger + Clone + std::marker::Send + 'static>(
-    mut state_manager: MutexGuard<GlobalState<WorkflowState, U>>,
-    logger: MutexGuard<U>,
+pub fn run_workflow<U, V>(
+    state_manager: &mut MutexGuard<GlobalState<WorkflowState, U>>,
+    logger: &mut MutexGuard<U>,
+    cache: &MutexGuard<V>,
     data: Value,
     wasm_file: Vec<u8>,
     workflow_index: usize,
     ignore_cache: bool, // ignores the cache
-) -> Result<Output, String> {
+) -> Result<Output, String>
+where
+    U: Logger + Clone + std::marker::Send + 'static,
+    V: Storage,
+{
     let workflow_id = state_manager
         .get_state_data(workflow_index)
         .unwrap()
@@ -36,12 +39,11 @@ pub fn run_workflow<U: Logger + Clone + std::marker::Send + 'static>(
 
     let hash_key = digest(format!("{:?}{:?}", data, workflow_id));
 
-    let cache = DB::open_default(format!("./.cache/{:?}", workflow_id)).unwrap();
-
     let prev_internal_state_data = if !ignore_cache {
-        let prev_internal_state_data: Value = match cache.get(hash_key.as_bytes()).unwrap() {
-            Some(data) => serde_json::from_slice(&data).unwrap(),
-            None => serde_json::json!([]),
+        let prev_internal_state_data = if let Ok(Some(data)) = cache.get_value(&hash_key) {
+            data
+        } else {
+            serde_json::json!({})
         };
 
         // returns the main output without passing the state data to the workflow
@@ -270,7 +272,7 @@ pub fn run_workflow<U: Logger + Clone + std::marker::Send + 'static>(
 
         let mut bytes: Vec<u8> = Vec::new();
         serde_json::to_writer(&mut bytes, &state_output).unwrap();
-        cache.put(hash_key.as_bytes(), bytes).unwrap();
+        cache.set_data(&hash_key, bytes).unwrap();
     } else {
         state_manager
             .update_result(workflow_index, res.result.clone(), true)
@@ -279,7 +281,7 @@ pub fn run_workflow<U: Logger + Clone + std::marker::Send + 'static>(
         let state_result = serde_json::json!({ "success" : res });
         let mut bytes: Vec<u8> = Vec::new();
         serde_json::to_writer(&mut bytes, &state_result).unwrap();
-        cache.put(hash_key.as_bytes(), bytes).unwrap();
+        cache.set_data(&hash_key, bytes).unwrap();
     }
 
     Ok(res)

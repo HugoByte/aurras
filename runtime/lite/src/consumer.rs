@@ -2,7 +2,8 @@ use kuska_ssb::keystore::{read_patchwork_config, OwnedIdentity};
 use runtime::{
     common::{
         constants::{
-            DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, FOLLOW_LIST_KEY, HTTP_SERVER_ADDRESS,
+            DEFAULT_CACHE_LIFETIME, DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, FOLLOW_LIST_KEY,
+            HTTP_SERVER_ADDRESS,
         },
         RequestBody,
     },
@@ -12,6 +13,7 @@ use runtime::{
     storage::{CoreStorage, Storage},
     AppError, Ctx, Logger, RuntimeError,
 };
+use std::result::Result::{Err, Ok};
 
 use std::{
     net::{TcpListener, TcpStream},
@@ -28,12 +30,25 @@ use dotenv::dotenv;
 async fn main() -> Result<(), RuntimeError> {
     dotenv().ok();
     let db = CoreStorage::new("runtime-db")?;
+
+    let cache_lifetime = match std::env::var("CACHE_LIFETIME") {
+        Ok(value) => value.parse::<u64>().unwrap(),
+        Err(_) => DEFAULT_CACHE_LIFETIME,
+    };
+
+    let cache_db = CoreStorage::new_with_ttl("./.cache", cache_lifetime, true).unwrap();
+
     let logger = CoreLogger::new(Some("./ssb-consumer.log"));
     let state_manager = GlobalState::new(logger.clone());
 
     logger.info("starting consumer...");
 
-    let context = Arc::new(Mutex::new(Context::new(logger.clone(), db, state_manager)));
+    let context = Arc::new(Mutex::new(Context::new(
+        logger.clone(),
+        db,
+        cache_db,
+        state_manager,
+    )));
 
     let secret = std::env::var("CONSUMER_SECRET").unwrap_or_else(|_| {
         let home_dir = dirs::home_dir().unwrap();
@@ -132,35 +147,71 @@ async fn handle_client(
     match get_follow_list {
         Some(mut list) => {
             if list.contains(&body.pub_id) {
+                let logger = ctx.get_logger().clone();
                 logger.info("Already Following the publisher");
-                return Ok(());
             } else {
+                let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
+                    RuntimeError::AppError(AppError::new(format!(
+                        "Error accepting invite: {}",
+                        err
+                    )))
+                })?;
+                let timestamp = match connect_feed[1].value.get("timestamp") {
+                    Some(timestamp) => timestamp,
+                    None => {
+                        return Err(RuntimeError::AppError(AppError::new(format!(
+                            "Error getting timestamp from the accepted invite-contact feed",
+                        ))));
+                    }
+                };
                 list.push(body.pub_id.clone());
+                db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
                 db.insert_value(FOLLOW_LIST_KEY, list)?;
             }
         }
         None => {
+            let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
+                RuntimeError::AppError(AppError::new(format!("Error accepting invite: {}", err)))
+            })?;
+            let timestamp = match connect_feed[1].value.get("timestamp") {
+                Some(timestamp) => timestamp,
+                None => {
+                    return Err(RuntimeError::AppError(AppError::new(format!(
+                        "Error getting timestamp from the accepted invite-contact feed",
+                    ))));
+                }
+            };
+            db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
             db.insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()])?;
         }
     }
 
-    let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
-        RuntimeError::AppError(AppError::new(format!("Error accepting invite: {}", err)))
-    })?;
-    let timestamp = match connect_feed[1].value.get("timestamp") {
-        Some(timestamp) => timestamp,
-        None => {
-            return Err(RuntimeError::AppError(AppError::new(format!(
-                "Error getting timestamp from the accepted invite-contact feed",
-            ))));
-        }
-    };
-
-    db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
     logger.info(&format!("Following the publisher {}", body.pub_id));
 
-    db.insert_value(&body.pub_id.clone(), body)?;
-    logger.info("Data inserted successfully");
+    let existing_data = db.get_request_body(&body.pub_id.to_string())?;
+
+    match existing_data {
+        Some(mut existing_body) => {
+            if let Some(position) = existing_body
+                .iter()
+                .position(|r| r.workflow_id == body.workflow_id)
+            {
+                existing_body.remove(position);
+                existing_body.push(body.clone());
+                db.insert_value(&body.pub_id.clone(), existing_body)?;
+                logger.info("Existing data updated successfully");
+            } else {
+                existing_body.push(body.clone());
+                db.insert_value(&body.pub_id.clone(), existing_body)?;
+                logger.info("Data updated successfully");
+            }
+        }
+        None => {
+            let new_data = vec![body.clone()];
+            db.insert_value(&body.pub_id.clone(), new_data)?;
+            logger.info("Data added")
+        }
+    }
 
     // Respond to the client (optional)
     let response = "Data received!";
