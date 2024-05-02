@@ -105,6 +105,7 @@ mod tests {
             input: serde_json::json!({ "test": "test"}),
             workflow_id: "1".to_string(),
             workflow_name: "hello".to_string(),
+            action: Some("follow".to_string()),
         };
 
         let key = "test";

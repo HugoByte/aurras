@@ -9,8 +9,9 @@ pub struct RequestBody {
     pub pub_id: String,
     pub allowed_hosts: Option<Vec<String>>,
     pub input: Value,
-    pub workflow_id : String,
-    pub workflow_name : String
+    pub workflow_id: String,
+    pub workflow_name: String,
+    pub action: Option<String>,
 }
 
 pub fn combine_values(dest: &mut serde_json::Value, src: &serde_json::Value) {

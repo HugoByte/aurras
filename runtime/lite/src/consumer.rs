@@ -3,7 +3,7 @@ use runtime::{
     common::{
         constants::{
             DEFAULT_CACHE_LIFETIME, DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, FOLLOW_LIST_KEY,
-            HTTP_SERVER_ADDRESS,
+            HTTP_SERVER_ADDRESS, UNFOLLOW_LIST_KEY,
         },
         RequestBody,
     },
@@ -13,7 +13,10 @@ use runtime::{
     storage::{CoreStorage, Storage},
     AppError, Ctx, Logger, RuntimeError,
 };
-use std::result::Result::{Err, Ok};
+use std::{
+    result::Result::{Err, Ok},
+    sync::MutexGuard,
+};
 
 use std::{
     net::{TcpListener, TcpStream},
@@ -140,9 +143,32 @@ async fn handle_client(
 
     let body = serde_json::from_slice::<RequestBody>(&buffer)?;
     logger.info("Data Deserialized");
+
+    if let Some(action) = &body.action {
+        logger.debug(&format!("Processing action: {}", action));
+        if action == "unfollow" {
+            logger.info(&format!(
+                "Attempting to unfollow publisher with ID: {}",
+                body.pub_id
+            ));
+            unfollow_publisher(&ctx, body.pub_id.clone())?;
+        }
+    }
+
     let db = ctx.get_db();
 
     let get_follow_list = db.get_value::<Vec<String>>(FOLLOW_LIST_KEY)?;
+    let unfollowed_list = db.get_value::<Vec<String>>(UNFOLLOW_LIST_KEY)?;
+
+    if let Some(unfollowed_list) = unfollowed_list {
+        if unfollowed_list.contains(&body.pub_id) {
+            logger.info(&format!(
+                "Publisher {} is unfollowed. Ignoring invite.",
+                body.pub_id
+            ));
+            // return Ok(());
+        }
+    }
 
     match get_follow_list {
         Some(mut list) => {
@@ -218,5 +244,59 @@ async fn handle_client(
     stream
         .write_all(response.as_bytes())
         .expect("Error writing response");
+    Ok(())
+}
+
+fn unfollow_publisher(ctx: &MutexGuard<dyn Ctx>, pub_id: String) -> Result<(), RuntimeError> {
+    let db = ctx.get_db();
+    let logger = ctx.get_logger().clone();
+
+    let follow_list = db
+        .get_value::<Vec<String>>(FOLLOW_LIST_KEY)
+        .map_err(|e| {
+            RuntimeError::AppError(AppError::new(format!("Failed to get follow list: {}", e)))
+        })?
+        .unwrap_or_else(|| {
+            logger.warn("Follow list is empty, initializing to new vector.");
+            Vec::new()
+        });
+
+    let mut unfollow_list = db
+        .get_value::<Vec<String>>(UNFOLLOW_LIST_KEY)
+        .map_err(|e| {
+            RuntimeError::AppError(AppError::new(format!("Failed to get unfollow list: {}", e)))
+        })?
+        .unwrap_or_else(|| {
+            logger.warn("Unfollow list is empty, initializing to new vector.");
+            Vec::new()
+        });
+
+    if follow_list.contains(&pub_id) {
+        let mut updated_follow_list = follow_list
+            .into_iter()
+            .filter(|id| id != &pub_id)
+            .collect::<Vec<String>>();
+        unfollow_list.push(pub_id.clone());
+
+        db.insert_value(FOLLOW_LIST_KEY, updated_follow_list)
+            .map_err(|e| {
+                RuntimeError::AppError(AppError::new(format!(
+                    "Failed to update follow list: {}",
+                    e
+                )))
+            })?;
+        db.insert_value(UNFOLLOW_LIST_KEY, unfollow_list)
+            .map_err(|e| {
+                RuntimeError::AppError(AppError::new(format!(
+                    "Failed to update unfollow list: {}",
+                    e
+                )))
+            })?;
+
+        logger.info(&format!("Unfollowed publisher {}", pub_id));
+    } else {
+        logger.info(&format!("Publisher {} not found in follow list.", pub_id));
+    }
+
     Ok(())
 }
