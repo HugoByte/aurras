@@ -7,6 +7,7 @@ pub struct IconFeed {
     icon_service: IconService,
     events: Vec<String>,
     score: Vec<String>,
+    logger: CoreLogger,
 }
 
 impl IconFeed {
@@ -26,26 +27,28 @@ impl IconFeed {
             .collect::<Vec<String>>();
 
         let icon_service = icon_service::IconService::new(Some(config.node_url));
+        let logger = CoreLogger::new(Some("./event-feed.log"));
 
         let icon_feed = IconFeed {
             icon_service,
             events,
             score,
+            logger,
         };
 
         Ok(icon_feed)
     }
 
     pub async fn filter(&self, transaction: &Value) -> Result<bool> {
-        let logger = CoreLogger::new(Some("./icon-event-feed.log"));
         let mut events_filter = false;
         let mut score_filter = false;
 
         if !self.events.is_empty() || !self.score.is_empty() {
-            logger.info("Checking the evnt filters or score filters");
+            self.logger
+                .info("Checking the evnt filters or score filters");
             let tx_hash: String =
                 serde_json::from_value(transaction.get("txHash").unwrap().clone()).unwrap();
-            logger.info(&format!(
+            self.logger.info(&format!(
                 "Filtering the events with the tx_hash : {:?}",
                 tx_hash
             ));
@@ -56,13 +59,15 @@ impl IconFeed {
                 if !&self.score.is_empty() {
                     for filter_score in &self.score {
                         if filter_score == &event_log.score_address {
-                            logger.info(&format!("Matched the score filter : {:?}", filter_score));
+                            self.logger
+                                .info(&format!("Matched the score filter : {:?}", filter_score));
                             score_filter = true;
                             break;
                         }
                     }
                 } else {
-                    logger.info("No score filter found, allowing all the transactions");
+                    self.logger
+                        .info("No score filter found, allowing all the transactions");
                     score_filter = true;
                 }
 
@@ -75,7 +80,8 @@ impl IconFeed {
                     }
                 } else {
                     events_filter = true;
-                    logger.info("No event filter found, allowing all the transactions");
+                    self.logger
+                        .info("No event filter found, allowing all the transactions");
                 }
 
                 if events_filter && score_filter {
@@ -88,15 +94,15 @@ impl IconFeed {
             score_filter = true;
         }
         let result = events_filter && score_filter;
-        logger.info(&format!("Filtering the result : {:?}", result));
+        self.logger
+            .info(&format!("Filtering the result : {:?}", result));
         Ok(result)
     }
 
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
-        let logger = CoreLogger::new(Some("./icon-event-feed.log"));
         let mut latest_height = get_icon_block_height(&self.icon_service).await?;
         let mut old_height = latest_height - 1;
-        logger.info(&format!(
+        self.logger.info(&format!(
             "Event feed started at {:?}, {:?}",
             latest_height, old_height
         ));
@@ -130,7 +136,7 @@ impl IconFeed {
                     }
                 }
 
-                logger.info(&format!(
+                self.logger.info(&format!(
                     "Filtered the {:?} transactions",
                     filtered_tx.len()
                 ));
@@ -141,7 +147,8 @@ impl IconFeed {
 
                 old_height += 1;
             } else {
-                logger.info("No new blocks got detected, sleeping for 1 second");
+                self.logger
+                    .info("No new blocks got detected, sleeping for 1 second");
                 sleep(Duration::from_secs(1));
             }
 

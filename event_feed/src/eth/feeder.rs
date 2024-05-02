@@ -5,6 +5,7 @@ pub struct EthFeed {
     eth_service: Provider<Ws>,
     events: Vec<(String, H256)>,
     contracts: Vec<String>,
+    logger: CoreLogger,
 }
 
 impl EthFeed {
@@ -24,18 +25,19 @@ impl EthFeed {
             .collect::<Vec<String>>();
 
         let client = Provider::<Ws>::connect(config.node_url).await?;
+        let logger = CoreLogger::new(Some("./event-feed.log"));
 
         let eth_feed = EthFeed {
             eth_service: client,
             events,
             contracts,
+            logger,
         };
 
         Ok(eth_feed)
     }
 
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<()> {
-        let logger = CoreLogger::new(Some("./eth-event-feed.log"));
         let client = Arc::new(&self.eth_service);
 
         let last_block = client
@@ -50,7 +52,7 @@ impl EthFeed {
         let filter = Filter::new().from_block(last_block - 25).events(events);
 
         let mut stream = client.subscribe_logs(&filter).await?;
-        logger.info(&format!(
+        self.logger.info(&format!(
             "Subscribed to events with the filter : {:?}",
             filter
         ));
@@ -79,7 +81,7 @@ impl EthFeed {
                 let tx_receipt = client.get_transaction_receipt(tx_hash).await;
 
                 if let Ok(Some(tx_receipt)) = tx_receipt {
-                    logger.info(&format!(
+                    self.logger.info(&format!(
                         "Received trabsaction receipt for the tx_hash : {:?}",
                         tx_hash
                     ));
@@ -91,7 +93,8 @@ impl EthFeed {
                         {
                             for evt in self.events.iter() {
                                 if log.topics[0] == evt.1 {
-                                    logger.info(&format!("Matched event : {:?}", evt.0.clone()));
+                                    self.logger
+                                        .info(&format!("Matched event : {:?}", evt.0.clone()));
                                     logs.push(
                                         serde_json::to_value(
                                         FeederEvent {

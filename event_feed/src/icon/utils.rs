@@ -2,7 +2,7 @@ use super::*;
 use runtime::{logger::CoreLogger, Logger};
 
 pub async fn get_icon_block_height(icon_service: &IconService) -> Result<usize> {
-    let logger = CoreLogger::new(Some("./icon-event-feed.log"));
+    let logger = CoreLogger::new(Some("./event-feed.log"));
     let latest_block = icon_service
         .get_last_block()
         .await
@@ -20,7 +20,7 @@ pub async fn get_event_logs_by_tx_hash(
     icon_service: &IconService,
     tx_hash: &str,
 ) -> Result<Vec<TxEventLog>> {
-    let logger = CoreLogger::new(Some("./icon-event-feed.log"));
+    let logger = CoreLogger::new(Some("./event-feed.log"));
     let mut tx_result = icon_service.get_transaction_result(tx_hash).await;
 
     while let Err(error) = tx_result {
