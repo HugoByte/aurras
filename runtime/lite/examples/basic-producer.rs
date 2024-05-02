@@ -5,7 +5,7 @@ use runtime::kuska_ssb_client::client::Client;
 use runtime::logger::{CoreLogger, Logger};
 use subxt::{OnlineClient, PolkadotConfig};
 
-/// The main function of the aurras ssb producer that sends the event feeds to the ssb `pub` network
+/// An example of aurras ssb producer that sends the event feeds to the ssb `pub` network
 #[tokio::main]
 async fn main() {
     dotenv().ok();

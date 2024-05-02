@@ -21,22 +21,18 @@ use super::{logger::Logger, storage::Storage};
 /// 
 /// # Arguments:
 /// 
-/// * `state_manager`: A mutable reference to a MutexGuard<U> where U is a type that implements the
-/// `GlobalStateManager` trait. This is the state manager that is used to manage the state of the workflow.
-/// * `logger`: A mutable reference to a MutexGuard<V> where V is a type that implements the `Logger`
-/// trait. This is the logger that is used to log the state of the workflow.
-/// * `cache`: A mutable reference to a MutexGuard<S> where S is a type that implements the `Storage`
-/// trait. This is the cache that is used to store the state of the workflow.
-/// * `data`: The `data` parameter is of type `Value` and is an instance of the `serde_json::Value`
-/// type. It is used to pass data to the workflow.
-/// * `wasm_file`: An instance of the `Vec<u8>` type that represents the workflow wasm code.
-/// * `workflow_index`: The index of the workflow in the state manager.
+/// * `state_manager`: An implementation of the `GlobalStateManager` that is used to manage the
+/// state of the workflow.
+/// * `logger`: An implementation of the `Logger` that is used to log the state of the workflow.
+/// * `cache`: An implementation of the `Storage` that is used to store the state of the workflow.
+/// * `data`: Initial input data for the workflow.
+/// * `wasm_file`: A Workflow wasm.
+/// * `workflow_index`: Index of the workflow in the state manager.
 /// * `ignore_cache`: A boolean value that indicates whether to ignore the cache or not.
 /// 
 /// # Returns:
 /// 
-/// Returns a `Result<Output, String>` where `Output` is a struct that contains the output of the
-/// workflow and `String` is an error message if there is an error.
+/// Returns the output of the workflow.
 pub fn run_workflow<U, V, S>(
     state_manager: &mut MutexGuard<U>,
     logger: &mut MutexGuard<V>,

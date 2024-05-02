@@ -5,12 +5,23 @@ use runtime::api::dto::content::Mention;
 use runtime::kuska_ssb_client::client::owned_identity_from_patchwork_config;
 use runtime::kuska_ssb_client::client::Client;
 
+/// Represents the aurras ssb producer client.
 pub struct Producer {
     config: ProducerConfig,
     client: Client,
 }
 
 impl Producer {
+
+    /// Creates a new ssb producer client.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `config` - A configuration struct for the ssb producer.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a new ssb producer client.
     pub async fn new(config: ProducerConfig) -> Result<Self> {
         let key = owned_identity_from_patchwork_config(&config.ssb_secret)
             .await
@@ -22,6 +33,7 @@ impl Producer {
         Ok(Self { config, client })
     }
 
+    /// Accepts an ssb pub invite.
     pub async fn accept_invite(&mut self) -> Result<()> {
         if let Err(e) = self.client.accept_invite(&self.config.ssb_invite).await {
             let error = format!("{e:?}");
@@ -34,6 +46,11 @@ impl Producer {
         Ok(())
     }
 
+    /// Publishes the event feed to the pub.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `message` - The event feed message to publish.
     pub async fn publish_feed(&mut self, message: Value) -> Result<()> {
         let mention = Mention {
             link: get_ssb_pub_address_from_invite(self.config.ssb_invite.as_str()),
@@ -51,6 +68,7 @@ impl Producer {
     }
 }
 
+/// Returns the ssb pub address from the invite.
 pub fn get_ssb_pub_address_from_invite(invite: &str) -> String {
     let pub_address = invite
         .split('@')

@@ -117,14 +117,10 @@ async fn main() -> Result<(), RuntimeError> {
 /// # Arguments
 ///
 /// * `stream`: A mutable reference to the `TcpStream` to receive the invites.
-/// * `ctx`: A instance of `Arc<Mutex<Context>>` to access the runtime context.
-/// * `key`: A reference to the `OwnedIdentity` of the consumer ssb.
-/// * `ip`: A string that represents the IP address of the consumer ssb.
-/// * `port`: A string that represents the port of the consumer ssb.
-///
-/// # Returns
-///
-/// Returns a `Result<(), RuntimeError>` that either returns an error or nothing.
+/// * `ctx`: A runtime context.
+/// * `key`: An instance of `OwnedIdentity` that represents the identity of the consumer ssb server.
+/// * `ip`: A ssb server ip address of the consumer.
+/// * `port`: A ssb server port number of the consumer.
 async fn handle_client(
     mut stream: TcpStream,
     ctx: Arc<Mutex<dyn Ctx>>,
@@ -197,7 +193,7 @@ async fn handle_client(
 
     logger.info(&format!("Following the publisher {}", body.pub_id));
 
-    let existing_data = db.get_request_body(&body.pub_id.to_string())?;
+    let existing_data = db.get_value::<Vec<RequestBody>>(&body.pub_id.to_string())?;
 
     match existing_data {
         Some(mut existing_body) => {

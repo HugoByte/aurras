@@ -1,40 +1,17 @@
 use super::*;
-/// The `EthFeed` struct in Rust represents a feed for Ethereum events and contracts, allowing for event
-/// filtering and subscription to event feeds.
-/// 
-/// Properties:
-/// 
-/// * `eth_service`: The `eth_service` property in the `EthFeed` struct is of type `Provider<Ws>`, which
-/// represents the Ethereum provider used for interacting with the Ethereum network over a WebSocket
-/// connection.
-/// * `events`: The `events` property in the `EthFeed` struct is a vector of tuples containing a string
-/// and a `H256` value. Each tuple represents an event filter, where the string is the event name and
-/// the `H256` value is the hashed representation of the event filter using the `
-/// * `contracts`: The `contracts` property in the `EthFeed` struct is a vector of strings that stores
-/// the contract addresses used for filtering events. It is populated based on the `contract_filter`
-/// field from the `ChainConfig` struct provided during the initialization of the `EthFeed` instance.
-/// The `event
+/// Represents an Ethereum blockchain event feed.
 pub struct EthFeed {
     eth_service: Provider<Ws>,
     events: Vec<(String, H256)>,
     contracts: Vec<String>,
 }
 
-/// This code snippet in Rust defines an implementation block for the `EthFeed` struct. Within this
-/// implementation block, there are two asynchronous functions defined:
 impl EthFeed {
-    /// The function `new` creates a new `EthFeed` instance based on the provided `ChainConfig`
-    /// configuration.
+    /// Creates a new EthFeed instance based on the provided chain configuration.
     /// 
     /// Arguments:
     /// 
-    /// * `config`: The `config` parameter in the `new` function is of type `ChainConfig`. It contains
-    /// the configuration settings needed to initialize an `EthFeed` instance. The `ChainConfig` struct
-    /// likely includes fields such as `event_filter`, `contract_filter`, and `node_url` which are used
-    /// 
-    /// Returns:
-    /// 
-    /// The `new` function returns a `Result` containing an `EthFeed` struct.
+    /// * `config`: An event feed chain configuration.
     pub async fn new(config: ChainConfig) -> Result<EthFeed> {
         let events = config
             .event_filter
@@ -61,21 +38,11 @@ impl EthFeed {
         Ok(eth_feed)
     }
 
-    /// This Rust function asynchronously fetches event logs from a blockchain client and processes them
-    /// based on specified filters and contracts, then calls a callback function with the extracted
-    /// event data.
+    /// Fetches the events from the Ethereum chain and returns it through the provided callback function.
     /// 
-    /// Arguments:
+    /// # Arguments:
     /// 
-    /// * `cb`: The `cb` parameter in the `event_feed` function is a callback function that takes a
-    /// vector of `serde_json::Value` as input. This callback function is called with the processed
-    /// event data to be handled by the caller of the `event_feed` function.
-    /// 
-    /// Returns:
-    /// 
-    /// The `event_feed` function returns a `Result<()>`, indicating that it can return either an
-    /// `Ok(())` if the function completes successfully or an error if there is a problem during
-    /// execution.
+    /// * `cb`: A callback function to return the events to the caller.
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<()> {
         let client = Arc::new(&self.eth_service);
 

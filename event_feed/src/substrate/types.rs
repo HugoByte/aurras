@@ -21,6 +21,12 @@ pub struct PolkadotFeed<T: subxt::Config> {
 }
 
 impl<T: subxt::Config> PolkadotFeed<T> {
+
+    /// Creates a new `PolkadotFeed` instance based on the provided chain configuration.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `chain_config`: An event feed chain configuration.
     pub async fn new(chain_config: ChainConfig) -> Result<PolkadotFeed<PolkadotConfig>> {
         let client = OnlineClient::<PolkadotConfig>::from_url(&chain_config.node_url)
             .await
@@ -33,10 +39,11 @@ impl<T: subxt::Config> PolkadotFeed<T> {
 }
 
 impl<T: subxt::Config> PolkadotFeed<T> {
-    /// The `event_feed` function in the code snippet is a method of the `PolkadotFeed` struct. It is an
-    /// asynchronous function that takes a callback function `cb` as a parameter. This function
-    /// subscribes to finalized blocks on the Polkadot chain and processes the extrinsics and events
-    /// within those blocks.
+    /// Fetches the events from the Substrate chain and returns it through the provided callback function.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `cb`: A callback function to return the events to the caller.
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()>{
         let mut blocks_sub = self.client.blocks().subscribe_finalized().await?;
 
@@ -89,12 +96,11 @@ impl<T: subxt::Config> PolkadotFeed<T> {
         }
     }
 
-    /// The function `split_filter` in Rust splits a string by ';' and then by '=' to create a HashMap
-    /// with keys and corresponding values as vectors.
+    /// Splits a string by ';' and then by '=' to create a HasMap. This hashmap is used to filter the events.
     /// 
     /// Returns:
     /// 
-    /// A `HashMap` containing keys of type `String` and values of type `Vec<&str>` is being returned.
+    /// Returns the hashmap with the key as the pallet name and the value as the list of events.
     pub fn split_filter(&self) -> std::collections::HashMap<String, Vec<&str>> {
         let mut filter_map: std::collections::HashMap<String, Vec<&str>> =
             std::collections::HashMap::new();
@@ -120,7 +126,7 @@ impl<T: subxt::Config> PolkadotFeed<T> {
     }
 }
 
-/// The `events` macro defined with `macro_rules!` in Rust is used for generating code at compile time.
+/// A macro to extract the list of particular event from the list of substrate events.
 #[macro_export]
 macro_rules! events {
     ($exp: expr, $pallet:ident, $method:ident ) => {

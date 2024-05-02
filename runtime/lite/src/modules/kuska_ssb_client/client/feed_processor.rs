@@ -5,33 +5,23 @@ use crate::{
         logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
         wasmtime_wasi_module,
     },
-    Ctx,
+    Ctx, RequestBody,
 };
 use kuska_ssb::api::dto::content::Post;
 use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-/// Defines an implementation for a `Client` struct with various asynchronous methods for processing
-/// the live feed. This implementation includes methods for fetching the live event feeds from the network
-/// and executes workflows based on the events received.
 impl Client {
     /// Processes the feed and executes workflows based on the events received.
     /// 
     /// # Arguments
     /// 
-    /// * `display`: An instance of `Feed` that represents the feed being processed.
-    /// * `logger`: A mutable reference to a `MutexGuard<T>`, where `T` is a type that implements 
-    /// the `Logger` trait. This is used to log the events received.
-    /// * `state_manager`: A mutable reference to a `MutexGuard<U>`, where `U` is a type
-    /// that implements the `GlobalStateManager` trait. This is used to manage the state data. 
-    /// * `db`: An instance of `MutexGuard<V>`, where `V` is a type that implements the `Storage` trait.
-    /// This is used to store and retrieve the workflow wasm files.
-    /// * `cache`: An instance of `MutexGuard<V>`, where `V` is a type that implements the `Storage` trait.
-    /// This is used to store the state data and retrieve the workflows.
-    /// 
-    /// # Returns
-    /// 
-    /// Returns a `Result<()>` that indicates whether the connection was closed successfully or not.
+    /// * `display`: The feed being processed.
+    /// * `logger`: A logger implementation of the `Logger` trait. This is used to log the events received.
+    /// * `state_manager`: A state manager implementation of the `GlobalStateManager` trait. This is used to store 
+    /// and retrieve the state data.
+    /// * `db`: A database implementation of the `Storage` trait. Workflows will be retrieved from this database. 
+    /// * `cache`: A cache implementation of the `Storage` trait. This is used to store the state data.
     fn process_feed<T, U, V>(
         display: Feed,
         logger: &mut MutexGuard<T>,
@@ -81,7 +71,7 @@ impl Client {
                         if offset < feed_rts {
                             logger.info(&format!("Event: {:#?}", event));
 
-                            match db.get_request_body(pub_id) {
+                            match db.get_value::<Vec<RequestBody>>(pub_id) {
                                 Ok(Some(mut bodies)) => {
                                     // Iterate through bodies, searching for matching pub_id
                                     for body in bodies.iter_mut() {
@@ -127,13 +117,12 @@ impl Client {
         Ok(())
     }
 
-    /// Asynchronous method for processing live feed and executing workflows based on the events received.
+    /// Processes the live feed and executes the workflow based on the events received.
     ///
     /// # Arguments
     ///
-    /// * `live` - A boolean indicating whether the feed is live or not. If `true` the feed will be
-    /// continuously fetched and corresponding workflows will be executed.
-    /// * `ctx` - An `Arc<Mutex<dyn Ctx>>` representing the context.
+    /// * `live` - A boolean indicating whether the feed is live or not.
+    /// * `ctx` - Context of the runtime.
     ///
     /// # Returns
     ///

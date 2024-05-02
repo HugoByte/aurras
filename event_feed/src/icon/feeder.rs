@@ -1,38 +1,22 @@
 use super::*;
 
-/// The `IconFeed` struct in Rust contains an `IconService`, a vector of events, and a vector of scores.
-/// 
-/// Properties:
-/// 
-/// * `icon_service`: The `icon_service` property in the `IconFeed` struct is of type `IconService`. It
-/// likely represents a service or object related to handling icons in some way.
-/// * `events`: The `events` property in the `IconFeed` struct is a vector that stores strings
-/// representing different events related to the icon feed. These events could include actions such as
-/// "like", "comment", "share", or any other interactions that users might have with the icon feed.
-/// * `score`: The `score` property in the `IconFeed` struct appears to be a vector of strings. This
-/// property likely stores some kind of score information related to the events in the feed.
+/// Represents the icon blockchain event feed which contains the endpoint and the filters.
 pub struct IconFeed {
     icon_service: IconService,
     events: Vec<String>,
     score: Vec<String>,
 }
 
-/// The `impl IconFeed` block in Rust is implementing methods for the `IconFeed` struct. Here's a
-/// breakdown of what each method is doing:
 impl IconFeed {
-   /// The function `new` creates a new `IconFeed` instance based on the provided `ChainConfig`
-   /// configuration.
-   /// 
-   /// Arguments:
-   /// 
-   /// * `config`: The `new` function you provided takes a `ChainConfig` struct as a parameter. This
-   /// struct likely contains configuration details for setting up an `IconFeed`. The function then
-   /// processes the `event_filter` and `contract_filter` fields from the `config` parameter to create
-   /// lists of events and scores
-   /// 
-   /// Returns:
-   /// 
-   /// The `new` function is returning a `Result` containing an `IconFeed` struct.
+    /// Creates a new `IconFeed` instance based on the provided chain configuration.
+    ///
+    /// Arguments:
+    ///
+    /// * `config`: An event feed chain configuration.
+    ///
+    /// Returns:
+    ///
+    /// The `new` function is returning a `Result` containing an `IconFeed` struct.
     pub fn new(config: ChainConfig) -> Result<IconFeed> {
         let events = config
             .event_filter
@@ -59,19 +43,15 @@ impl IconFeed {
         Ok(icon_feed)
     }
 
-    /// The function `filter` in Rust checks if a transaction meets specified event and score filters.
-    /// 
+    /// Filters the event based on the events an score addresses.
+    ///
     /// Arguments:
-    /// 
-    /// * `transaction`: The `filter` function takes a reference to a `Value` type named `transaction`
-    /// as a parameter. This function filters events based on the contents of the `transaction`. The
-    /// `transaction` parameter is used to extract the transaction hash (`txHash`) and then retrieve
-    /// event logs associated with that transaction
-    /// 
+    ///
+    /// * `transaction`: An icon transaction receipt as a json value.
+    ///
     /// Returns:
-    /// 
-    /// The `filter` method returns a `Result<bool>`, which indicates whether the transaction passes the
-    /// filters based on the events and scores specified in the `self` object.
+    ///
+    /// Returns a boolean value indicating if the event should be filtered.
     pub async fn filter(&self, transaction: &Value) -> Result<bool> {
         let mut events_filter = false;
         let mut score_filter = false;
@@ -118,18 +98,11 @@ impl IconFeed {
         Ok(events_filter & score_filter)
     }
 
-    /// The `event_feed` function in Rust asynchronously fetches and filters transactions from a
-    /// blockchain event feed.
-    /// 
+    /// Fetches the events from the Icon chain and returns it through the provided callback function.
+    ///
     /// Arguments:
-    /// 
-    /// * `cb`: The `cb` parameter in the `event_feed` function is a closure that takes a vector of
-    /// `serde_json::Value` as input. This closure is called with the filtered transactions whenever
-    /// there are new transactions that pass the filter criteria.
-    /// 
-    /// Returns:
-    /// 
-    /// The `event_feed` function returns a `Result<()>`.
+    ///
+    /// * `cb`: A callback function to return the events to the caller.
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
         let mut latest_height = get_icon_block_height(&self.icon_service).await?;
         let mut old_height = latest_height - 1;

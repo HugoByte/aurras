@@ -1,19 +1,6 @@
 use super::*;
 
 /// Represents the execution state of a workflow. This enum is used to track the lifecycle of a workflow.
-/// 
-/// # Variants
-/// 
-/// * `Init`: Represents the initial state of a workflow. This state indicates that the workflow has not
-/// been started yet.
-/// * `Running`: Represents the running state of a workflow. This state indicates that the workflow is
-/// currently executing.
-/// * `Paused`: Represents the paused state of a workflow. This state indicates that the workflow execution is
-/// currently paused.
-/// * `Failed`: Represents the failed state of a workflow. This state indicates that the workflow execution
-/// has failed.
-/// * `Success`: Represents the success state of a workflow. This state indicates that the workflow execution
-/// has succeeded.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub enum ExecutionState {
     #[default]
@@ -24,22 +11,7 @@ pub enum ExecutionState {
     Success,
 }
 
-/// Represents the state of a workflow execution with its ID, name, execution state, and optional result.
-/// 
-/// # Properties:
-/// 
-/// * `workflow_id`: The `workflow_id` property in the `WorkflowState` struct represents the unique
-/// identifier of a workflow. It is of type `String` and is used to uniquely identify a specific
-/// workflow instance.
-/// * `workflow_name`: The `workflow_name` property in the `WorkflowState` struct represents the name of
-/// the workflow. It is a field of type `String` and is used to store the name associated with a
-/// particular workflow instance.
-/// * `execution_state`: The `execution_state` property in the `WorkflowState` struct represents the
-/// current state of execution for a workflow. It is of type `ExecutionState`, which is likely an enum
-/// or a custom type that defines different states that a workflow can be in, such as "Running",
-/// "Completed", "
-/// * `result`: The `result` property in the `WorkflowState` struct is an optional field of type
-/// `Option<Value>`. This means that it can either contain a value of type `Value` or be `None`.
+/// Represents the state of a workflow in the execution.
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct WorkflowState {
     workflow_id: String,
@@ -48,21 +20,14 @@ pub struct WorkflowState {
     result: Option<Value>,
 }
 
-/// Implements the `WorkflowState` struct.
 impl WorkflowState {
 
     /// Creates a new `WorkflowState` instance which is used to represent the state data of a workflow.
     /// 
     /// # Arguments
     /// 
-    /// * `workflow_id`: The `workflow_id` argument is a string slice that represents the unique
-    /// identifier of a workflow.
-    /// * `workflow_name`: The `workflow_name` argument is a string slice that represents the name of
-    /// the workflow.
-    /// 
-    /// # Returns
-    /// 
-    /// Returns a new `WorkflowState` instance.
+    /// * `workflow_id`: Unique identifier of a workflow.
+    /// * `workflow_name`: Name of the workflow.
     pub fn new(workflow_id: &str, workflow_name: &str) -> Self {
         Self {
             workflow_id: workflow_id.to_string(),
@@ -73,16 +38,9 @@ impl WorkflowState {
     }
 }
 
-/// Implements the `WorkflowStateManager` trait for the `WorkflowState` struct.
 impl WorkflowStateManager for WorkflowState {
 
     /// Updates the execution state of the workflow to `Running`.
-    /// 
-    /// # Returns
-    /// 
-    /// Returns a `Result<(), anyhow::Error>` indicating success or failure of the update operation. The
-    /// method returns an error if the workflow is already in the `Running` state or if the workflow is
-    /// still in the `Init` or `Paused` state.
     fn update_running(&mut self) -> Result<()> {
         match self.execution_state {
             ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
@@ -103,14 +61,8 @@ impl WorkflowStateManager for WorkflowState {
     /// 
     /// # Arguments
     /// 
-    /// * `result`: An instance of type `Value` that represents the result of the workflow.
+    /// * `result`: The result of the workflow.
     /// * `is_success`: A boolean value that indicates whether the workflow was successful or not.
-    /// 
-    /// # Returns
-    /// 
-    /// Returns a `Result<(), anyhow::Error>` indicating success or failure of the update operation. The
-    /// method returns an error if the workflow is already in the `Success` or `Failed` state or if the
-    /// workflow is still in the `Init` state.
     fn update_result(&mut self, result: Value, is_success: bool) -> Result<()> {
         match self.execution_state {
             ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
@@ -138,13 +90,7 @@ impl WorkflowStateManager for WorkflowState {
     /// 
     /// # Arguments
     /// 
-    /// * `output`: An instance of type `Option<Value>` that represents the output of the workflow.
-    /// 
-    /// # Returns
-    /// 
-    /// Returns a `Result<(), anyhow::Error>` indicating success or failure of the update operation. The
-    /// method returns an error if the workflow is already in the `Paused` state or if the workflow is
-    /// still in the `Init` or `Running` state.
+    /// * `output`: An optional value that represents the output of the workflow.
     fn update_paused(&mut self, output: Option<Value>) -> Result<()> {
         match self.execution_state {
             ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
@@ -167,38 +113,21 @@ impl WorkflowStateManager for WorkflowState {
     }
 
     /// Returns the ID of the workflow.
-    /// 
-    /// # Returns
-    /// 
-    /// Returns a `String` that represents the ID of the workflow.
     fn get_id(&self) -> String {
         self.workflow_id.clone()
     }
 
     /// Returns the name of the workflow.
-    /// 
-    /// # Returns
-    /// 
-    /// Returns a `String` that represents the name of the workflow.
     fn get_workflow_name(&self) -> String {
         self.workflow_name.clone()
     }
 
     /// Returns the execution state of the workflow.
-    /// 
-    /// # Returns
-    /// 
-    /// Returns a variant of the enum `ExecutionState` that represents the execution state of the workflow.
     fn get_execution_state(&self) -> ExecutionState {
         self.execution_state.clone()
     }
 
-    /// Returns the result of the workflow.
-    /// 
-    /// # Returns
-    /// 
-    /// Returns a `Result<bool>` that indicates whether the workflow was successful or not. The method returns
-    /// error if the workflow is not in the `Success` or `Failed` state.
+    /// Returns the result of the workflow as a `bool`.
     fn is_success(&self) -> Result<bool> {
         match self.execution_state {
             ExecutionState::Init => Err(anyhow!("execution not started")),
@@ -210,10 +139,6 @@ impl WorkflowStateManager for WorkflowState {
     }
 
     /// Returns the result of the workflow.
-    /// 
-    /// # Returns
-    /// 
-    /// Returns a `Result<Value>` that represents the result of the workflow.
     fn get_result(&self) -> Result<Value> {
         match self.execution_state {
             ExecutionState::Init => Err(anyhow!("execution not started")),
