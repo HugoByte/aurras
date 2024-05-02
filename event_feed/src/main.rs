@@ -27,9 +27,10 @@ async fn main() {
 
     let feed: Context = match chain_config.clone().chain.to_lowercase().as_str() {
         "substrate" => {
-            let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone(), logger.clone())
-                .await
-                .unwrap();
+            let polkadot_client =
+                PolkadotFeed::<PolkadotConfig>::new(chain_config.clone(), logger.clone())
+                    .await
+                    .unwrap();
             logger.info("Polkadot client got created");
             Context::PolkadotFeed(polkadot_client)
         }
@@ -39,7 +40,9 @@ async fn main() {
             Context::IconFeed(icon_client)
         }
         "eth" => {
-            let eth_client = EthFeed::new(chain_config.clone(), logger.clone()).await.unwrap();
+            let eth_client = EthFeed::new(chain_config.clone(), logger.clone())
+                .await
+                .unwrap();
             logger.info("Eth client got created");
             Context::EthFeed(eth_client)
         }
