@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use async_std::stream::StreamExt;
 use dotenv::dotenv;
 use ethers::prelude::*;
@@ -47,25 +45,38 @@ async fn main() -> Result<()> {
     let mut client = Client::new(Some(key), ip, port).await.unwrap();
 
     // Accept SSB invite
-    let invite_res = client.accept_invite(&invite).await;
-    logger.info(&format!("{:?}", invite_res));
+    // let invite_res = client.accept_invite(&invite).await;
+    if let Err(e) = client.accept_invite(&invite).await {
+        let error = format!("{e:?}");
+
+        if error.contains("already following") {
+            logger.info("Already following the pub...");
+        } else {
+            logger.error(&format!("Error in accepting invite: {:?}", error));
+        }
+    };
+
     logger.info("Producer successfully started✅");
 
     let provider = Provider::<Ws>::connect(WSS_URL).await?;
     let provider = Arc::new(provider);
-    let event = Transfer::new::<_, Provider<Ws>>(Filter::new(), Arc::clone(&provider));
+
+    // Subscribe to the Transfer event
+    let filter = Filter::new().event("Transfer(address,address,uint256)");
+    let event = Transfer::new::<_, Provider<Ws>>(filter, Arc::clone(&provider));
     let mut transfers = event.subscribe().await?;
 
     while let Some(log) = transfers.next().await {
-        logger.info(&format!("{:?}", log));
+        logger.info(&format!("Event: {:?}", log));
 
         // Extract the Transfer data from the Result
         match log {
             Ok(transfer) => {
                 let message = format!(
-                    "Transfer: from: {}, to: {}, tokens: {}",
+                    "{{\"from\":\"{:?}\",\"to\":\"{:?}\",\"amount\":\"{}\"}}",
                     transfer.from, transfer.to, transfer.tokens
                 );
+
                 let mention = Mention {
                     link: pub_address.clone(),
                     name: None,
