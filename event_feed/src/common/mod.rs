@@ -41,3 +41,4 @@ pub struct FeederEvent {
     pub tx_hash: Option<String>,
     pub log_index: usize,
 }
+

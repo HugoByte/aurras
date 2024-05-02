@@ -5,6 +5,13 @@ edition = '2021'
 repository = 'https://github.com/hugobyte/aurras.git'
 version = '0.0.1'
 
+[lib]
+path = 'src/lib.rs'
+
+[[bin]]
+name = 'event_feed'
+path = 'src/main.rs'
+
 [dependencies]
 subxt = '0.35.3'
 dotenv = '0.15.0'
@@ -16,6 +23,7 @@ icon-sdk = '1.2.0'
 tendermint-rpc = {version = "0.35.0", features = ["http-client", "websocket-client"]}
 futures = "0.3.30"
 base64 = "0.22.0"
+clap ={ version = "4.5.4", features = [ "derive", "env" ]}
 
 [dependencies.ethers]
 version = '2.0.8'
