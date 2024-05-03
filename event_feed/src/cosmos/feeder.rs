@@ -47,7 +47,6 @@ impl CosmosFeed {
             .map(|e| e.to_string())
             .filter(|e| !e.is_empty())
             .collect::<Vec<String>>();
-        // let logger = CoreLogger::new(Some("./event-feed.log"));
         let cosmos = CosmosFeed {
             chain_config,
             events,
