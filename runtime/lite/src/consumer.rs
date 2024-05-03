@@ -2,7 +2,7 @@ use kuska_ssb::keystore::{read_patchwork_config, OwnedIdentity};
 use runtime::{
     common::{
         constants::{
-            DEFAULT_CACHE_LIFETIME, DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, FOLLOW_LIST_KEY,
+            DEFAULT_CACHE_LIFETIME, DEFAULT_SSB_IP, DEFAULT_SSB_PORT, FOLLOW_LIST_KEY,
             HTTP_SERVER_ADDRESS, UNFOLLOW_LIST_KEY,
         },
         RequestBody,
@@ -13,15 +13,13 @@ use runtime::{
     storage::{CoreStorage, Storage},
     AppError, Context, Ctx, Logger, RuntimeError,
 };
-use std::{
-    result::Result::{Err, Ok},
-    sync::MutexGuard,
-};
 
+use runtime::common;
 use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},
-    sync::{Arc, Mutex},
+    result::Result::{Err, Ok},
+    sync::{Arc, Mutex, MutexGuard},
 };
 
 /// The main function of the aurras ssb consumer that receives the event feeds from the ssb network
@@ -195,7 +193,7 @@ async fn handle_client(
     }
 
     // Handle existing data updates
-    let existing_data = db.get_request_body(&body.pub_id.to_string())?;
+    let existing_data: Option<Vec<RequestBody>> = db.get_value(&body.pub_id.to_string())?;
     match existing_data {
         Some(mut existing_body) => {
             if let Some(position) = existing_body
