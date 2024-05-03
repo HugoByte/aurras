@@ -102,14 +102,6 @@ impl IconFeed {
                     }
                 };
 
-                // let transactions: Vec<Value> = serde_json::from_value(
-                //     block
-                //         .get("result")
-                //         .and_then(|val| val.get("confirmed_transaction_list"))
-                //         .unwrap()
-                //         .clone(),
-                // )?;
-
                 let transactions = match block.get("result")
                 .and_then(|val| val.get("confirmed_transaction_list"))
                 .cloned() {
@@ -140,7 +132,6 @@ impl IconFeed {
                 sleep(Duration::from_secs(1));
             }
 
-            // latest_height = get_icon_block_height(&self.icon_service).await?;
             latest_height = match get_icon_block_height(&self.icon_service).await {
                 Ok(height) => height,
                 Err(err) => {

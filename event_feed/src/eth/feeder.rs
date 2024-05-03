@@ -1,5 +1,5 @@
 use super::*;
-use crate::error::EventFeedError;
+// use crate::error::EventFeedError;
 use anyhow::*;
 use core::result::Result::Ok;
 
@@ -39,12 +39,6 @@ impl EthFeed {
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<()> {
         let client = Arc::new(&self.eth_service);
         
-        // let last_block = client
-        //     .get_block(BlockNumber::Latest)
-        //     .await?
-        //     .unwrap()
-        //     .number
-        //     .unwrap();
         let last_block = match client.get_block(BlockNumber::Latest).await? {
             Some(block) => block.number.unwrap(),
             None => return Err(anyhow!("Failed to fetch the latest block number")),
@@ -55,7 +49,6 @@ impl EthFeed {
 
         let filter = Filter::new().from_block(last_block - 25).events(events);
 
-        // let mut stream = client.subscribe_logs(&filter).await?;
         let mut stream = match client.subscribe_logs(&filter).await {
             Ok(stream) => stream,
             Err(e) => return Err(anyhow!("Failed to subscribe to logs: {}", e)),
