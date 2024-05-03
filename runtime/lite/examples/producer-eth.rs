@@ -3,7 +3,7 @@ use dotenv::dotenv;
 use ethers::prelude::*;
 use eyre::Result;
 use kuska_ssb::{api::dto::content::Mention, keystore::read_patchwork_config};
-use runtime::common::constants::{DEFAULT_PRODUCER_IP, DEFAULT_PRODUCER_PORT};
+use runtime::common::constants::{DEFAULT_SSB_IP, DEFAULT_SSB_PORT};
 use runtime::kuska_ssb_client::client::Client;
 use runtime::logger::{CoreLogger, Logger};
 use serde::{Deserialize, Serialize};
@@ -36,13 +36,13 @@ async fn main() -> Result<()> {
     let key = read_patchwork_config(&mut file).await.unwrap();
 
     // Configure producer settings
-    let port = std::env::var("PRODUCER_PORT").unwrap_or(DEFAULT_PRODUCER_PORT.to_string());
-    let ip = std::env::var("PRODUCER_IP").unwrap_or(DEFAULT_PRODUCER_IP.to_string());
+    let port = std::env::var("PRODUCER_PORT").unwrap_or(DEFAULT_SSB_PORT.to_string());
+    let ip = std::env::var("PRODUCER_IP").unwrap_or(DEFAULT_SSB_IP.to_string());
     let pub_address = std::env::var("PUB_ADDRESS").expect("Pub address must be provided");
     let invite = std::env::var("PRODUCER_INVITE").expect("Invite address must be provided");
 
     // Initialize SSB Client
-    let mut client = Client::new(Some(key), ip, port).await.unwrap();
+    let mut client = Client::new(Some(&key), &ip, &port).await.unwrap();
 
     // Accept SSB invite
     // let invite_res = client.accept_invite(&invite).await;

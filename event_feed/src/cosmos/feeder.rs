@@ -1,71 +1,43 @@
-use crate::common::{self, ChainConfig};
+use super::*;
+use crate::common;
 use anyhow::*;
 use futures::StreamExt;
 use runtime::{logger::CoreLogger, Logger};
 use serde_json::Value;
 use tendermint_rpc::event::{Event, EventData};
-use tendermint_rpc::query::EventType;
-use tendermint_rpc::{SubscriptionClient, WebSocketClient};
 
-/// The `CosmosFeed` struct in Rust defines a feed for handling Cosmos blockchain events with filtering
-/// capabilities.
-///
-/// Properties:
-///
-/// * `chain_config`: The `chain_config` property in the `CosmosFeed` struct represents the
-/// configuration settings for a specific blockchain network. It includes parameters such as the node
-/// URL, event filters, and other relevant details needed to interact with the blockchain network.
-/// * `events`: The `events` property in the `CosmosFeed` struct is a vector of strings that stores the
-/// event filters for the Cosmos blockchain feed. These event filters are used to specify which types of
-/// events the feed should listen to and process. The events are parsed from the `event_filter` string
-/// provided
+/// Represents the cosmos blockchain event feed.
 pub struct CosmosFeed {
     pub chain_config: ChainConfig,
     pub events: Vec<String>,
     pub logger: CoreLogger,
 }
 
-/// The above Rust code defines an implementation for a `CosmosFeed` struct. Here is a breakdown of what
-/// the code is doing:
 impl CosmosFeed {
-    /// The function `new` creates a new `CosmosFeed` instance based on the provided `ChainConfig` with
-    /// event filtering.
+    /// Creates a new CosmosFeed instance based on the provided chain configuration.
     ///
     /// Arguments:
     ///
-    /// * `chain_config`: The `chain_config` parameter is of type `common::ChainConfig` and is used to
-    /// configure the chain settings for the CosmosFeed struct.
-    ///
-    /// Returns:
-    ///
-    /// A `CosmosFeed` struct instance is being returned.
-    pub fn new(chain_config: common::ChainConfig, logger: CoreLogger) -> CosmosFeed {
+    /// * `chain_config`: An event feed chain configuration.
+    pub fn new(chain_config: common::ChainConfig) -> CosmosFeed {
         let events = chain_config
             .event_filter
             .split(',')
             .map(|e| e.to_string())
             .filter(|e| !e.is_empty())
             .collect::<Vec<String>>();
-        let cosmos = CosmosFeed {
+        CosmosFeed {
             chain_config,
             events,
             logger,
-        };
-        cosmos
+        }
     }
 
-    /// This Rust function asynchronously subscribes to a WebSocket event feed, filters and processes
-    /// the events, and calls a callback function with the results.
+    /// Fetches the events from the Cosmos chain and returns it through the provided callback function.
     ///
     /// Arguments:
     ///
-    /// * `cb`: The `cb` parameter in the `event_feed` function is a callback function that takes a
-    /// vector of `serde_json::Value` as input. This callback function is called with the filtered
-    /// events obtained from the WebSocket subscription loop.
-    ///
-    /// Returns:
-    ///
-    /// The `event_feed` function returns a `Result<()>`.
+    /// * `cb`: A callback function to return the events to the caller.
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
         let (client, driver) = WebSocketClient::new(&*self.chain_config.node_url)
             .await
@@ -107,22 +79,16 @@ impl CosmosFeed {
         Ok(())
     }
 
-    /// The function `convert_to_feeder_event` takes an event and chain configuration as input, extracts
-    /// relevant data from the event, filters events based on configuration, and returns a vector of
-    /// JSON values representing feeder events.
+    /// Converts a cosmos Tendermint event to a list of json `FeederEvent` objects.
     ///
     /// Arguments:
     ///
-    /// * `event`: The `event` parameter is a reference to an `Event` struct.
-    /// * `chain_config`: The `chain_config` parameter in the `convert_to_feeder_event` function is of
-    /// type `&ChainConfig`, which likely contains configuration settings specific to the blockchain
-    /// network or chain being used. This parameter is used to filter events based on certain criteria
-    /// specified in the `chain_config` object.
+    /// * `event`: A tendermint event.
+    /// * `chain_config`: The event feed chain configuration.
     ///
     /// Returns:
     ///
-    /// The function `convert_to_feeder_event` returns an `Option` containing a `Vec` of
-    /// `serde_json::Value` elements.
+    /// Returns the list of `FeederEvent` objects as json values.
     fn convert_to_feeder_event(
         &self,
         event: &Event,

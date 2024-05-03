@@ -1,5 +1,6 @@
 use super::*;
 
+/// Represents the execution state of a workflow. This enum is used to track the lifecycle of a workflow.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub enum ExecutionState {
     #[default]
@@ -10,6 +11,7 @@ pub enum ExecutionState {
     Success,
 }
 
+/// Represents the state of a workflow in the execution.
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct WorkflowState {
     workflow_id: String,
@@ -19,6 +21,13 @@ pub struct WorkflowState {
 }
 
 impl WorkflowState {
+
+    /// Creates a new `WorkflowState` instance which is used to represent the state data of a workflow.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `workflow_id`: Unique identifier of a workflow.
+    /// * `workflow_name`: Name of the workflow.
     pub fn new(workflow_id: &str, workflow_name: &str) -> Self {
         Self {
             workflow_id: workflow_id.to_string(),
@@ -30,6 +39,8 @@ impl WorkflowState {
 }
 
 impl WorkflowStateManager for WorkflowState {
+
+    /// Updates the execution state of the workflow to `Running`.
     fn update_running(&mut self) -> Result<()> {
         match self.execution_state {
             ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
@@ -46,6 +57,12 @@ impl WorkflowStateManager for WorkflowState {
         }
     }
 
+    /// Updates the execution state of the workflow to `Success` or `Failed` and sets the result.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `result`: The result of the workflow.
+    /// * `is_success`: A boolean value that indicates whether the workflow was successful or not.
     fn update_result(&mut self, result: Value, is_success: bool) -> Result<()> {
         match self.execution_state {
             ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
@@ -69,6 +86,11 @@ impl WorkflowStateManager for WorkflowState {
         }
     }
 
+    /// Updates the execution state of the workflow to `Paused`.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `output`: An optional value that represents the output of the workflow.
     fn update_paused(&mut self, output: Option<Value>) -> Result<()> {
         match self.execution_state {
             ExecutionState::Failed | ExecutionState::Success => Err(anyhow!(
@@ -90,18 +112,22 @@ impl WorkflowStateManager for WorkflowState {
         }
     }
 
+    /// Returns the ID of the workflow.
     fn get_id(&self) -> String {
         self.workflow_id.clone()
     }
 
+    /// Returns the name of the workflow.
     fn get_workflow_name(&self) -> String {
         self.workflow_name.clone()
     }
 
+    /// Returns the execution state of the workflow.
     fn get_execution_state(&self) -> ExecutionState {
         self.execution_state.clone()
     }
 
+    /// Returns the result of the workflow as a `bool`.
     fn is_success(&self) -> Result<bool> {
         match self.execution_state {
             ExecutionState::Init => Err(anyhow!("execution not started")),
@@ -112,6 +138,7 @@ impl WorkflowStateManager for WorkflowState {
         }
     }
 
+    /// Returns the result of the workflow.
     fn get_result(&self) -> Result<Value> {
         match self.execution_state {
             ExecutionState::Init => Err(anyhow!("execution not started")),

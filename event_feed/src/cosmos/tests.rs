@@ -1,7 +1,5 @@
 mod tests {
     use super::super::*;
-    use crate::common::ChainConfig;
-    use runtime::{logger::CoreLogger};
 
     #[tokio::test]
     async fn test_cosmos_feed_new() {
