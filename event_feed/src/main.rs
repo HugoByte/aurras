@@ -3,7 +3,7 @@ use event_feed::{
 };
 use std::{fs, path};
 use subxt::PolkadotConfig;
-
+use runtime::{logger::CoreLogger, Logger};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug, Clone)]
@@ -29,6 +29,7 @@ pub enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let logger = CoreLogger::new(Some("./event-feed.log"));
     let args = EventFeed::parse();
 
     //TODO config none case
@@ -48,21 +49,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let feed = match args.command {
         Commands::Substrate => {
-            let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone())
+            let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone(), logger.clone())
                 .await
                 .unwrap();
             Context::PolkadotFeed(polkadot_client)
         }
         Commands::Icon => {
-            let icon_client = IconFeed::new(chain_config.clone()).unwrap();
+            let icon_client = IconFeed::new(chain_config.clone(), logger.clone()).unwrap();
             Context::IconFeed(icon_client)
         }
         Commands::Eth => {
-            let eth_client = EthFeed::new(chain_config.clone()).await.unwrap();
+            let eth_client = EthFeed::new(chain_config.clone(), logger.clone()).await.unwrap();
             Context::EthFeed(eth_client)
         }
         Commands::Cosmos => {
-            let cosmos_client = CosmosFeed::new(chain_config.clone());
+            let cosmos_client = CosmosFeed::new(chain_config.clone(), logger.clone());
             Context::CosmosFeed(cosmos_client)
         }
     };

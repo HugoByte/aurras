@@ -1,5 +1,5 @@
-use tests::types::PolkadotFeed;
 use runtime::{logger::CoreLogger, Logger};
+use tests::feeder::PolkadotFeed;
 
 use super::*;
 #[cfg(test)]
@@ -13,7 +13,9 @@ async fn test_filter_events() {
         contract_filter: "".to_string(),
     };
     let logger = CoreLogger::new(Some("./event-feed.log"));
-    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config, logger).await.unwrap();
+    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config, logger)
+        .await
+        .unwrap();
     let result = polkadot.split_filter();
 
     assert_eq!(
@@ -31,9 +33,11 @@ async fn test_filter_events_argument_with_no_method() {
         contract_filter: "".to_string(),
     };
     let logger = CoreLogger::new(Some("./event-feed.log"));
-    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config, logger).await.unwrap();
+    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config, logger)
+        .await
+        .unwrap();
     let result = polkadot.split_filter();
-    
+
     assert_eq!(
         result,
         std::collections::HashMap::from([
