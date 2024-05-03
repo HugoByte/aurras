@@ -2,6 +2,8 @@ pub mod constants;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+/// Represents a workflow request body, consisting of wasm bytecode, pub invite 
+/// key, public ID, allowed hosts, input value, workflow ID, and workflow name.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct RequestBody {
     pub wasm: Vec<u8>,
@@ -14,6 +16,12 @@ pub struct RequestBody {
     pub action: Option<String>,
 }
 
+/// Merges two JSON objects, updating values from the source object to the destination object.
+/// 
+/// # Arguments:
+/// 
+/// * `dest`: A json object to be updated.
+/// * `src`: A json object to be merged.
 pub fn combine_values(dest: &mut serde_json::Value, src: &serde_json::Value) {
     use serde_json::Value::{Null, Object};
 

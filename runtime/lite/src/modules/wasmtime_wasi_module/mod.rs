@@ -1,6 +1,4 @@
-use crate::modules::state_manager::{
-    ExecutionState, GlobalState, GlobalStateManager, WorkflowState,
-};
+use crate::modules::state_manager::{ExecutionState, GlobalStateManager};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha256::digest;
@@ -19,18 +17,35 @@ use wasmtime_wasi::sync::WasiCtxBuilder;
 
 use super::{logger::Logger, storage::Storage};
 
-pub fn run_workflow<U, V>(
-    state_manager: &mut MutexGuard<GlobalState<WorkflowState, U>>,
-    logger: &mut MutexGuard<U>,
-    cache: &MutexGuard<V>,
+/// Runs the workflow wasm and manages the state of the workflow.
+/// 
+/// # Arguments:
+/// 
+/// * `state_manager`: An implementation of the `GlobalStateManager` that is used to manage the
+/// state of the workflow.
+/// * `logger`: An implementation of the `Logger` that is used to log the state of the workflow.
+/// * `cache`: An implementation of the `Storage` that is used to store the state of the workflow.
+/// * `data`: Initial input data for the workflow.
+/// * `wasm_file`: A Workflow wasm.
+/// * `workflow_index`: Index of the workflow in the state manager.
+/// * `ignore_cache`: A boolean value that indicates whether to ignore the cache or not.
+/// 
+/// # Returns:
+/// 
+/// Returns the output of the workflow.
+pub fn run_workflow<U, V, S>(
+    state_manager: &mut MutexGuard<U>,
+    logger: &mut MutexGuard<V>,
+    cache: &MutexGuard<S>,
     data: Value,
     wasm_file: Vec<u8>,
     workflow_index: usize,
     ignore_cache: bool, // ignores the cache
 ) -> Result<Output, String>
 where
-    U: Logger + Clone + std::marker::Send + 'static,
-    V: Storage,
+    U: GlobalStateManager,
+    V: Logger + Clone + std::marker::Send + 'static,
+    S: Storage,
 {
     let workflow_id = state_manager
         .get_state_data(workflow_index)

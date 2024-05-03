@@ -1,4 +1,4 @@
-use tests::types::PolkadotFeed;
+use tests::feeder::PolkadotFeed;
 
 use super::*;
 #[cfg(test)]

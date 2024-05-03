@@ -9,10 +9,13 @@ pub use context::*;
 
 pub use super::*;
 
-#[derive(Deserialize, Debug, Clone)]
-#[derive(PartialEq)]
+/// Represents the event feed chain configuration. This is used to configure the chain,
+/// node endpoint and the filters. 
+#[derive(Deserialize, Debug, Clone, PartialEq)]
 pub struct ChainConfig {
+    #[serde(default)]
     pub chain: String,
+    #[serde(default = "default_endpoint")]
     pub node_url: String,
     #[serde(default)]
     pub event_filter: String,
@@ -20,6 +23,8 @@ pub struct ChainConfig {
     pub contract_filter: String,
 }
 
+/// Represents the aurras ssb producer configuration. This is used to configure the producer
+/// ip, port secret path and the invite key for the ssb pub. 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ProducerConfig {
     #[serde(default = "default_host")]
@@ -32,6 +37,7 @@ pub struct ProducerConfig {
     pub ssb_invite: String,
 }
 
+/// Represents a single event in the event feed.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FeederEvent {
     pub name: String,
@@ -40,4 +46,26 @@ pub struct FeederEvent {
     pub block_number: usize,
     pub tx_hash: Option<String>,
     pub log_index: usize,
+}
+
+impl Default for ChainConfig {
+    fn default() -> Self {
+        Self {
+            chain: Default::default(),
+            node_url: "ws://127.0.0.1:9944".to_string(),
+            event_filter: Default::default(),
+            contract_filter: Default::default(),
+        }
+    }
+}
+
+impl Default for ProducerConfig {
+    fn default() -> Self {
+        Self {
+            ssb_ip: default_host(),
+            ssb_port: default_port(),
+            ssb_secret: default_secret(),
+            ssb_invite: Default::default(),
+        }
+    }
 }

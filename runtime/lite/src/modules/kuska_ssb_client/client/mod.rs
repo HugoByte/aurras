@@ -5,6 +5,7 @@ extern crate base64;
 
 use std::fmt::Debug;
 
+use crate::AppError;
 use async_std::net::TcpStream;
 use kuska_handshake::async_std::{handshake_client, BoxStream};
 use kuska_sodiumoxide::crypto::sign::{ed25519, SecretKey};
@@ -22,9 +23,11 @@ use kuska_ssb::{
 
 #[allow(clippy::module_inception)]
 mod client;
+mod feed_processor;
 mod response_parser;
 
 pub use client::*;
+pub use feed_processor::*;
 pub use response_parser::*;
 
 pub mod types;
@@ -35,7 +38,12 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 #[cfg(test)]
 pub mod tests;
 
-pub async fn owned_identity_from_patchwork_config(file_path: String) -> Result<OwnedIdentity> {
+/// Creates a `OwnedIdentity` object from a ssb `secret` file path
+/// 
+/// # Arguments
+/// 
+/// * `file_path` - Path to the ssb `secret` file.
+pub async fn owned_identity_from_patchwork_config(file_path: &str) -> Result<OwnedIdentity> {
     let mut file = async_std::fs::File::open(file_path).await?;
     Ok(kuska_ssb::keystore::read_patchwork_config(&mut file)
         .await
