@@ -89,21 +89,32 @@ impl EthFeed {
                         if self.contracts.is_empty()
                             || self.contracts.contains(&format!("{:?}", &log.address))
                         {
-                            for evt in self.events.iter() {
-                                if log.topics[0] == evt.1 {
-                                    logs.push(
-                                        serde_json::to_value(
-                                        FeederEvent {
-                                        name: evt.0.clone(),
-                                        contract: format!("{:?}", &log.address),
-                                        data: json!({ "topics": log.topics, "data": log.data.to_vec() }),
-                                        block_number: log.block_number.unwrap_or_default().as_usize(),
-                                        tx_hash: Some(format!("{:?}", tx_hash)),
-                                        log_index: log.log_index.unwrap_or_default().as_usize(),
-                                        }).unwrap()
-                                    );
-                                    break;
+                            let mut filtered = false;
+                            let mut event_name = "Unknown".to_string();
+
+                            if self.events.is_empty() {
+                                filtered = true;
+                            } else {
+                                for evt in self.events.iter() {
+                                    if log.topics[0] == evt.1 {
+                                        filtered = true;
+                                        event_name = evt.0.clone();
+                                        break;
+                                    }
                                 }
+                            }
+
+                            if filtered {
+                                logs.push(
+                                    serde_json::to_value(
+                                FeederEvent {
+                                name: event_name,
+                                contract: format!("{:?}", &log.address),
+                                data: json!({ "topics": log.topics, "data": log.data.to_vec() }),
+                                block_number: log.block_number.unwrap_or_default().as_usize(),
+                                tx_hash: Some(format!("{:?}", tx_hash)),
+                                log_index: log.log_index.unwrap_or_default().as_usize(),
+                            }).unwrap());
                             }
                         }
                     }

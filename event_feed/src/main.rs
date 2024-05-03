@@ -20,9 +20,6 @@ async fn main() {
     let chain_config = envy::from_env::<ChainConfig>().unwrap();
     let producer_config = envy::from_env::<ProducerConfig>().unwrap();
 
-    let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
-    ssb_client.accept_invite().await.unwrap();
-
     let feed: Context = match chain_config.clone().chain.to_lowercase().as_str() {
         "substrate" => {
             let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone())
@@ -51,6 +48,7 @@ async fn main() {
                 tokio::spawn(async move {
                     let producer_config = envy::from_env::<ProducerConfig>().unwrap();
                     let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
+                    ssb_client.accept_invite().await.unwrap();
                     ssb_client
                         .publish_feed(i)
                         .await
