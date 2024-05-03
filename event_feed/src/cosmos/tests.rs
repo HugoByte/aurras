@@ -1,6 +1,7 @@
 mod tests {
     use super::super::*;
-
+    use runtime::{logger::CoreLogger, Logger};
+    
     #[tokio::test]
     async fn test_cosmos_feed_new() {
         let chain_config = ChainConfig {

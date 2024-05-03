@@ -19,7 +19,7 @@ impl CosmosFeed {
     /// Arguments:
     ///
     /// * `chain_config`: An event feed chain configuration.
-    pub fn new(chain_config: common::ChainConfig) -> CosmosFeed {
+    pub fn new(chain_config: common::ChainConfig, logger: CoreLogger) -> CosmosFeed {
         let events = chain_config
             .event_filter
             .split(',')

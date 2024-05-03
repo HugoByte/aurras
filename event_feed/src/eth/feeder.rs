@@ -1,4 +1,5 @@
 use super::*;
+use runtime::{logger::CoreLogger, Logger};
 /// Represents an Ethereum blockchain event feed.
 pub struct EthFeed {
     eth_service: Provider<Ws>,
@@ -9,11 +10,11 @@ pub struct EthFeed {
 
 impl EthFeed {
     /// Creates a new EthFeed instance based on the provided chain configuration.
-    /// 
+    ///
     /// Arguments:
-    /// 
+    ///
     /// * `config`: An event feed chain configuration.
-    pub async fn new(config: ChainConfig) -> Result<EthFeed> {
+    pub async fn new(config: ChainConfig, logger: CoreLogger) -> Result<EthFeed> {
         let events = config
             .event_filter
             .split(';')
@@ -41,9 +42,9 @@ impl EthFeed {
     }
 
     /// Fetches the events from the Ethereum chain and returns it through the provided callback function.
-    /// 
+    ///
     /// # Arguments:
-    /// 
+    ///
     /// * `cb`: A callback function to return the events to the caller.
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<()> {
         let client = Arc::new(&self.eth_service);

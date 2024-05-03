@@ -19,7 +19,7 @@ impl IconFeed {
     /// Returns:
     ///
     /// The `new` function is returning a `Result` containing an `IconFeed` struct.
-    pub fn new(config: ChainConfig) -> Result<IconFeed> {
+    pub fn new(config: ChainConfig, logger: CoreLogger) -> Result<IconFeed> {
         let events = config
             .event_filter
             .split(',')
