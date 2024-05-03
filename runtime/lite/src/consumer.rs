@@ -134,88 +134,62 @@ async fn handle_client(
     let mut buffer = Vec::new();
     stream.read_to_end(&mut buffer).expect("Error reading data");
 
-    let ctx = ctx.lock()?;
-    let logger = ctx.get_logger().clone();
-
-    if let Err(err) = stream.read_to_end(&mut buffer) {
-        logger.error(&format!("Error reading data: {}", err));
-    };
+    let ctx_guard = ctx.lock()?;
+    let logger = ctx_guard.get_logger().clone();
 
     let body = serde_json::from_slice::<RequestBody>(&buffer)?;
     logger.info("Data Deserialized");
 
+    // Check for unfollow action immediately after deserializing the request body
     if let Some(action) = &body.action {
-        logger.debug(&format!("Processing action: {}", action));
+        logger.debug(&format!("Action received: {}", action));
         if action == "unfollow" {
-            logger.info(&format!(
-                "Attempting to unfollow publisher with ID: {}",
-                body.pub_id
-            ));
-            unfollow_publisher(&ctx, body.pub_id.clone())?;
-        }
-    }
-
-    let db = ctx.get_db();
-
-    let get_follow_list = db.get_value::<Vec<String>>(FOLLOW_LIST_KEY)?;
-    let unfollowed_list = db.get_value::<Vec<String>>(UNFOLLOW_LIST_KEY)?;
-
-    if let Some(unfollowed_list) = unfollowed_list {
-        if unfollowed_list.contains(&body.pub_id) {
-            logger.info(&format!(
-                "Publisher {} is unfollowed. Ignoring invite.",
-                body.pub_id
-            ));
-            // return Ok(());
-        }
-    }
-
-    match get_follow_list {
-        Some(mut list) => {
-            if list.contains(&body.pub_id) {
-                let logger = ctx.get_logger().clone();
-                logger.info("Already Following the publisher");
+            let unfollow_result = unfollow_publisher(&ctx_guard, body.pub_id.clone())?;
+            if unfollow_result {
+                logger.info("Unfollow successful");
+                return Ok(());
             } else {
-                let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
-                    RuntimeError::AppError(AppError::new(format!(
-                        "Error accepting invite: {}",
-                        err
-                    )))
-                })?;
-                let timestamp = match connect_feed[1].value.get("timestamp") {
-                    Some(timestamp) => timestamp,
-                    None => {
-                        return Err(RuntimeError::AppError(AppError::new(format!(
-                            "Error getting timestamp from the accepted invite-contact feed",
-                        ))));
-                    }
-                };
-                list.push(body.pub_id.clone());
-                db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
-                db.insert_value(FOLLOW_LIST_KEY, list)?;
+                logger.info("Unfollow not successful, no publisher was unfollowed.");
+                return Ok(());
             }
         }
-        None => {
-            let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
-                RuntimeError::AppError(AppError::new(format!("Error accepting invite: {}", err)))
-            })?;
-            let timestamp = match connect_feed[1].value.get("timestamp") {
-                Some(timestamp) => timestamp,
-                None => {
-                    return Err(RuntimeError::AppError(AppError::new(format!(
-                        "Error getting timestamp from the accepted invite-contact feed",
-                    ))));
-                }
-            };
-            db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
-            db.insert_value(FOLLOW_LIST_KEY, vec![body.pub_id.clone()])?;
-        }
     }
 
-    logger.info(&format!("Following the publisher {}", body.pub_id));
+    // Additional checks for follow actions or other operations
+    let db = ctx_guard.get_db();
+    let unfollowed_list = db
+        .get_value::<Vec<String>>(UNFOLLOW_LIST_KEY)?
+        .unwrap_or_default();
+    if unfollowed_list.contains(&body.pub_id) {
+        logger.info(&format!(
+            "Publisher {} is unfollowed. Ignoring invite.",
+            body.pub_id
+        ));
+        return Ok(());
+    }
 
+    let mut follow_list = db
+        .get_value::<Vec<String>>(FOLLOW_LIST_KEY)?
+        .unwrap_or_default();
+    if follow_list.contains(&body.pub_id) {
+        logger.info("Already following the publisher.");
+    } else {
+        let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
+            RuntimeError::AppError(AppError::new(format!("Error accepting invite: {}", err)))
+        })?;
+        let timestamp = connect_feed[1].value.get("timestamp").ok_or_else(|| {
+            RuntimeError::AppError(AppError::new(
+                "Error getting timestamp from the accepted invite-contact feed".to_string(),
+            ))
+        })?;
+        follow_list.push(body.pub_id.clone());
+        db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
+        db.insert_value(FOLLOW_LIST_KEY, follow_list)?;
+        logger.info(&format!("Following the publisher {}", body.pub_id));
+    }
+
+    // Handle existing data updates
     let existing_data = db.get_request_body(&body.pub_id.to_string())?;
-
     match existing_data {
         Some(mut existing_body) => {
             if let Some(position) = existing_body
@@ -235,7 +209,7 @@ async fn handle_client(
         None => {
             let new_data = vec![body.clone()];
             db.insert_value(&body.pub_id.clone(), new_data)?;
-            logger.info("Data added")
+            logger.info("Data added");
         }
     }
 
@@ -247,7 +221,7 @@ async fn handle_client(
     Ok(())
 }
 
-fn unfollow_publisher(ctx: &MutexGuard<dyn Ctx>, pub_id: String) -> Result<(), RuntimeError> {
+fn unfollow_publisher(ctx: &MutexGuard<dyn Ctx>, pub_id: String) -> Result<bool, RuntimeError> {
     let db = ctx.get_db();
     let logger = ctx.get_logger().clone();
 
@@ -256,26 +230,21 @@ fn unfollow_publisher(ctx: &MutexGuard<dyn Ctx>, pub_id: String) -> Result<(), R
         .map_err(|e| {
             RuntimeError::AppError(AppError::new(format!("Failed to get follow list: {}", e)))
         })?
-        .unwrap_or_else(|| {
-            logger.warn("Follow list is empty, initializing to new vector.");
-            Vec::new()
-        });
-
-    let mut unfollow_list = db
-        .get_value::<Vec<String>>(UNFOLLOW_LIST_KEY)
-        .map_err(|e| {
-            RuntimeError::AppError(AppError::new(format!("Failed to get unfollow list: {}", e)))
-        })?
-        .unwrap_or_else(|| {
-            logger.warn("Unfollow list is empty, initializing to new vector.");
-            Vec::new()
-        });
+        .unwrap_or_default();
 
     if follow_list.contains(&pub_id) {
-        let mut updated_follow_list = follow_list
+        let updated_follow_list = follow_list
             .into_iter()
             .filter(|id| id != &pub_id)
             .collect::<Vec<String>>();
+
+        let mut unfollow_list = db
+            .get_value::<Vec<String>>(UNFOLLOW_LIST_KEY)
+            .map_err(|e| {
+                RuntimeError::AppError(AppError::new(format!("Failed to get unfollow list: {}", e)))
+            })?
+            .unwrap_or_default();
+
         unfollow_list.push(pub_id.clone());
 
         db.insert_value(FOLLOW_LIST_KEY, updated_follow_list)
@@ -294,9 +263,12 @@ fn unfollow_publisher(ctx: &MutexGuard<dyn Ctx>, pub_id: String) -> Result<(), R
             })?;
 
         logger.info(&format!("Unfollowed publisher {}", pub_id));
+        Ok(true)
     } else {
-        logger.info(&format!("Publisher {} not found in follow list.", pub_id));
+        logger.info(&format!(
+            "Cannot unfollow publisher {} as they are not in the follow list.",
+            pub_id
+        ));
+        Ok(false)
     }
-
-    Ok(())
 }
