@@ -9,6 +9,8 @@ pub use context::*;
 
 pub use super::*;
 
+/// Represents the event feed chain configuration. This is used to configure the chain,
+/// node endpoint and the filters. 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub struct ChainConfig {
     #[serde(default)]
@@ -21,6 +23,8 @@ pub struct ChainConfig {
     pub contract_filter: String,
 }
 
+/// Represents the aurras ssb producer configuration. This is used to configure the producer
+/// ip, port secret path and the invite key for the ssb pub. 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ProducerConfig {
     #[serde(default = "default_host")]
@@ -33,6 +37,7 @@ pub struct ProducerConfig {
     pub ssb_invite: String,
 }
 
+/// Represents a single event in the event feed.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FeederEvent {
     pub name: String,

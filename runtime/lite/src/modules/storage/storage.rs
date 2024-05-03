@@ -1,31 +1,24 @@
-/// The `CoreStorage` struct implements the `Storage` trait for interacting with a RocksDB database,
-/// providing methods for data retrieval, storage, modification, deletion, and storing/retrieving
-/// WebAssembly modules.
-///
-/// Properties:
-///
-/// * `id`: The `id` property in the `CoreStorage` struct represents the identifier associated with the
-/// storage instance. It is a unique identifier that can be used to distinguish one storage instance
-/// from another.
-/// * `db`: The `db` property in the `CoreStorage` struct is an instance of the `rocksdb::DB` type,
-/// which represents a connection to a RocksDB database. This property is used to interact with the
-/// underlying database for storing and retrieving data as defined in the `Storage` trait implementation
 use super::traits::Storage;
 use crate::AppError;
 use crate::RuntimeError;
 use rocksdb::DB;
 use serde::Serialize;
 
+/// Represents a core database.
 #[derive(Debug)]
 pub struct CoreStorage {
     pub db: rocksdb::DB,
-    // pub cache: rocksdb::DB,
     cache_db: bool,
     is_refreshed: bool,
 }
 
 impl CoreStorage {
-    pub fn new(db_name: &str, ) -> Result<Self, RuntimeError> {
+    /// A constructor function for `CoreStorage`.
+    ///
+    /// # Arguments:
+    ///
+    /// * `db_name`: Name of the database to be created.
+    pub fn new(db_name: &str) -> Result<Self, RuntimeError> {
         let db = DB::open_default(db_name).map_err(RuntimeError::RocksDB)?;
         Ok(Self {
             db,
@@ -34,21 +27,13 @@ impl CoreStorage {
         })
     }
 
-    /// A constructor function that creates a new `CoreStorage` instance with a TTL(Time To Live)
-    /// configured.
+    /// A constructor function for `CoreStorage` with a TTL(Time To Live) configuration.
     ///
-    /// Arguments:
+    /// # Arguments:
     ///
-    /// * `db_name`: The `db_name` parameter is a string slice that represents the name of the database
-    /// to be created.
-    /// * `ttl_duration_seconds`: The `ttl_duration_seconds` parameter is an `u64` value that represents
-    /// the number of seconds that the data should be stored in the database. The data will be deleted
-    /// after the specified time.
-    ///
-    /// Returns:
-    ///
-    /// A `Result` that can either be an `Ok` variant containing a new `CoreStorage` instance or
-    /// an `Err` variant containing an `AppError` if the database could not be created.
+    /// * `db_name`: Name of the database to be created.
+    /// * `ttl_duration_seconds`: Number of seconds that the data should be stored in the database.
+    /// The data will be deleted after the specified time.
     pub fn new_with_ttl(
         db_name: &str,
         ttl_duration_seconds: u64,
@@ -82,17 +67,10 @@ impl CoreStorage {
 
     /// This function refreshes the lifetime of the data in the database that is configured with ttl.
     ///
-    /// Arguments:
+    /// # Arguments:
     ///
-    /// * `key`: The `key` parameter is a reference to a string that represents the key of the data
-    /// in the database.
-    /// * `value`: The `value` parameter is a reference to a vector of bytes that represents the
-    /// value of the data in the database.
-    /// 
-    /// Returns:
-    /// 
-    /// This function returns a `Result` type that can either be an `Ok` variant containing a `()`
-    /// value or an `Err` variant containing an `AppError`.
+    /// * `key`: Key of the data in the database.
+    /// * `value`: The data to be re-stored in the database.
     fn refresh_lifetime(&self, key: &str, value: &Vec<u8>) -> Result<(), RuntimeError> {
         if self.cache_db && self.is_refreshed {
             self.db.put(key, value)?;
@@ -103,8 +81,15 @@ impl CoreStorage {
 }
 
 impl Storage for CoreStorage {
-    /// The `fn get_data(&self, key: &str) -> Result<Vec<u8>, Error>` function in the `CoreStorage`
-    /// struct is implementing the `get_data` method defined in the `Storage` trait.
+    /// Retrieves data from the database using the provided key.
+    ///
+    /// # Arguments:
+    ///
+    /// * `key`: Key of the data in the database.
+    ///
+    /// Returns:
+    ///
+    /// Returns the data as bytes.
     fn get_data(&self, key: &str) -> Result<Vec<u8>, RuntimeError> {
         self.clean_expired_data();
 
@@ -123,41 +108,24 @@ impl Storage for CoreStorage {
         Ok(data)
     }
 
-    /// The function `set_data` serializes a vector of unsigned bytes and stores it in a database with a
-    /// given key.
+    /// Stores data in the database using the provided key and value.
     ///
-    /// Arguments:
+    /// # Arguments:
     ///
-    /// * `key`: The `key` parameter is a reference to a string that serves as the identifier for the
-    /// data being stored in the database. It is used to uniquely identify the data when retrieving or
-    /// updating it.
-    /// * `value`: The `value` parameter in the `set_data` function is of type `Vec<u8>`, which is a
-    /// vector of unsigned 8-bit integers. It is the data that you want to store in the database under
-    /// the specified `key`.
-    ///
-    /// Returns:
-    ///
-    /// The `set_data` function returns a `Result<(), Error>`.
+    /// * `key`: Unique identifier for the data.
+    /// * `value`: The data to be stored in the database.
     fn set_data(&self, key: &str, value: Vec<u8>) -> Result<(), RuntimeError> {
         self.clean_expired_data();
         self.db.put(key, value)?;
         Ok(())
     }
 
-    /// The function `modify_data` takes a key and a value, retrieves existing data based on the key,
-    /// updates the data with the new value, and stores it in a database.
+    /// Modifies data in the database using the provided key and value.
     ///
-    /// Arguments:
+    /// # Arguments:
     ///
-    /// * `key`: The `key` parameter is a reference to a string that is used to identify the data in the
-    /// database. It is used to retrieve and modify the data associated with that key.
-    /// * `value`: The `value` parameter in the `modify_data` function is of type `Vec<u8>`, which
-    /// represents a vector of unsigned 8-bit integers. This parameter is used to update the data
-    /// associated with the given `key` in the database.
-    ///
-    /// Returns:
-    ///
-    /// The `modify_data` function is returning a `Result<(), Error>`.
+    /// * `key`: Key of the data in the database.
+    /// * `value`: The data to be modified in the database.
     fn modify_data(&self, key: &str, value: Vec<u8>) -> Result<(), RuntimeError> {
         self.clean_expired_data();
         let _existing_data = self.get_data(key)?;
@@ -166,83 +134,22 @@ impl Storage for CoreStorage {
         Ok(())
     }
 
-    /// The `delete_data` function in Rust deletes data associated with a given key from a database.
+    /// Deletes data associated with a given key from a database.
     ///
-    /// Arguments:
+    /// # Arguments:
     ///
-    /// * `key`: The `key` parameter in the `delete_data` function is a reference to a string (`&str`)
-    /// that represents the key of the data you want to delete from the database.
-    ///
-    /// Returns:
-    ///
-    /// The `delete_data` function is returning a `Result<(), Error>`. This means that it returns a
-    /// `Result` enum where the success case contains an empty tuple `()` and the error case contains an
-    /// `Error`.
+    /// * `key`: Key of the data in the database.
     fn delete_data(&self, key: &str) -> Result<(), RuntimeError> {
         self.clean_expired_data();
         self.db.delete(key)?;
         Ok(())
     }
 
-    /// The function `get_wasm` retrieves a WebAssembly module from a database using a given key.
+    /// Retrieves the data as a generic type from the database using the provided key.
     ///
-    /// Arguments:
+    /// # Arguments:
     ///
-    /// * `key`: The `key` parameter in the `get_wasm` function is a reference to a string (`&str`) that
-    /// is used to look up a WebAssembly (WASM) module in a database.
-    ///
-    /// Returns:
-    ///
-    /// The `get_wasm` function returns a `Result` containing either a vector of `u8` bytes or an
-    /// `Error`.
-
-    fn insert_request_body(
-        &self,
-        key: &str,
-        value: crate::common::RequestBody,
-    ) -> Result<(), RuntimeError> {
-        self.clean_expired_data();
-        let bytes = serde_json::to_vec(&value)
-            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
-        self.db
-            .put(key, bytes)
-            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))
-    }
-
-    fn get_request_body(
-        &self,
-        key: &str,
-    ) -> Result<Option<Vec<crate::common::RequestBody>>, RuntimeError> {
-        self.clean_expired_data();
-        let res = self
-            .db
-            .get(key)
-            .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
-        match res {
-            Some(bytes) => {
-                self.refresh_lifetime(key, &bytes)?;
-
-                let value = serde_json::from_slice(&bytes)
-                    .map_err(|e| RuntimeError::AppError(AppError::new(e.to_string())))?;
-                Ok(value)
-            }
-            None => Ok(None),
-        }
-    }
-
-    /// The above Rust code defines functions for getting and inserting values into a database using serde
-    /// for serialization and deserialization.
-    ///
-    /// Arguments:
-    ///
-    /// * `key`: The `key` parameter in the provided code snippets is a reference to a string (`&str`). It
-    /// is used as a unique identifier to retrieve or insert values into a database.
-    ///
-    /// Returns:
-    ///
-    /// The `get_value` function returns a `Result` containing an `Option` of the deserialized value of type
-    /// `T`. The `insert_value` function returns a `Result` indicating success or an error of type
-    /// `RuntimeError`.
+    /// * `key`: Key of the data in the database.
     fn get_value<T: serde::de::DeserializeOwned>(
         &self,
         key: &str,
@@ -263,20 +170,12 @@ impl Storage for CoreStorage {
         }
     }
 
-    /// The function `insert_value` serializes a value to JSON and stores it in a database with a
-    /// specified key.
+    /// Inserts a generic type data in the database using the provided key and value.
     ///
-    /// Arguments:
+    /// # Arguments:
     ///
-    /// * `key`: The `key` parameter in the `insert_value` function is a reference to a string (`&str`).
-    /// It is used as the key to store the serialized value in the database.
-    /// * `value`: The `value` parameter in the `insert_value` function is of type `T`, which is
-    /// required to implement the `Serialize` trait. This means that the value must be serializable to
-    /// JSON using serde.
-    ///
-    /// Returns:
-    ///
-    /// The `insert_value` function is returning a `Result<(), RuntimeError>`.
+    /// * `key`: Unique identifier for the data.
+    /// * `value`: The value to be stored in the database.
     fn insert_value<T: Serialize>(&self, key: &str, value: T) -> Result<(), RuntimeError> {
         self.clean_expired_data();
         let bytes = serde_json::to_vec(&value)
