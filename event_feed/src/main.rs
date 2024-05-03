@@ -66,22 +66,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    let (tx, rx) = std::sync::mpsc::channel::<Vec<serde_json::Value>>();
+ 
+    tokio::spawn(async move {
+        while let Ok(logs) = rx.recv() {
+            for log in logs {
+                ssb_client.publish_feed(log).await.unwrap();
+            }
+        }
+    });
+ 
     let _ = feed
         .feed_events(&|e| {
-            for i in e {
-                tokio::spawn(async move {
-                    let args = EventFeed::parse();
-                    let read_data = fs::read(path::Path::new(&args.config.unwrap())).unwrap();
-                    let producer_config: ProducerConfig =
-                        serde_json::from_slice(read_data.clone().as_slice()).unwrap();
-                    let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
-
-                    ssb_client
-                        .publish_feed(i)
-                        .await
-                        .expect("Failed to send event");
-                });
-            }
+            tx.send(e).unwrap();
         })
         .await;
 
