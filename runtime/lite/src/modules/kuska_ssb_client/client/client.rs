@@ -356,7 +356,7 @@ impl Client {
                                                             })?;
                                                     }
                                                 }
-                                                Err(e) => logger.trace(&e.to_string()),
+                                                Err(e) => logger.error(&e.to_string()),
                                             }
                                         }
                                         Err(e) => logger.trace(&e.to_string()),
