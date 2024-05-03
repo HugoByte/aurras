@@ -1,4 +1,8 @@
 use super::*;
+use crate::error::EventFeedError;
+use anyhow::*;
+use core::result::Result::Ok;
+
 pub struct EthFeed {
     eth_service: Provider<Ws>,
     events: Vec<(String, H256)>,
@@ -34,19 +38,28 @@ impl EthFeed {
 
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<()> {
         let client = Arc::new(&self.eth_service);
+        
+        // let last_block = client
+        //     .get_block(BlockNumber::Latest)
+        //     .await?
+        //     .unwrap()
+        //     .number
+        //     .unwrap();
+        let last_block = match client.get_block(BlockNumber::Latest).await? {
+            Some(block) => block.number.unwrap(),
+            None => return Err(anyhow!("Failed to fetch the latest block number")),
+        };
 
-        let last_block = client
-            .get_block(BlockNumber::Latest)
-            .await?
-            .unwrap()
-            .number
-            .unwrap();
 
         let events = self.events.iter().map(|e| e.0.clone());
 
         let filter = Filter::new().from_block(last_block - 25).events(events);
 
-        let mut stream = client.subscribe_logs(&filter).await?;
+        // let mut stream = client.subscribe_logs(&filter).await?;
+        let mut stream = match client.subscribe_logs(&filter).await {
+            Ok(stream) => stream,
+            Err(e) => return Err(anyhow!("Failed to subscribe to logs: {}", e)),
+        };
 
         while let Some(log) = stream.next().await {
             if self.contracts.is_empty() || self.contracts.contains(&format!("{:?}", &log.address))
@@ -103,6 +116,7 @@ impl EthFeed {
                 }
             }
         }
+        
 
         Ok(())
     }

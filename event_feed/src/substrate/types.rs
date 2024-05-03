@@ -32,18 +32,18 @@ impl<T: subxt::Config> PolkadotFeed<T> {
         // For each block, print a bunch of information about it:
         loop {
             if let Some(block) = blocks_sub.next().await {
-                let block = block.unwrap();
+                let block = block?;
                 let mut fetched_events = Vec::new();
-                let extrinsics = block.extrinsics().await.unwrap();
+                let extrinsics = block.extrinsics().await?;
                 for ext in extrinsics.iter() {
-                    let ext = ext.unwrap();
-                    let events = ext.events().await.unwrap();
-                    let event_details = events.iter().collect::<Result<Vec<_>, _>>().unwrap();
+                    let ext = ext?;
+                    let events = ext.events().await?;
+                    let event_details = events.iter().collect::<Result<Vec<_>, _>>()?;
 
                     let filter = self.split_filter();
 
                     for event in event_details.iter() {
-                        let s = event.field_values().unwrap();
+                        let s = event.field_values()?;
                         let data = format!("{}", s).replace("((", "[").replace("))", "]");
 
                         let pallet_name = event.pallet_name().to_lowercase();

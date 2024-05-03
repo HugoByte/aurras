@@ -12,7 +12,6 @@ mod cosmos;
 mod eth;
 mod icon;
 mod substrate;
-// pub use cosmos;
 
 #[tokio::main]
 async fn main() {

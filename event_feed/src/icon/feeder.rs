@@ -38,8 +38,13 @@ impl IconFeed {
         let mut score_filter = false;
 
         if !self.events.is_empty() || !self.score.is_empty() {
-            let tx_hash: String =
-                serde_json::from_value(transaction.get("txHash").unwrap().clone()).unwrap();
+            // let tx_hash: String =
+            //     serde_json::from_value(transaction.get("txHash").unwrap().clone()).unwrap();
+            let tx_hash: String = serde_json::from_value(
+                transaction.get("txHash")
+                    .ok_or_else(|| anyhow::anyhow!("Transaction hash not found in transaction"))?
+                    .clone()
+            )?;
 
             let event_logs = get_event_logs_by_tx_hash(&self.icon_service, &tx_hash).await?;
 
@@ -97,13 +102,26 @@ impl IconFeed {
                     }
                 };
 
-                let transactions: Vec<Value> = serde_json::from_value(
-                    block
-                        .get("result")
-                        .and_then(|val| val.get("confirmed_transaction_list"))
-                        .unwrap()
-                        .clone(),
-                )?;
+                // let transactions: Vec<Value> = serde_json::from_value(
+                //     block
+                //         .get("result")
+                //         .and_then(|val| val.get("confirmed_transaction_list"))
+                //         .unwrap()
+                //         .clone(),
+                // )?;
+
+                let transactions = match block.get("result")
+                .and_then(|val| val.get("confirmed_transaction_list"))
+                .cloned() {
+                    Some(transactions) => transactions,
+                    None => {
+                        eprintln!("No transactions found in block {}", latest_height);
+                        sleep(Duration::from_millis(1000));
+                        continue;
+                    }
+                };
+
+            let transactions: Vec<Value> = serde_json::from_value(transactions)?;
 
                 let mut filtered_tx = Vec::<Value>::new();
 
@@ -122,7 +140,14 @@ impl IconFeed {
                 sleep(Duration::from_secs(1));
             }
 
-            latest_height = get_icon_block_height(&self.icon_service).await?;
+            // latest_height = get_icon_block_height(&self.icon_service).await?;
+            latest_height = match get_icon_block_height(&self.icon_service).await {
+                Ok(height) => height,
+                Err(err) => {
+                    eprintln!("Error getting latest block height: {}", err);
+                    continue;
+                }
+            }
         }
     }
 }

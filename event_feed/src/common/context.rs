@@ -2,6 +2,7 @@ use super::CosmosFeed;
 use super::EthFeed;
 use crate::IconFeed;
 use crate::PolkadotFeed;
+// use crate::error::EventFeedError;
 use anyhow::Result;
 use subxt::PolkadotConfig;
 
