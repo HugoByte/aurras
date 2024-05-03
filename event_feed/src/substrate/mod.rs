@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests;
-pub mod types;
+pub mod feeder;
+pub use feeder::*;
 use serde::{Deserialize, Serialize};
 use subxt::{OnlineClient, PolkadotConfig};
 use anyhow::Result;

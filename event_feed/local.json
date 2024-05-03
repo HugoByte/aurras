@@ -1,0 +1,6 @@
+{
+  "node_url": "ws://127.0.0.1:9944",
+  "ssb_port": 8015,
+  "ssb_secret": "/Users/shanithkk/Hugobyte/work/macos/workspace-aurras/2.aurras/runtime/lite/scripts/secret/producer_secret",
+  "ssb_invite": "172.21.0.5:8008:@C5ec5l3lfDv68c+nswKVFxMd2ZGYM5yJUwK0RAMLoHE=.ed25519~zGxf+96nkS7Xeex3wM9dvU4N1dRiU8CWjs3gNxsbaqU="
+}
