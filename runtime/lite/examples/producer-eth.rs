@@ -36,8 +36,8 @@ async fn main() -> Result<()> {
     let key = read_patchwork_config(&mut file).await.unwrap();
 
     // Configure producer settings
-    let port = std::env::var("PRODUCER_PORT").unwrap_or(DEFAULT_PRODUCER_PORT.to_string());
-    let ip = std::env::var("PRODUCER_IP").unwrap_or(DEFAULT_PRODUCER_IP.to_string());
+    let port = std::env::var("PRODUCER_PORT").unwrap_or(DEFAULT_SSB_PORT.to_string());
+    let ip = std::env::var("PRODUCER_IP").unwrap_or(DEFAULT_SSB_IP.to_string());
     let pub_address = std::env::var("PUB_ADDRESS").expect("Pub address must be provided");
     let invite = std::env::var("PRODUCER_INVITE").expect("Invite address must be provided");
 
