@@ -1,5 +1,4 @@
 {
-  "chain": "substrate",
   "node_url": "ws://127.0.0.1:9944",
   "ssb_port": 8015,
   "ssb_secret": "/Users/shanithkk/Hugobyte/work/macos/workspace-aurras/2.aurras/runtime/lite/scripts/secret/producer_secret",
