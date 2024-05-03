@@ -1,5 +1,3 @@
-use crate::substrate::polkadot::runtime_apis::core::Core;
-
 use super::*;
 use runtime::{logger::CoreLogger, Logger};
 
@@ -43,8 +41,6 @@ impl IconFeed {
         let mut score_filter = false;
 
         if !self.events.is_empty() || !self.score.is_empty() {
-            self.logger
-                .info("Checking the evnt filters or score filters");
             let tx_hash: String =
                 serde_json::from_value(transaction.get("txHash").unwrap().clone()).unwrap();
             self.logger.info(&format!(

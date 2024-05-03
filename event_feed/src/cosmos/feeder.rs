@@ -1,4 +1,3 @@
-use super::*;
 use crate::common::{self, ChainConfig};
 use anyhow::*;
 use futures::StreamExt;
@@ -72,7 +71,7 @@ impl CosmosFeed {
             .await
             .unwrap();
         self.logger.info(&format!(
-            "Following the publisher {}",
+            "Following the chain at {}",
             self.chain_config.node_url
         ));
         let driver_handle = tokio::spawn(async move { driver.run().await });
