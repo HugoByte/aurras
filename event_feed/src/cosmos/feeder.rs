@@ -12,9 +12,9 @@ pub struct CosmosFeed {
 
 impl CosmosFeed {
     /// Creates a new CosmosFeed instance based on the provided chain configuration.
-    /// 
+    ///
     /// Arguments:
-    /// 
+    ///
     /// * `chain_config`: An event feed chain configuration.
     pub fn new(chain_config: common::ChainConfig) -> CosmosFeed {
         let events = chain_config
@@ -23,11 +23,10 @@ impl CosmosFeed {
             .map(|e| e.to_string())
             .filter(|e| !e.is_empty())
             .collect::<Vec<String>>();
-        let cosmos = CosmosFeed {
+        CosmosFeed {
             chain_config,
             events,
-        };
-        cosmos
+        }
     }
 
     /// Fetches the events from the Cosmos chain and returns it through the provided callback function.

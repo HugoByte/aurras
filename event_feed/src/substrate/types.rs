@@ -106,7 +106,7 @@ impl<T: subxt::Config> PolkadotFeed<T> {
             std::collections::HashMap::new();
         if !self.chain_config.event_filter.is_empty() {
             for pair in self.chain_config.event_filter.split(';') {
-                if !pair.contains("=") {
+                if !pair.contains('=') {
                     filter_map.insert(pair.to_string(), vec![]);
                 }
                 if pair.is_empty() {

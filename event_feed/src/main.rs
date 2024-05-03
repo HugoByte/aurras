@@ -18,7 +18,6 @@ mod substrate;
 async fn main() {
     dotenv::dotenv().ok();
     let chain_config = envy::from_env::<ChainConfig>().unwrap();
-    let producer_config = envy::from_env::<ProducerConfig>().unwrap();
 
     let feed: Context = match chain_config.clone().chain.to_lowercase().as_str() {
         "substrate" => {
