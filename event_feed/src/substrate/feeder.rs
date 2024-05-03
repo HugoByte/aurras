@@ -1,5 +1,3 @@
-use self::polkadot::runtime_apis::core::Core;
-
 use super::*;
 use crate::common::ChainConfig;
 use runtime::{logger::CoreLogger, Logger};
@@ -29,7 +27,7 @@ impl<T: subxt::Config> PolkadotFeed<T> {
     /// asynchronous function that takes a callback function `cb` as a parameter. This function
     /// subscribes to finalized blocks on the Polkadot chain and processes the extrinsics and events
     /// within those blocks.
-    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
+    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> where <<T as subxt::Config>::Header as subxt::config::Header>::Number: std::fmt::Display {
         self.logger.info("PolkadotEventFeed: event started");
         let mut blocks_sub = self.client.blocks().subscribe_finalized().await?;
 
@@ -37,7 +35,7 @@ impl<T: subxt::Config> PolkadotFeed<T> {
         loop {
             if let Some(block) = blocks_sub.next().await {
                 let block = block.unwrap();
-                self.logger.info("Processing the obtained block number");
+                self.logger.info(&format!("Processing the obtained block number {}", block.number()));
                 let mut fetched_events = Vec::new();
                 let extrinsics = block.extrinsics().await.unwrap();
                 for ext in extrinsics.iter() {
