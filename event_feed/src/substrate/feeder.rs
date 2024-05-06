@@ -2,6 +2,17 @@ use super::*;
 use crate::common::ChainConfig;
 
 #[derive(Debug, Clone)]
+/// The `PolkadotFeed` struct in Rust contains a `chain_config` field of type `ChainConfig` and a
+/// `client` field of type `OnlineClient<T>`.
+/// 
+/// Properties:
+/// 
+/// * `chain_config`: The `chain_config` property is a field of type `ChainConfig` in the `PolkadotFeed`
+/// struct. It likely contains configuration settings related to the Polkadot chain that the feed is
+/// interacting with.
+/// * `client`: The `client` property in the `PolkadotFeed` struct is an instance of the `OnlineClient`
+/// struct parameterized with the type `T`, which must implement the `subxt::Config` trait. This client
+/// is used to interact with the Substrate blockchain associated with the Polkad
 pub struct PolkadotFeed<T: subxt::Config> {
     chain_config: ChainConfig,
 
@@ -10,6 +21,12 @@ pub struct PolkadotFeed<T: subxt::Config> {
 }
 
 impl<T: subxt::Config> PolkadotFeed<T> {
+
+    /// Creates a new `PolkadotFeed` instance based on the provided chain configuration.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `chain_config`: An event feed chain configuration.
     pub async fn new(chain_config: ChainConfig) -> Result<PolkadotFeed<PolkadotConfig>> {
         let client = OnlineClient::<PolkadotConfig>::from_url(&chain_config.node_url)
             .await
@@ -22,10 +39,11 @@ impl<T: subxt::Config> PolkadotFeed<T> {
 }
 
 impl<T: subxt::Config> PolkadotFeed<T> {
-    /// The `event_feed` function in the code snippet is a method of the `PolkadotFeed` struct. It is an
-    /// asynchronous function that takes a callback function `cb` as a parameter. This function
-    /// subscribes to finalized blocks on the Polkadot chain and processes the extrinsics and events
-    /// within those blocks.
+    /// Fetches the events from the Substrate chain and returns it through the provided callback function.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `cb`: A callback function to return the events to the caller.
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()>{
         let mut blocks_sub = self.client.blocks().subscribe_finalized().await?;
 
@@ -78,12 +96,17 @@ impl<T: subxt::Config> PolkadotFeed<T> {
         }
     }
 
+    /// Splits a string by ';' and then by '=' to create a HasMap. This hashmap is used to filter the events.
+    /// 
+    /// Returns:
+    /// 
+    /// Returns the hashmap with the key as the pallet name and the value as the list of events.
     pub fn split_filter(&self) -> std::collections::HashMap<String, Vec<&str>> {
         let mut filter_map: std::collections::HashMap<String, Vec<&str>> =
             std::collections::HashMap::new();
         if !self.chain_config.event_filter.is_empty() {
             for pair in self.chain_config.event_filter.split(';') {
-                if !pair.contains("=") {
+                if !pair.contains('=') {
                     filter_map.insert(pair.to_string(), vec![]);
                 }
                 if pair.is_empty() {
@@ -103,6 +126,7 @@ impl<T: subxt::Config> PolkadotFeed<T> {
     }
 }
 
+/// A macro to extract the list of particular event from the list of substrate events.
 #[macro_export]
 macro_rules! events {
     ($exp: expr, $pallet:ident, $method:ident ) => {

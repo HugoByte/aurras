@@ -6,6 +6,8 @@ use crate::PolkadotFeed;
 use anyhow::Result;
 use subxt::PolkadotConfig;
 
+/// Represents the main context of the event feed. This is used to configure the event feed with the
+/// appropriate chain.
 pub enum Context {
     PolkadotFeed(PolkadotFeed<PolkadotConfig>),
     IconFeed(IconFeed),
@@ -14,6 +16,8 @@ pub enum Context {
 }
 
 impl Context {
+
+    /// Starts the event feed.
     pub async fn feed_events(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
         match self {
             Context::PolkadotFeed(feed) => feed.event_feed(cb).await,

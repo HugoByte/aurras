@@ -1,6 +1,6 @@
 use super::*;
 
-// event_logs structure
+/// Represents a transaction event log of the Icon blockchain.
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct TxEventLog {
     #[serde(rename = "scoreAddress")]

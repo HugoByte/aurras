@@ -3,6 +3,7 @@ use super::*;
 use anyhow::*;
 use core::result::Result::Ok;
 
+/// Represents an Ethereum blockchain event feed.
 pub struct EthFeed {
     eth_service: Provider<Ws>,
     events: Vec<(String, H256)>,
@@ -10,6 +11,11 @@ pub struct EthFeed {
 }
 
 impl EthFeed {
+    /// Creates a new EthFeed instance based on the provided chain configuration.
+    /// 
+    /// Arguments:
+    /// 
+    /// * `config`: An event feed chain configuration.
     pub async fn new(config: ChainConfig) -> Result<EthFeed> {
         let events = config
             .event_filter
@@ -36,6 +42,11 @@ impl EthFeed {
         Ok(eth_feed)
     }
 
+    /// Fetches the events from the Ethereum chain and returns it through the provided callback function.
+    /// 
+    /// # Arguments:
+    /// 
+    /// * `cb`: A callback function to return the events to the caller.
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<()> {
         let client = Arc::new(&self.eth_service);
         
@@ -84,21 +95,32 @@ impl EthFeed {
                         if self.contracts.is_empty()
                             || self.contracts.contains(&format!("{:?}", &log.address))
                         {
-                            for evt in self.events.iter() {
-                                if log.topics[0] == evt.1 {
-                                    logs.push(
-                                        serde_json::to_value(
-                                        FeederEvent {
-                                        name: evt.0.clone(),
-                                        contract: format!("{:?}", &log.address),
-                                        data: json!({ "topics": log.topics, "data": log.data.to_vec() }),
-                                        block_number: log.block_number.unwrap_or_default().as_usize(),
-                                        tx_hash: Some(format!("{:?}", tx_hash)),
-                                        log_index: log.log_index.unwrap_or_default().as_usize(),
-                                        }).unwrap()
-                                    );
-                                    break;
+                            let mut filtered = false;
+                            let mut event_name = "Unknown".to_string();
+
+                            if self.events.is_empty() {
+                                filtered = true;
+                            } else {
+                                for evt in self.events.iter() {
+                                    if log.topics[0] == evt.1 {
+                                        filtered = true;
+                                        event_name = evt.0.clone();
+                                        break;
+                                    }
                                 }
+                            }
+
+                            if filtered {
+                                logs.push(
+                                    serde_json::to_value(
+                                FeederEvent {
+                                name: event_name,
+                                contract: format!("{:?}", &log.address),
+                                data: json!({ "topics": log.topics, "data": log.data.to_vec() }),
+                                block_number: log.block_number.unwrap_or_default().as_usize(),
+                                tx_hash: Some(format!("{:?}", tx_hash)),
+                                log_index: log.log_index.unwrap_or_default().as_usize(),
+                            }).unwrap());
                             }
                         }
                     }

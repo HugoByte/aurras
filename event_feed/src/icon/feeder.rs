@@ -1,5 +1,6 @@
 use super::*;
 
+/// Represents the icon blockchain event feed which contains the endpoint and the filters.
 pub struct IconFeed {
     icon_service: IconService,
     events: Vec<String>,
@@ -7,6 +8,15 @@ pub struct IconFeed {
 }
 
 impl IconFeed {
+    /// Creates a new `IconFeed` instance based on the provided chain configuration.
+    ///
+    /// Arguments:
+    ///
+    /// * `config`: An event feed chain configuration.
+    ///
+    /// Returns:
+    ///
+    /// The `new` function is returning a `Result` containing an `IconFeed` struct.
     pub fn new(config: ChainConfig) -> Result<IconFeed> {
         let events = config
             .event_filter
@@ -33,6 +43,15 @@ impl IconFeed {
         Ok(icon_feed)
     }
 
+    /// Filters the event based on the events an score addresses.
+    ///
+    /// Arguments:
+    ///
+    /// * `transaction`: An icon transaction receipt as a json value.
+    ///
+    /// Returns:
+    ///
+    /// Returns a boolean value indicating if the event should be filtered.
     pub async fn filter(&self, transaction: &Value) -> Result<bool> {
         let mut events_filter = false;
         let mut score_filter = false;
@@ -84,6 +103,11 @@ impl IconFeed {
         Ok(events_filter & score_filter)
     }
 
+    /// Fetches the events from the Icon chain and returns it through the provided callback function.
+    ///
+    /// Arguments:
+    ///
+    /// * `cb`: A callback function to return the events to the caller.
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
         let mut latest_height = get_icon_block_height(&self.icon_service).await?;
         let mut old_height = latest_height - 1;

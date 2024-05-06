@@ -1,5 +1,6 @@
 use super::*;
 
+/// Returns the height of the latest block on the Icon blockchain.
 pub async fn get_icon_block_height(icon_service: &IconService) -> Result<usize> {
     let latest_block = icon_service
         .get_last_block()
@@ -13,6 +14,7 @@ pub async fn get_icon_block_height(icon_service: &IconService) -> Result<usize> 
     Ok(serde_json::from_value(latest_block)?)
 }
 
+/// Returns the event logs of the given transaction hash.
 pub async fn get_event_logs_by_tx_hash(
     icon_service: &IconService,
     tx_hash: &str,

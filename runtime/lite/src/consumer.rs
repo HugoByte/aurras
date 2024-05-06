@@ -2,7 +2,7 @@ use kuska_ssb::keystore::{read_patchwork_config, OwnedIdentity};
 use runtime::{
     common::{
         constants::{
-            DEFAULT_CACHE_LIFETIME, DEFAULT_CONSUMER_IP, DEFAULT_CONSUMER_PORT, FOLLOW_LIST_KEY,
+            DEFAULT_CACHE_LIFETIME, DEFAULT_SSB_IP, DEFAULT_SSB_PORT, FOLLOW_LIST_KEY,
             HTTP_SERVER_ADDRESS,
         },
         RequestBody,
@@ -11,24 +11,19 @@ use runtime::{
     modules::kuska_ssb_client::client::Client,
     state_manager::GlobalState,
     storage::{CoreStorage, Storage},
-    AppError, Ctx, Logger, RuntimeError,
+    AppError, Context, Ctx, Logger, RuntimeError,
 };
-use std::result::Result::{Err, Ok};
-
 use std::{
+    io::{Read, Write},
     net::{TcpListener, TcpStream},
     sync::{Arc, Mutex},
 };
 
-use std::io::{Read, Write};
-
-pub use runtime;
-use runtime::Context;
-
-use dotenv::dotenv;
+/// The main function of the aurras ssb consumer that receives the event feeds from the ssb network
+/// and processes them.
 #[tokio::main]
 async fn main() -> Result<(), RuntimeError> {
-    dotenv().ok();
+    dotenv::dotenv().ok();
     let db = CoreStorage::new("runtime-db")?;
 
     let cache_lifetime = match std::env::var("CACHE_LIFETIME") {
@@ -54,8 +49,8 @@ async fn main() -> Result<(), RuntimeError> {
         let home_dir = dirs::home_dir().unwrap();
         std::format!("{}/.ssb/secret", home_dir.to_string_lossy())
     });
-    let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_CONSUMER_PORT.to_string());
-    let ip = std::env::var("CONSUMER_IP").unwrap_or(DEFAULT_CONSUMER_IP.to_string());
+    let port = std::env::var("CONSUMER_PORT").unwrap_or_else(|_| DEFAULT_SSB_PORT.to_string());
+    let ip = std::env::var("CONSUMER_IP").unwrap_or(DEFAULT_SSB_IP.to_string());
 
     let mut file = async_std::fs::File::open(secret).await?;
     let key = read_patchwork_config(&mut file).await.map_err(|err| {
@@ -67,7 +62,7 @@ async fn main() -> Result<(), RuntimeError> {
 
     let ssb_context = context.clone();
 
-    let mut client = match Client::new(Some(key.clone()), ip.clone(), port.clone()).await {
+    let mut client = match Client::new(Some(&key), &ip, &port).await {
         Ok(client) => client,
         Err(err) => {
             logger.critical(&format!("Error creating SSB client: {}", err));
@@ -117,6 +112,15 @@ async fn main() -> Result<(), RuntimeError> {
     Ok(())
 }
 
+/// Handles the process of accepting to the event feed `pub` and storing the workflow wasm
+///
+/// # Arguments
+///
+/// * `stream`: A mutable reference to the `TcpStream` to receive the invites.
+/// * `ctx`: A runtime context.
+/// * `key`: An instance of `OwnedIdentity` that represents the identity of the consumer ssb server.
+/// * `ip`: A ssb server ip address of the consumer.
+/// * `port`: A ssb server port number of the consumer.
 async fn handle_client(
     mut stream: TcpStream,
     ctx: Arc<Mutex<dyn Ctx>>,
@@ -124,7 +128,7 @@ async fn handle_client(
     ip: String,
     port: String,
 ) -> Result<(), RuntimeError> {
-    let mut client = Client::new(Some(key), ip, port).await.map_err(|err| {
+    let mut client = Client::new(Some(&key), &ip, &port).await.map_err(|err| {
         RuntimeError::AppError(AppError::new(format!("Error creating SSB client: {}", err)))
     })?;
 
@@ -159,9 +163,10 @@ async fn handle_client(
                 let timestamp = match connect_feed[1].value.get("timestamp") {
                     Some(timestamp) => timestamp,
                     None => {
-                        return Err(RuntimeError::AppError(AppError::new(format!(
-                            "Error getting timestamp from the accepted invite-contact feed",
-                        ))));
+                        return Err(RuntimeError::AppError(AppError::new(
+                            "Error getting timestamp from the accepted invite-contact feed"
+                                .to_string(),
+                        )));
                     }
                 };
                 list.push(body.pub_id.clone());
@@ -176,9 +181,9 @@ async fn handle_client(
             let timestamp = match connect_feed[1].value.get("timestamp") {
                 Some(timestamp) => timestamp,
                 None => {
-                    return Err(RuntimeError::AppError(AppError::new(format!(
-                        "Error getting timestamp from the accepted invite-contact feed",
-                    ))));
+                    return Err(RuntimeError::AppError(AppError::new(
+                        "Error getting timestamp from the accepted invite-contact feed".to_string(),
+                    )));
                 }
             };
             db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
@@ -188,7 +193,7 @@ async fn handle_client(
 
     logger.info(&format!("Following the publisher {}", body.pub_id));
 
-    let existing_data = db.get_request_body(&body.pub_id.to_string())?;
+    let existing_data = db.get_value::<Vec<RequestBody>>(&body.pub_id.to_string())?;
 
     match existing_data {
         Some(mut existing_body) => {

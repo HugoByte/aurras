@@ -1,15 +1,18 @@
 use super::*;
-use crate::{
-    modules::{
-        logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
-        wasmtime_wasi_module,
-    }, AppError, Ctx
-};
-use kuska_ssb::api::dto::content::{Mention, Post};
-use std::borrow::BorrowMut;
-use std::sync::{Arc, Mutex};
+use kuska_ssb::api::dto::content::Mention;
 
 impl Client {
+    /// Receives a single response for the given request number from the rpc reader and 
+    /// parses them based on a provided closure. 
+    ///
+    /// # Arguments:
+    ///
+    /// * `req_no`: An request number that uniquely identifies the request.
+    /// * `f`: A closure to parse the received message.
+    ///
+    /// # Returns:
+    ///
+    /// Returns the result of the parsing closure.
     async fn get_async<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<T>
     where
         F: Fn(&[u8]) -> Result<T>,
@@ -31,6 +34,17 @@ impl Client {
         }
     }
 
+    /// Receives multiple responses for the given request number from the rpc reader and 
+    /// parses them based on a provided closure.
+    ///
+    /// # Arguments:
+    ///
+    /// * `req_no`: A request number that uniquely identifies the request.
+    /// * `f`: A closure to parse the received message.
+    ///
+    /// # Returns:
+    ///
+    /// Returns a `Result` containing a vector of type `T`.
     async fn get_responses<'a, T, F>(&mut self, req_no: RequestNo, f: F) -> Result<Vec<T>>
     where
         F: Fn(&[u8]) -> Result<T>,
@@ -80,6 +94,19 @@ impl Client {
         Ok(response)
     }
 
+    /// Performs the handshake protocol to establish a secure connection with the ssb server.
+    ///
+    /// # Arguments:
+    ///
+    /// * `pk`: SSB public key.
+    /// * `sk`: SSB secret key.
+    /// * `id`: SSB id.
+    /// * `ip`: IP address of the ssb server.
+    /// * `port`: Port number of the ssb server.
+    ///
+    /// # Returns:
+    ///
+    /// Returns the client.
     async fn ssb_handshake(
         pk: PublicKey,
         sk: SecretKey,
@@ -109,21 +136,40 @@ impl Client {
         })
     }
 
-    pub async fn new(configs: Option<OwnedIdentity>, ip: String, port: String) -> Result<Client> {
+    /// Creates a new client for the ssb server.
+    ///
+    /// # Arguments:
+    ///
+    /// * `configs`: SSB client configurations such as public key, secret key, and id. Local server
+    /// defaults are used if `configs` is `None`.
+    /// * `ip`: SSB server IP address.
+    /// * `port`: SSB server port number.
+    pub async fn new(configs: Option<&OwnedIdentity>, ip: &str, port: &str) -> Result<Client> {
         match configs {
-            Some(config) => Self::ssb_handshake(config.pk, config.sk, config.id, ip, port).await,
+            Some(config) => {
+                Self::ssb_handshake(
+                    config.pk,
+                    config.sk.clone(),
+                    config.id.clone(),
+                    ip.to_string(),
+                    port.to_string(),
+                )
+                .await
+            }
             None => {
                 let OwnedIdentity { pk, sk, id } =
                     from_patchwork_local().await.expect("read local secret");
-                Self::ssb_handshake(pk, sk, id, ip, port).await
+                Self::ssb_handshake(pk, sk, id, ip.to_string(), port.to_string()).await
             }
         }
     }
 
+    /// Returns the secret key associated with the SSB client.
     pub fn get_secret_key(&self) -> SecretKey {
         self.sk.clone()
     }
 
+    /// Returns the public key associated with the SSB client.
     pub async fn whoami(&mut self) -> Result<String> {
         let req_id = self.api.whoami_req_send().await?;
         let whoami = self.get_async(req_id, whoami_res_parse).await?.id;
@@ -131,6 +177,11 @@ impl Client {
         Ok(whoami)
     }
 
+    /// Retrieves a message from the SSB network based on the provided message ID.
+    ///
+    /// # Arguments:
+    ///
+    /// * `msg_id`: ssb feed message id.
     pub async fn get(&mut self, msg_id: &str) -> Result<Message> {
         let req_id = self.api.get_req_send(msg_id).await?;
         let msg = self.get_async(req_id, message_res_parse).await?;
@@ -138,6 +189,12 @@ impl Client {
         Ok(msg)
     }
 
+    /// Retrieves the list of feed posted by the provided user id.
+    ///
+    /// # Arguments:
+    ///
+    /// * `user_id`: SSB user id.
+    /// * `live`: A `bool` value that represents whether the feed should be live or not.
     pub async fn get_feed_by_user(&mut self, live: bool, user_id: &str) -> Result<Vec<Feed>> {
         let user_id = match user_id {
             "me" => self.whoami().await?,
@@ -152,6 +209,11 @@ impl Client {
         Ok(feed)
     }
 
+    /// Retrieves a list of feed posted in the network.
+    ///
+    /// # Arguments:
+    ///
+    /// * `live`: A `bool` value that represents whether the feed should be live or not.
     pub async fn feed(&mut self, live: bool) -> Result<Vec<Feed>> {
         let args = CreateStreamIn::default().live(live);
         let req_id = self.api.create_feed_stream_req_send(&args).await?;
@@ -161,31 +223,33 @@ impl Client {
         Ok(feed)
     }
 
-    pub async fn live_feed_with_execution_of_workflow(
-        &mut self,
-        live: bool,
-        ctx: Arc<Mutex<dyn Ctx>>,
-    ) -> Result<()> {
-        let args = CreateStreamIn::default().live(live);
-        let req_id = self.api.create_feed_stream_req_send(&args).await?;
-
-        self.execute_workflow_by_event(req_id, ctx).await?;
-
-        Ok(())
-    }
-
+    /// Returns a new invite to join the ssb network.
     pub async fn create_invite(&mut self) -> Result<String> {
         let req_id = self.api.invite_create_req_send(1).await?;
         let responses = self.get_async(req_id, invite_create).await?;
         Ok(responses)
     }
 
+    /// Accepts an invite to join other ssb networks.
+    ///
+    /// # Arguments:
+    ///
+    /// * `invite_code`: SSB invite key to be accepted.
+    ///
+    /// # Returns:
+    ///
+    /// Returns a list of `Feed` that represents the accepted invite.
     pub async fn accept_invite(&mut self, invite_code: &str) -> Result<Vec<Feed>> {
         let req_id = self.api.invite_use_req_send(invite_code).await?;
         let responses = self.get_async(req_id, invite_accept_res_parse).await?;
         Ok(responses)
     }
 
+    /// Publishes a message to the network.
+    ///
+    /// # Arguments:
+    ///
+    /// * `msg`: The message to be published.
     pub async fn publish(&mut self, msg: &str, mention: Option<Vec<Mention>>) -> Result<()> {
         let _req_id = self
             .api
@@ -198,6 +262,14 @@ impl Client {
         Ok(())
     }
 
+    /// Publishes an `Event` as a message to the network.
+    ///
+    /// # Arguments:
+    ///
+    /// * `event`: Event to be published.
+    /// * `section`: Section of the event.
+    /// * `content`: Content of the event.
+    /// * `mentions`: An optional mentions of the feed.
     pub async fn publish_event(
         &mut self,
         event: &str,
@@ -219,168 +291,9 @@ impl Client {
         Ok(())
     }
 
+    /// Closes the connection inbetween the client and the ssb network.
     pub async fn close(&mut self) -> Result<()> {
         self.api.rpc().close().await?;
         Ok(())
-    }
-
-    pub async fn execute_workflow_by_event(
-        &mut self,
-        req_no: RequestNo,
-        ctx: Arc<Mutex<dyn Ctx>>,
-    ) -> Result<()> {
-        let mut is_synced = false;
-
-        loop {
-            let (id, msg) = self.rpc_reader.recv().await?;
-            let ctx = match ctx.lock() {
-                Ok(ctx) => ctx,
-                Err(err) => {
-                    return Err(Box::new(AppError::new(format!(
-                        "Failed to acquire lock on context: {}",
-                        err
-                    ))));
-                }
-            };
-            let db = ctx.get_db();
-            let cache_db = ctx.get_cache_db();
-            let mut logger = ctx.get_logger();
-            let mut state_manager = ctx.get_state_manager();
-
-            if id == req_no {
-                match msg {
-                    RecvMsg::RpcResponse(_type, body) => {
-                        let display = feed_res_parse(&body);
-
-                        match display {
-                            Ok(display) => {
-                                if is_synced {
-                                    match serde_json::from_value::<Post>(
-                                        display.value.get("content").unwrap().clone(),
-                                    ) {
-                                        Ok(content) => {
-                                            match serde_json::from_str::<serde_json::Value>(
-                                                &content.text,
-                                            ) {
-                                                Ok(event) => {
-                                                    let mentions =
-                                                        &content.mentions.unwrap_or(vec![]);
-
-                                                    let pub_id = if !mentions.is_empty() {
-                                                        &mentions[0].link
-                                                    } else {
-                                                        return Err(Box::new(AppError::new(
-                                                            format!("No mentions found in the event: {}", event)
-                                                        )));
-                                                    };
-
-                                                    let offset = db
-                                                        .get_value::<f64>(&format!(
-                                                            "{}offset",
-                                                            pub_id
-                                                        ))
-                                                        .map_err(|err| {
-                                                            Box::new(AppError::new(
-                                                                format!(
-                                                            "offset timestamp not present in the database: {}",
-                                                                err
-                                                            ),
-                                                            ))
-                                                        })?
-                                                        .unwrap_or(0.0);
-
-                                                    let feed_rts = match display.rts {
-                                                        Some(rts) => rts,
-                                                        None => {
-                                                            return Err(Box::new(AppError::new(
-                                                                "feed received timestamp is none"
-                                                                    .to_string(),
-                                                            )))
-                                                        }
-                                                    };
-
-                                                    if offset < feed_rts {
-                                                        logger
-                                                            .info(&format!("Event: {:#?}", event));
-
-                                                        match db.get_request_body(pub_id) {
-                                                            Ok(bodies) => {
-                                                                // Handle the case where bodies is None (no request bodies found)
-                                                                if bodies.is_none() {
-                                                                    logger.error(&format!(
-                                                                        "No request bodies found"
-                                                                    ));
-                                                                }
-
-                                                                let mut bodies = bodies.unwrap();
-
-                                                                // Iterate through bodies, searching for matching pub_id
-                                                                for body in bodies.iter_mut() {
-                                                                    crate::common::combine_values(
-                                                                        &mut body.input,
-                                                                        &event,
-                                                                    );
-                                                                    let data = serde_json::json!({
-                                                                        "data": body.input,
-                                                                        "allowed_hosts": body.allowed_hosts.as_ref(),
-                                                                    });
-
-                                                                    let workflow_index =
-                                                                        state_manager.new_workflow(
-                                                                            &body.workflow_id,
-                                                                            &body.workflow_name,
-                                                                        );
-                                                                    let _ = wasmtime_wasi_module::run_workflow(
-                                                                            state_manager.borrow_mut(),
-                                                                            logger.borrow_mut(),
-                                                                            &cache_db,
-                                                                            data,
-                                                                            body.wasm.clone(),
-                                                                            workflow_index,
-                                                                            false,
-                                                                        );
-                                                                }
-                                                            }
-                                                            Err(e) => logger.error(&format!(
-                                                                "Error type: {}",
-                                                                e
-                                                            )),
-                                                        }
-
-                                                        // Perform database insertion
-                                                        db.insert_value(&format!("{}offset", pub_id), display.timestamp)
-                                                            .map_err(|err| {
-                                                                Box::new(AppError::new(format!(
-                                                                    "not able to insert offset timestamp to the database: {}", err
-                                                                )))
-                                                            })?;
-                                                    }
-                                                }
-                                                Err(e) => logger.trace(&e.to_string()),
-                                            }
-                                        }
-                                        Err(e) => logger.trace(&e.to_string()),
-                                    }
-                                }
-                            }
-                            Err(err) => {
-                                let body = std::str::from_utf8(&body).unwrap();
-
-                                if body == "{\"sync\":true}" {
-                                    logger.info("Syncing Successful");
-                                    is_synced = true;
-                                } else {
-                                    return Err(err);
-                                }
-                            }
-                        }
-                    }
-                    RecvMsg::ErrorResponse(message) => {
-                        return Err(AppError::new(message).into());
-                    }
-                    _ => {}
-                }
-            }
-        }
     }
 }
