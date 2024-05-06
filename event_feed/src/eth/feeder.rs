@@ -1,6 +1,5 @@
 use super::*;
 use crate::error::IOError;
-use anyhow::*;
 use core::result::Result::Ok;
 
 /// Represents an Ethereum blockchain event feed.
@@ -47,7 +46,7 @@ impl EthFeed {
     /// # Arguments:
     ///
     /// * `cb`: A callback function to return the events to the caller.
-    pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<(), IOError> {
+    pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<()> {
         let client = Arc::new(&self.eth_service);
 
         let last_block = match client.get_block(BlockNumber::Latest).await {
@@ -55,9 +54,9 @@ impl EthFeed {
             Ok(None) => {
                 return Err(IOError::Other(
                     "Failed to fetch the latest block number".to_string(),
-                ))
+                ).into())
             }
-            Err(err) => return Err(IOError::Other(err.to_string())),
+            Err(err) => return Err(IOError::Other(err.to_string()).into()),
         };
 
         let events = self.events.iter().map(|e| e.0.clone());
@@ -66,7 +65,7 @@ impl EthFeed {
 
         let mut stream = match client.subscribe_logs(&filter).await {
             Ok(stream) => stream,
-            Err(e) => return Err(IOError::Other(e.to_string())),
+            Err(e) => return Err(IOError::Other(e.to_string()).into()),
         };
 
         while let Some(log) = stream.next().await {

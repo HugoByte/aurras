@@ -110,7 +110,7 @@ impl IconFeed {
     /// Arguments:
     ///
     /// * `cb`: A callback function to return the events to the caller.
-    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<(), IOError> {
+    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
         let mut latest_height = get_icon_block_height(&self.icon_service).await?;
         let mut old_height = latest_height - 1;
 
@@ -138,7 +138,7 @@ impl IconFeed {
                         return Err(IOError::Other(format!(
                             "No taransactions found in block {}",
                             latest_height
-                        )));
+                        )).into());
                     }
                 };
 
@@ -170,7 +170,7 @@ impl IconFeed {
                     return Err(IOError::Other(format!(
                         "Error getting latest block height: {}",
                         err
-                    )));
+                    )).into());
                 }
             }
         }

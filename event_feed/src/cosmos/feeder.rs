@@ -36,7 +36,7 @@ impl CosmosFeed {
     /// Arguments:
     ///
     /// * `cb`: A callback function to return the events to the caller.
-    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<(), IOError> {
+    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
         let (client, driver) = WebSocketClient::new(&*self.chain_config.node_url)
             .await
             .map_err(|err| IOError::Other(format!("Client not created {}", err)))?;
@@ -68,7 +68,7 @@ impl CosmosFeed {
                 }
                 Err(err) => {
                     // Consider retry logic or other actions here
-                    return Err(IOError::Other(format!("Error receving event {} ", err)));
+                    return Err(IOError::Other(format!("Error receving event {} ", err)).into_anyhow());
                 }
             }
         }

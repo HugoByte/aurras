@@ -8,14 +8,13 @@ pub enum IOError {
     Subxt(subxt::Error),
 }
 
-impl From<anyhow::Error> for IOError {
-    fn from(err: anyhow::Error) -> Self {
-        match err.root_cause().downcast_ref::<std::io::Error>() {
-            Some(io_err) => IOError::Std(Box::new(std::io::Error::new(
-                io_err.kind(),
-                io_err.to_string(),
-            ))),
-            None => IOError::Other(format!("Unexpected error: {}", err)),
+impl IOError {
+    pub fn into_anyhow(self) -> anyhow::Error {
+        match self {
+            IOError::Anyhow(error) => error,
+            IOError::Other(msg) => anyhow::Error::msg(msg),
+            IOError::Std(io_error) => anyhow::Error::new(*io_error),
+            IOError::Subxt(subxt_error) => anyhow::Error::msg(subxt_error.to_string()),
         }
     }
 }

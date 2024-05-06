@@ -46,11 +46,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let mut ssb_client = Producer::new(producer_config.clone())
         .await
-        .map_err(|e| IOError::Anyhow(e.into()))?;
+        .map_err(|e| IOError::Anyhow(e))?;
     ssb_client
         .accept_invite()
         .await
-        .map_err(|e| IOError::Anyhow(e.into()))?;
+        .map_err(|e| IOError::Anyhow(e))?;
 
     let feed = match args.command {
         Commands::Substrate => {

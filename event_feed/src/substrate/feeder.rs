@@ -7,9 +7,9 @@ use core::result::Result::Ok;
 #[derive(Debug, Clone)]
 /// The `PolkadotFeed` struct in Rust contains a `chain_config` field of type `ChainConfig` and a
 /// `client` field of type `OnlineClient<T>`.
-/// 
+///
 /// Properties:
-/// 
+///
 /// * `chain_config`: The `chain_config` property is a field of type `ChainConfig` in the `PolkadotFeed`
 /// struct. It likely contains configuration settings related to the Polkadot chain that the feed is
 /// interacting with.
@@ -24,16 +24,13 @@ pub struct PolkadotFeed<T: subxt::Config> {
 }
 
 impl<T: subxt::Config> PolkadotFeed<T> {
-
     /// Creates a new `PolkadotFeed` instance based on the provided chain configuration.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `chain_config`: An event feed chain configuration.
     pub async fn new(chain_config: ChainConfig) -> Result<PolkadotFeed<PolkadotConfig>> {
-        let client = OnlineClient::<PolkadotConfig>::from_url(&chain_config.node_url)
-            .await
-            ?;
+        let client = OnlineClient::<PolkadotConfig>::from_url(&chain_config.node_url).await?;
         Ok(PolkadotFeed {
             chain_config,
             client,
@@ -43,40 +40,61 @@ impl<T: subxt::Config> PolkadotFeed<T> {
 
 impl<T: subxt::Config> PolkadotFeed<T> {
     /// Fetches the events from the Substrate chain and returns it through the provided callback function.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `cb`: A callback function to return the events to the caller.
-    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<(), IOError>{
-        let mut blocks_sub = self.client.blocks().subscribe_finalized().await.map_err(|err| IOError::Subxt(err.into()))?;
+    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
+        let mut blocks_sub = self
+            .client
+            .blocks()
+            .subscribe_finalized()
+            .await
+            .map_err(|err| IOError::Subxt(err))?;
 
         // For each block, print a bunch of information about it:
         loop {
             if let Some(block) = blocks_sub.next().await {
-                let block = block.map_err(|err| IOError::Subxt(err.into()))?;
+                let block = block.map_err(IOError::Subxt)?;
                 let mut fetched_events = Vec::new();
-                let extrinsics = block.extrinsics().await.map_err(|err| IOError::Subxt(err.into()))?;
+                let extrinsics = block
+                    .extrinsics()
+                    .await
+                    .map_err(|err| IOError::Subxt(err))?;
                 for ext in extrinsics.iter() {
-                    let ext = match ext{
+                    let ext = match ext {
                         Ok(ext) => ext,
-                        Err(err) => return Err(IOError::Subxt(err)),
+                        Err(err) => return Err(IOError::Subxt(err).into()),
                     };
-                    let events = match ext.events().await{
+                    let events = match ext.events().await {
                         Ok(events) => events,
-                        Err(err) => return Err(IOError::Other(format!("Error fetching events: {}", err))),
+                        Err(err) => {
+                            return Err(
+                                IOError::Other(format!("Error fetching events: {}", err)).into()
+                            )
+                        }
                     };
-                    let event_details = match events.iter().collect::<Result<Vec<_>, _>>(){
+                    let event_details = match events.iter().collect::<Result<Vec<_>, _>>() {
                         Ok(event_details) => event_details,
-                        Err(err) => return Err(IOError::Other(format!("Error collecting events: {}", err))),
+                        Err(err) => {
+                            return Err(
+                                IOError::Other(format!("Error collecting events: {}", err)).into()
+                            )
+                        }
                     };
 
                     let filter = self.split_filter();
 
                     for event in event_details.iter() {
-                        let s = match event.field_values(){
+                        let s = match event.field_values() {
                             Ok(data) => data,
-                            Err(err) => return Err(IOError::Other(format!("Error getting event field values: {}", err))),
-
+                            Err(err) => {
+                                return Err(IOError::Other(format!(
+                                    "Error getting event field values: {}",
+                                    err
+                                ))
+                                .into())
+                            }
                         };
                         let data = format!("{}", s).replace("((", "[").replace("))", "]");
 
@@ -101,7 +119,10 @@ impl<T: subxt::Config> PolkadotFeed<T> {
                                 method: event.variant_name().to_string(),
                                 field_value: data,
                             };
-                            let serialize_event = serde_json::to_value(&decode_event).map_err(|err| IOError::Other(format!("Serialising error {}", err)))?;
+                            let serialize_event =
+                                serde_json::to_value(&decode_event).map_err(|err| {
+                                    IOError::Other(format!("Serialising error {}", err))
+                                })?;
                             fetched_events.push(serialize_event);
                         }
                     }
@@ -113,9 +134,9 @@ impl<T: subxt::Config> PolkadotFeed<T> {
     }
 
     /// Splits a string by ';' and then by '=' to create a HasMap. This hashmap is used to filter the events.
-    /// 
+    ///
     /// Returns:
-    /// 
+    ///
     /// Returns the hashmap with the key as the pallet name and the value as the list of events.
     pub fn split_filter(&self) -> std::collections::HashMap<String, Vec<&str>> {
         let mut filter_map: std::collections::HashMap<String, Vec<&str>> =
