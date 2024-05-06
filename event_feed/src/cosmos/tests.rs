@@ -1,7 +1,7 @@
 mod tests {
     use super::super::*;
     use runtime::{logger::CoreLogger, Logger};
-    
+
     #[tokio::test]
     async fn test_cosmos_feed_new() {
         let chain_config = ChainConfig {
@@ -33,6 +33,7 @@ mod tests {
         let logger = CoreLogger::new(Some("./event-feed.log"));
         let cosmos_feed = CosmosFeed::new(chain_config.clone(), logger);
         let result = cosmos_feed.event_feed(&callback).await;
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(result.is_ok());
     }
@@ -56,5 +57,6 @@ mod tests {
         let cosmos_feed = CosmosFeed::new(chain_config.clone(), logger);
 
         let _ = cosmos_feed.event_feed(&callback).await;
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
     }
 }

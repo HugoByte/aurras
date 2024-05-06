@@ -26,6 +26,7 @@ mod tests {
                 .clone(),
         )
         .unwrap();
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(icon_feed.filter(&tx_list[1]).await.unwrap());
     }
@@ -50,6 +51,7 @@ mod tests {
             )
             .await
             .unwrap();
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(!icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
@@ -73,6 +75,7 @@ mod tests {
             )
             .await
             .unwrap();
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
@@ -96,6 +99,7 @@ mod tests {
             )
             .await
             .unwrap();
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(!icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
@@ -119,6 +123,7 @@ mod tests {
             )
             .await
             .unwrap();
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
@@ -142,6 +147,7 @@ mod tests {
             )
             .await
             .unwrap();
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(!icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }

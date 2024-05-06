@@ -91,7 +91,7 @@ impl EthFeed {
 
                 if let Ok(Some(tx_receipt)) = tx_receipt {
                     self.logger.info(&format!(
-                        "Received trabsaction receipt for the tx_hash : {:?}",
+                        "Received transaction receipt for the tx_hash : {:?}",
                         tx_hash
                     ));
                     let mut logs = Vec::<Value>::new();

@@ -17,6 +17,7 @@ async fn test_filter_events() {
         .await
         .unwrap();
     let result = polkadot.split_filter();
+    let _ = tokio::fs::remove_file("./event-feed.log").await;
 
     assert_eq!(
         result,
@@ -37,6 +38,7 @@ async fn test_filter_events_argument_with_no_method() {
         .await
         .unwrap();
     let result = polkadot.split_filter();
+    let _ = tokio::fs::remove_file("./event-feed.log").await;
 
     assert_eq!(
         result,
