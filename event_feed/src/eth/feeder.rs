@@ -1,5 +1,5 @@
 use super::*;
-// use crate::error::EventFeedError;
+use crate::error::IOError;
 use anyhow::*;
 use core::result::Result::Ok;
 
@@ -12,9 +12,9 @@ pub struct EthFeed {
 
 impl EthFeed {
     /// Creates a new EthFeed instance based on the provided chain configuration.
-    /// 
+    ///
     /// Arguments:
-    /// 
+    ///
     /// * `config`: An event feed chain configuration.
     pub async fn new(config: ChainConfig) -> Result<EthFeed> {
         let events = config
@@ -43,18 +43,22 @@ impl EthFeed {
     }
 
     /// Fetches the events from the Ethereum chain and returns it through the provided callback function.
-    /// 
+    ///
     /// # Arguments:
-    /// 
+    ///
     /// * `cb`: A callback function to return the events to the caller.
-    pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<()> {
+    pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<(), IOError> {
         let client = Arc::new(&self.eth_service);
-        
-        let last_block = match client.get_block(BlockNumber::Latest).await? {
-            Some(block) => block.number.unwrap(),
-            None => return Err(anyhow!("Failed to fetch the latest block number")),
-        };
 
+        let last_block = match client.get_block(BlockNumber::Latest).await {
+            Ok(Some(block)) => block.number.unwrap(),
+            Ok(None) => {
+                return Err(IOError::Other(
+                    "Failed to fetch the latest block number".to_string(),
+                ))
+            }
+            Err(err) => return Err(IOError::Other(err.to_string())),
+        };
 
         let events = self.events.iter().map(|e| e.0.clone());
 
@@ -62,7 +66,7 @@ impl EthFeed {
 
         let mut stream = match client.subscribe_logs(&filter).await {
             Ok(stream) => stream,
-            Err(e) => return Err(anyhow!("Failed to subscribe to logs: {}", e)),
+            Err(e) => return Err(IOError::Other(e.to_string())),
         };
 
         while let Some(log) = stream.next().await {
@@ -131,7 +135,6 @@ impl EthFeed {
                 }
             }
         }
-        
 
         Ok(())
     }

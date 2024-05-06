@@ -1,10 +1,10 @@
 use super::*;
 use crate::common;
+use crate::error::IOError;
 use anyhow::*;
+use core::result::Result::Ok;
 use serde_json::Value;
 use tendermint_rpc::event::{Event, EventData};
-use core::result::Result::Ok;
-// use crate::error::EventFeedError;
 
 /// Represents the cosmos blockchain event feed.
 pub struct CosmosFeed {
@@ -36,12 +36,16 @@ impl CosmosFeed {
     /// Arguments:
     ///
     /// * `cb`: A callback function to return the events to the caller.
-    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
+    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<(), IOError> {
         let (client, driver) = WebSocketClient::new(&*self.chain_config.node_url)
-            .await?;
+            .await
+            .map_err(|err| IOError::Other(format!("Client not created {}", err)))?;
         let driver_handle = tokio::spawn(async move { driver.run().await });
 
-        let mut subs = client.subscribe(EventType::NewBlock.into()).await?;
+        let mut subs = client
+            .subscribe(EventType::NewBlock.into())
+            .await
+            .map_err(|err| IOError::Other(format!("Error in subscribing the client {}", err)))?;
         let mut events: Vec<Event> = Vec::new();
 
         while let Some(res) = subs.next().await {
@@ -51,18 +55,20 @@ impl CosmosFeed {
                     let filter_events = events
                         .iter()
                         .filter(|tendermint_event| {
-                            Self::convert_to_feeder_event(tendermint_event, &self.chain_config).is_some()
+                            Self::convert_to_feeder_event(tendermint_event, &self.chain_config)
+                                .is_some()
                         })
                         .flat_map(|tendermint_event| {
-                            Self::convert_to_feeder_event(tendermint_event, &self.chain_config).unwrap()
+                            Self::convert_to_feeder_event(tendermint_event, &self.chain_config)
+                                .unwrap()
                         })
                         .collect::<Vec<serde_json::Value>>();
                     cb(filter_events);
                     events.clear();
                 }
                 Err(err) => {
-                    eprintln!("Error receiving event: {}", err);
                     // Consider retry logic or other actions here
+                    return Err(IOError::Other(format!("Error receving event {} ", err)));
                 }
             }
         }
@@ -109,10 +115,12 @@ impl CosmosFeed {
                             tx_hash: hash_string.clone(),
                             log_index: 0,
                         })
-                        .map(|e| serde_json::to_value(e).unwrap_or_else(|err|{
-                            eprintln!("Error converting FeederEvent to Json: {}", err);
-                            serde_json::Value::Null
-                        }))
+                        .map(|e| {
+                            serde_json::to_value(e).unwrap_or_else(|err| {
+                                eprintln!("Error converting FeederEvent to Json: {}", err);
+                                serde_json::Value::Null
+                            })
+                        })
                         .collect()
                 } else {
                     result_begin_block
@@ -130,10 +138,12 @@ impl CosmosFeed {
                         })
                         .collect::<Vec<common::FeederEvent>>()
                         .into_iter()
-                        .map(|e| serde_json::to_value(e).unwrap_or_else(|err|{
-                            eprintln!("Error converting FeederEvent to Json: {}", err);
-                            serde_json::Value::Null
-                        }))
+                        .map(|e| {
+                            serde_json::to_value(e).unwrap_or_else(|err| {
+                                eprintln!("Error converting FeederEvent to Json: {}", err);
+                                serde_json::Value::Null
+                            })
+                        })
                         .collect()
                 };
 

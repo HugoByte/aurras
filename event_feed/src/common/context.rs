@@ -1,9 +1,8 @@
 use super::CosmosFeed;
 use super::EthFeed;
+use crate::error::IOError;
 use crate::IconFeed;
 use crate::PolkadotFeed;
-// use crate::error::EventFeedError;
-use anyhow::Result;
 use subxt::PolkadotConfig;
 
 /// Represents the main context of the event feed. This is used to configure the event feed with the
@@ -16,9 +15,8 @@ pub enum Context {
 }
 
 impl Context {
-
     /// Starts the event feed.
-    pub async fn feed_events(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
+    pub async fn feed_events(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<(), IOError> {
         match self {
             Context::PolkadotFeed(feed) => feed.event_feed(cb).await,
             Context::IconFeed(feed) => feed.event_feed(cb).await,

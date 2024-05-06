@@ -1,5 +1,6 @@
 use event_feed::{
-    ChainConfig, Context, CosmosFeed, EthFeed, IconFeed, PolkadotFeed, Producer, ProducerConfig,
+    ChainConfig, Context, CosmosFeed, EthFeed, IOError, IconFeed, PolkadotFeed, Producer,
+    ProducerConfig,
 };
 use std::{fs, path};
 use subxt::PolkadotConfig;
@@ -35,29 +36,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (chain_config, producer_config) = match args.clone().config {
         Some(path) => {
             let read_data = fs::read(path::Path::new(&path))?;
-            let chain_config: ChainConfig = serde_json::from_slice(&read_data).unwrap();
+            let chain_config: ChainConfig =
+                serde_json::from_slice(&read_data).map_err(|e| IOError::Anyhow(e.into()))?;
             let producer_config: ProducerConfig =
                 serde_json::from_slice(&read_data.clone()).unwrap();
             (chain_config, producer_config)
         }
         None => (ChainConfig::default(), ProducerConfig::default()),
     };
-    let mut ssb_client = Producer::new(producer_config.clone()).await.unwrap();
-    ssb_client.accept_invite().await.unwrap();
+    let mut ssb_client = Producer::new(producer_config.clone())
+        .await
+        .map_err(|e| IOError::Anyhow(e.into()))?;
+    ssb_client
+        .accept_invite()
+        .await
+        .map_err(|e| IOError::Anyhow(e.into()))?;
 
     let feed = match args.command {
         Commands::Substrate => {
             let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone())
                 .await
-                .unwrap();
+                .map_err(|e| {
+                    IOError::Other(format!("Error initializing POLKADOT client : {}", e))
+                })?;
             Context::PolkadotFeed(polkadot_client)
         }
         Commands::Icon => {
-            let icon_client = IconFeed::new(chain_config.clone()).unwrap();
+            let icon_client = IconFeed::new(chain_config.clone())
+                .map_err(|e| IOError::Other(format!("Error initializing ICON client: {}", e)))?;
             Context::IconFeed(icon_client)
         }
         Commands::Eth => {
-            let eth_client = EthFeed::new(chain_config.clone()).await.unwrap();
+            let eth_client = EthFeed::new(chain_config.clone())
+                .await
+                .map_err(|e| IOError::Other(format!("Error initializing ETH client: {}", e)))?;
             Context::EthFeed(eth_client)
         }
         Commands::Cosmos => {
@@ -67,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let (tx, rx) = std::sync::mpsc::channel::<Vec<serde_json::Value>>();
- 
+
     tokio::spawn(async move {
         while let Ok(logs) = rx.recv() {
             for log in logs {
@@ -75,7 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     });
- 
+
     let _ = feed
         .feed_events(&|e| {
             tx.send(e).unwrap();

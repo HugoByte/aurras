@@ -1,4 +1,5 @@
 use super::*;
+use crate::error::IOError;
 
 /// Represents the icon blockchain event feed which contains the endpoint and the filters.
 pub struct IconFeed {
@@ -60,9 +61,10 @@ impl IconFeed {
             // let tx_hash: String =
             //     serde_json::from_value(transaction.get("txHash").unwrap().clone()).unwrap();
             let tx_hash: String = serde_json::from_value(
-                transaction.get("txHash")
+                transaction
+                    .get("txHash")
                     .ok_or_else(|| anyhow::anyhow!("Transaction hash not found in transaction"))?
-                    .clone()
+                    .clone(),
             )?;
 
             let event_logs = get_event_logs_by_tx_hash(&self.icon_service, &tx_hash).await?;
@@ -108,7 +110,7 @@ impl IconFeed {
     /// Arguments:
     ///
     /// * `cb`: A callback function to return the events to the caller.
-    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
+    pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<(), IOError> {
         let mut latest_height = get_icon_block_height(&self.icon_service).await?;
         let mut old_height = latest_height - 1;
 
@@ -126,23 +128,29 @@ impl IconFeed {
                     }
                 };
 
-                let transactions = match block.get("result")
-                .and_then(|val| val.get("confirmed_transaction_list"))
-                .cloned() {
+                let transactions = match block
+                    .get("result")
+                    .and_then(|val| val.get("confirmed_transaction_list"))
+                    .cloned()
+                {
                     Some(transactions) => transactions,
                     None => {
-                        eprintln!("No transactions found in block {}", latest_height);
-                        sleep(Duration::from_millis(1000));
-                        continue;
+                        return Err(IOError::Other(format!(
+                            "No taransactions found in block {}",
+                            latest_height
+                        )));
                     }
                 };
 
-            let transactions: Vec<Value> = serde_json::from_value(transactions)?;
+                let transactions: Vec<Value> = serde_json::from_value(transactions)
+                    .map_err(|err| IOError::Other(format!("Error in transacation: {}", err)))?;
 
                 let mut filtered_tx = Vec::<Value>::new();
 
                 for transaction in transactions {
-                    if self.filter(&transaction).await? {
+                    if self.filter(&transaction).await.map_err(|err| {
+                        IOError::Other(format!("Error filtering transaction: {}", err))
+                    })? {
                         filtered_tx.push(transaction);
                     }
                 }
@@ -159,8 +167,10 @@ impl IconFeed {
             latest_height = match get_icon_block_height(&self.icon_service).await {
                 Ok(height) => height,
                 Err(err) => {
-                    eprintln!("Error getting latest block height: {}", err);
-                    continue;
+                    return Err(IOError::Other(format!(
+                        "Error getting latest block height: {}",
+                        err
+                    )));
                 }
             }
         }

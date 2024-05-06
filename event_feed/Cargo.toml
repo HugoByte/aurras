@@ -20,18 +20,19 @@ dirs = '5.0.1'
 envy = '0.4'
 anyhow = '1.0.82'
 icon-sdk = '1.2.0'
-tendermint-rpc = {version = "0.35.0", features = ["http-client", "websocket-client"]}
+tendermint-rpc = { version = "0.35.0", features = [
+    "http-client",
+    "websocket-client",
+] }
 futures = "0.3.30"
 base64 = "0.22.0"
-clap ={ version = "4.5.4", features = [ "derive", "env" ]}
+clap = { version = "4.5.4", features = ["derive", "env"] }
+thiserror = "1.0.59"
 
 [dependencies.ethers]
 version = '2.0.8'
 default_features = false
-features = [
-    'ws',
-    'rustls',
-]
+features = ['ws', 'rustls']
 
 [dependencies.serde]
 version = '1.0.198'
@@ -42,8 +43,4 @@ path = '../runtime/lite'
 
 [dependencies.tokio]
 version = '1.36.0'
-features = [
-    'macros',
-    'time',
-    'rt-multi-thread',
-]
+features = ['macros', 'time', 'rt-multi-thread']
