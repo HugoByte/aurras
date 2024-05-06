@@ -68,7 +68,7 @@ impl CosmosFeed {
                 }
                 Err(err) => {
                     // Consider retry logic or other actions here
-                    return Err(IOError::Other(format!("Error receving event {} ", err)).into_anyhow());
+                    return Err(IOError::Other(format!("Error receving event {} ", err)).into());
                 }
             }
         }
