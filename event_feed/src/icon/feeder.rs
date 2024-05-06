@@ -61,8 +61,6 @@ impl IconFeed {
         let mut score_filter = false;
 
         if !self.events.is_empty() || !self.score.is_empty() {
-            // let tx_hash: String =
-            //     serde_json::from_value(transaction.get("txHash").unwrap().clone()).unwrap();
             let tx_hash: String = serde_json::from_value(
                 transaction
                     .get("txHash")
@@ -156,7 +154,8 @@ impl IconFeed {
                         return Err(IOError::Other(format!(
                             "No taransactions found in block {}",
                             latest_height
-                        )).into());
+                        ))
+                        .into());
                     }
                 };
 
@@ -195,7 +194,8 @@ impl IconFeed {
                     return Err(IOError::Other(format!(
                         "Error getting latest block height: {}",
                         err
-                    )).into());
+                    ))
+                    .into());
                 }
             }
         }
