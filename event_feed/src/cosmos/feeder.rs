@@ -3,6 +3,8 @@ use crate::common;
 use crate::error::IOError;
 use anyhow::*;
 use core::result::Result::Ok;
+use futures::StreamExt;
+use runtime::{logger::CoreLogger, Logger};
 use serde_json::Value;
 use tendermint_rpc::event::{Event, EventData};
 
@@ -10,6 +12,7 @@ use tendermint_rpc::event::{Event, EventData};
 pub struct CosmosFeed {
     pub chain_config: ChainConfig,
     pub events: Vec<String>,
+    pub logger: CoreLogger,
 }
 
 impl CosmosFeed {
@@ -18,7 +21,7 @@ impl CosmosFeed {
     /// Arguments:
     ///
     /// * `chain_config`: An event feed chain configuration.
-    pub fn new(chain_config: common::ChainConfig) -> CosmosFeed {
+    pub fn new(chain_config: common::ChainConfig, logger: CoreLogger) -> CosmosFeed {
         let events = chain_config
             .event_filter
             .split(',')
@@ -28,6 +31,7 @@ impl CosmosFeed {
         CosmosFeed {
             chain_config,
             events,
+            logger,
         }
     }
 
@@ -74,6 +78,7 @@ impl CosmosFeed {
         }
 
         drop(subs);
+        self.logger.info("Websocket connection closed!!");
         let _ = driver_handle.await;
         Ok(())
     }
@@ -89,9 +94,12 @@ impl CosmosFeed {
     ///
     /// Returns the list of `FeederEvent` objects as json values.
     fn convert_to_feeder_event(
+        &self,
         event: &Event,
         chain_config: &ChainConfig,
     ) -> Option<Vec<serde_json::Value>> {
+        self.logger
+            .debug(&format!("Processing events : {:?}", event));
         match event.data.clone() {
             EventData::LegacyNewBlock {
                 ref block,
@@ -101,8 +109,16 @@ impl CosmosFeed {
                 let block = block.as_ref()?;
                 let block_number = block.header.version.block as usize;
                 let hash_string = block.header.last_commit_hash.map(|h| h.to_string());
+                self.logger.info(&format!(
+                    "Processing LegacyNewBlockEvent for block: {}",
+                    block.header.version.block
+                ));
 
                 let filtered_events: Vec<Value> = if chain_config.event_filter.is_empty() {
+                    self.logger.info(&format!(
+                        "Processing all events from block : {}",
+                        block_number
+                    ));
                     result_begin_block
                         .unwrap()
                         .events
@@ -123,6 +139,7 @@ impl CosmosFeed {
                         })
                         .collect()
                 } else {
+                    self.logger.info("Filtering events based on the event name");
                     result_begin_block
                         .unwrap()
                         .events
@@ -148,8 +165,10 @@ impl CosmosFeed {
                 };
 
                 if !filtered_events.is_empty() {
+                    self.logger.info("returning the filtered events");
                     Some(filtered_events)
                 } else {
+                    self.logger.info("No events matched the filter");
                     None
                 }
             }

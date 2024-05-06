@@ -1,3 +1,4 @@
+use runtime::{logger::CoreLogger, Logger};
 use tests::feeder::PolkadotFeed;
 
 use super::*;
@@ -11,8 +12,12 @@ async fn test_filter_events() {
         event_filter: "balances=Transfer".to_string(),
         contract_filter: "".to_string(),
     };
-    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config).await.unwrap();
+    let logger = CoreLogger::new(Some("./event-feed.log"));
+    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config, logger)
+        .await
+        .unwrap();
     let result = polkadot.split_filter();
+    let _ = tokio::fs::remove_file("./event-feed.log").await;
 
     assert_eq!(
         result,
@@ -28,8 +33,12 @@ async fn test_filter_events_argument_with_no_method() {
         event_filter: "balances=Transfer;system".to_string(),
         contract_filter: "".to_string(),
     };
-    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config).await.unwrap();
+    let logger = CoreLogger::new(Some("./event-feed.log"));
+    let polkadot = PolkadotFeed::<PolkadotConfig>::new(config, logger)
+        .await
+        .unwrap();
     let result = polkadot.split_filter();
+    let _ = tokio::fs::remove_file("./event-feed.log").await;
 
     assert_eq!(
         result,

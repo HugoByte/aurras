@@ -2,11 +2,13 @@ use super::*;
 use crate::error::IOError;
 use core::result::Result::Ok;
 
+use runtime::{logger::CoreLogger, Logger};
 /// Represents an Ethereum blockchain event feed.
 pub struct EthFeed {
     eth_service: Provider<Ws>,
     events: Vec<(String, H256)>,
     contracts: Vec<String>,
+    logger: CoreLogger,
 }
 
 impl EthFeed {
@@ -15,7 +17,7 @@ impl EthFeed {
     /// Arguments:
     ///
     /// * `config`: An event feed chain configuration.
-    pub async fn new(config: ChainConfig) -> Result<EthFeed> {
+    pub async fn new(config: ChainConfig, logger: CoreLogger) -> Result<EthFeed> {
         let events = config
             .event_filter
             .split(';')
@@ -36,6 +38,7 @@ impl EthFeed {
             eth_service: client,
             events,
             contracts,
+            logger,
         };
 
         Ok(eth_feed)
@@ -67,6 +70,10 @@ impl EthFeed {
             Ok(stream) => stream,
             Err(e) => return Err(IOError::Other(e.to_string()).into()),
         };
+        self.logger.info(&format!(
+            "Subscribed to events with the filter : {:?}",
+            filter
+        ));
 
         while let Some(log) = stream.next().await {
             if self.contracts.is_empty() || self.contracts.contains(&format!("{:?}", &log.address))
@@ -92,6 +99,10 @@ impl EthFeed {
                 let tx_receipt = client.get_transaction_receipt(tx_hash).await;
 
                 if let Ok(Some(tx_receipt)) = tx_receipt {
+                    self.logger.info(&format!(
+                        "Received transaction receipt for the tx_hash : {:?}",
+                        tx_hash
+                    ));
                     let mut logs = Vec::<Value>::new();
 
                     for log in tx_receipt.logs.iter() {

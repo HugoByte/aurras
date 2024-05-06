@@ -3,6 +3,7 @@ use crate::common::ChainConfig;
 use crate::error::IOError;
 use anyhow::*;
 use core::result::Result::Ok;
+use runtime::{logger::CoreLogger, Logger};
 
 #[derive(Debug, Clone)]
 /// The `PolkadotFeed` struct in Rust contains a `chain_config` field of type `ChainConfig` and a
@@ -21,6 +22,7 @@ pub struct PolkadotFeed<T: subxt::Config> {
 
     // Substrate client
     client: OnlineClient<T>,
+    logger: CoreLogger,
 }
 
 impl<T: subxt::Config> PolkadotFeed<T> {
@@ -29,11 +31,15 @@ impl<T: subxt::Config> PolkadotFeed<T> {
     /// # Arguments
     ///
     /// * `chain_config`: An event feed chain configuration.
-    pub async fn new(chain_config: ChainConfig) -> Result<PolkadotFeed<PolkadotConfig>> {
+    pub async fn new(
+        chain_config: ChainConfig,
+        logger: CoreLogger,
+    ) -> Result<PolkadotFeed<PolkadotConfig>> {
         let client = OnlineClient::<PolkadotConfig>::from_url(&chain_config.node_url).await?;
         Ok(PolkadotFeed {
             chain_config,
             client,
+            logger,
         })
     }
 }
@@ -142,6 +148,7 @@ impl<T: subxt::Config> PolkadotFeed<T> {
         let mut filter_map: std::collections::HashMap<String, Vec<&str>> =
             std::collections::HashMap::new();
         if !self.chain_config.event_filter.is_empty() {
+            self.logger.info("No event filters configured");
             for pair in self.chain_config.event_filter.split(';') {
                 if !pair.contains('=') {
                     filter_map.insert(pair.to_string(), vec![]);
