@@ -48,6 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut ssb_client = Producer::new(producer_config.clone())
         .await
         .map_err(|e| IOError::Anyhow(e))?;
+    logger.info("SSB client created");
     ssb_client
         .accept_invite()
         .await
