@@ -1,15 +1,17 @@
 mod tests {
     use super::super::*;
+    use runtime::{logger::CoreLogger, Logger};
 
     #[tokio::test]
     async fn test_filter_events_true() {
         let config = ChainConfig {
-            chain:"Icon".to_string(),
+            chain: "Icon".to_string(),
             node_url: "https://api.icon.community/api/v3".to_string(),
             event_filter: "ICXTransfer".to_string(),
             contract_filter: "".to_string(),
         };
-        let icon_feed = IconFeed::new(config).unwrap();
+        let logger = CoreLogger::new(Some("./event-feed.log"));
+        let icon_feed = IconFeed::new(config, logger).unwrap();
 
         let icon_service = IconService::new(None);
 
@@ -24,6 +26,7 @@ mod tests {
                 .clone(),
         )
         .unwrap();
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(icon_feed.filter(&tx_list[1]).await.unwrap());
     }
@@ -31,12 +34,13 @@ mod tests {
     #[tokio::test]
     async fn test_filter_events_false() {
         let config = ChainConfig {
-            chain:"Icon".to_string(),
+            chain: "Icon".to_string(),
             node_url: "https://api.icon.community/api/v3".to_string(),
             event_filter: "ICXIssued".to_string(),
             contract_filter: "".to_string(),
         };
-        let icon_feed = IconFeed::new(config).unwrap();
+        let logger = CoreLogger::new(Some("./event-feed.log"));
+        let icon_feed = IconFeed::new(config, logger).unwrap();
 
         let icon_service = IconService::new(None);
 
@@ -47,6 +51,7 @@ mod tests {
             )
             .await
             .unwrap();
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(!icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
@@ -54,12 +59,13 @@ mod tests {
     #[tokio::test]
     async fn test_filter_score_true() {
         let config = ChainConfig {
-            chain:"Icon".to_string(),
+            chain: "Icon".to_string(),
             node_url: "https://api.icon.community/api/v3".to_string(),
             event_filter: "".to_string(),
             contract_filter: "cx21e94c08c03daee80c25d8ee3ea22a20786ec231".to_string(),
         };
-        let icon_feed = IconFeed::new(config).unwrap();
+        let logger = CoreLogger::new(Some("./event-feed.log"));
+        let icon_feed = IconFeed::new(config, logger).unwrap();
 
         let icon_service = IconService::new(None);
 
@@ -69,6 +75,7 @@ mod tests {
             )
             .await
             .unwrap();
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
@@ -76,12 +83,13 @@ mod tests {
     #[tokio::test]
     async fn test_filter_score_false() {
         let config = ChainConfig {
-            chain:"Icon".to_string(),
+            chain: "Icon".to_string(),
             node_url: "https://api.icon.community/api/v3".to_string(),
             event_filter: "".to_string(),
             contract_filter: "cx21e94c08c03daee80c25d8ee3ea22a20786ec231".to_string(),
         };
-        let icon_feed = IconFeed::new(config).unwrap();
+        let logger = CoreLogger::new(Some("./event-feed.log"));
+        let icon_feed = IconFeed::new(config, logger).unwrap();
 
         let icon_service = IconService::new(None);
 
@@ -91,6 +99,7 @@ mod tests {
             )
             .await
             .unwrap();
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(!icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
@@ -98,12 +107,13 @@ mod tests {
     #[tokio::test]
     async fn test_filter_event_and_score_true() {
         let config = ChainConfig {
-            chain:"Icon".to_string(),
+            chain: "Icon".to_string(),
             node_url: "https://api.icon.community/api/v3".to_string(),
             event_filter: "Transfer".to_string(),
             contract_filter: "cx88fd7df7ddff82f7cc735c871dc519838cb235bb".to_string(),
         };
-        let icon_feed = IconFeed::new(config).unwrap();
+        let logger = CoreLogger::new(Some("./event-feed.log"));
+        let icon_feed = IconFeed::new(config, logger).unwrap();
 
         let icon_service = IconService::new(None);
 
@@ -113,6 +123,7 @@ mod tests {
             )
             .await
             .unwrap();
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }
@@ -120,12 +131,13 @@ mod tests {
     #[tokio::test]
     async fn test_filter_event_and_score_false() {
         let config = ChainConfig {
-            chain:"Icon".to_string(),
+            chain: "Icon".to_string(),
             node_url: "https://api.icon.community/api/v3".to_string(),
             event_filter: "ICXIssued".to_string(),
             contract_filter: "cx88fd7df7ddff82f7cc735c871dc519838cb235bb".to_string(),
         };
-        let icon_feed = IconFeed::new(config).unwrap();
+        let logger = CoreLogger::new(Some("./event-feed.log"));
+        let icon_feed = IconFeed::new(config, logger).unwrap();
 
         let icon_service = IconService::new(None);
 
@@ -135,6 +147,7 @@ mod tests {
             )
             .await
             .unwrap();
+        let _ = tokio::fs::remove_file("./event-feed.log").await;
 
         assert!(!icon_feed.filter(&tx.get("result").unwrap()).await.unwrap());
     }

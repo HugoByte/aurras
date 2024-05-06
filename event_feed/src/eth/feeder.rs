@@ -1,18 +1,20 @@
 use super::*;
+use runtime::{logger::CoreLogger, Logger};
 /// Represents an Ethereum blockchain event feed.
 pub struct EthFeed {
     eth_service: Provider<Ws>,
     events: Vec<(String, H256)>,
     contracts: Vec<String>,
+    logger: CoreLogger,
 }
 
 impl EthFeed {
     /// Creates a new EthFeed instance based on the provided chain configuration.
-    /// 
+    ///
     /// Arguments:
-    /// 
+    ///
     /// * `config`: An event feed chain configuration.
-    pub async fn new(config: ChainConfig) -> Result<EthFeed> {
+    pub async fn new(config: ChainConfig, logger: CoreLogger) -> Result<EthFeed> {
         let events = config
             .event_filter
             .split(';')
@@ -33,15 +35,16 @@ impl EthFeed {
             eth_service: client,
             events,
             contracts,
+            logger,
         };
 
         Ok(eth_feed)
     }
 
     /// Fetches the events from the Ethereum chain and returns it through the provided callback function.
-    /// 
+    ///
     /// # Arguments:
-    /// 
+    ///
     /// * `cb`: A callback function to return the events to the caller.
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<()> {
         let client = Arc::new(&self.eth_service);
@@ -58,6 +61,10 @@ impl EthFeed {
         let filter = Filter::new().from_block(last_block - 25).events(events);
 
         let mut stream = client.subscribe_logs(&filter).await?;
+        self.logger.info(&format!(
+            "Subscribed to events with the filter : {:?}",
+            filter
+        ));
 
         while let Some(log) = stream.next().await {
             if self.contracts.is_empty() || self.contracts.contains(&format!("{:?}", &log.address))
@@ -83,6 +90,10 @@ impl EthFeed {
                 let tx_receipt = client.get_transaction_receipt(tx_hash).await;
 
                 if let Ok(Some(tx_receipt)) = tx_receipt {
+                    self.logger.info(&format!(
+                        "Received transaction receipt for the tx_hash : {:?}",
+                        tx_hash
+                    ));
                     let mut logs = Vec::<Value>::new();
 
                     for log in tx_receipt.logs.iter() {
