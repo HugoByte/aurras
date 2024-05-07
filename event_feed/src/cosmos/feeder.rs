@@ -3,7 +3,6 @@ use crate::common;
 use crate::error::IOError;
 use anyhow::*;
 use core::result::Result::Ok;
-use futures::StreamExt;
 use runtime::{logger::CoreLogger, Logger};
 use serde_json::Value;
 use tendermint_rpc::event::{Event, EventData};
@@ -44,7 +43,10 @@ impl CosmosFeed {
         let (client, driver) = WebSocketClient::new(&*self.chain_config.node_url)
             .await
             .map_err(|err| IOError::Other(format!("Client not created {}", err)))?;
-        self.logger.info(&format!("Following the chain at {}", self.chain_config.node_url));
+        self.logger.info(&format!(
+            "Following the chain at {}",
+            self.chain_config.node_url
+        ));
         let driver_handle = tokio::spawn(async move { driver.run().await });
 
         let mut subs = client
@@ -60,12 +62,27 @@ impl CosmosFeed {
                     let filter_events = events
                         .iter()
                         .filter(|tendermint_event| {
-                            Self::convert_to_feeder_event(self, tendermint_event, &self.chain_config)
-                                .is_some()
+                            Self::convert_to_feeder_event(
+                                self,
+                                tendermint_event,
+                                &self.chain_config,
+                            )
+                            .is_some()
                         })
                         .flat_map(|tendermint_event| {
-                            Self::convert_to_feeder_event(self, tendermint_event, &self.chain_config)
-                                .unwrap()
+                            match Self::convert_to_feeder_event(
+                                self,
+                                tendermint_event,
+                                &self.chain_config,
+                            ) {
+                                Some(value) => value,
+                                None => {
+                                    let _ = Err::<IOError, _>(IOError::Other(
+                                        "Error converting to FeederEvent".to_string(),
+                                    ));
+                                    vec![serde_json::Value::Null]
+                                }
+                            }
                         })
                         .collect::<Vec<serde_json::Value>>();
                     cb(filter_events);

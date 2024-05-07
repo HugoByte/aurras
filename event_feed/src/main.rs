@@ -1,11 +1,11 @@
+use clap::{Parser, Subcommand};
 use event_feed::{
     ChainConfig, Context, CosmosFeed, EthFeed, IOError, IconFeed, PolkadotFeed, Producer,
     ProducerConfig,
 };
+use runtime::{logger::CoreLogger, Logger};
 use std::{fs, path};
 use subxt::PolkadotConfig;
-use runtime::{logger::CoreLogger, Logger};
-use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Async CLI Example")]
@@ -39,8 +39,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let read_data = fs::read(path::Path::new(&path))?;
             let chain_config: ChainConfig =
                 serde_json::from_slice(&read_data).map_err(|e| IOError::Anyhow(e.into()))?;
-            let producer_config: ProducerConfig =
-                serde_json::from_slice(&read_data.clone()).unwrap();
+            let producer_config: ProducerConfig = serde_json::from_slice(&read_data.clone())
+                .map_err(|e| IOError::Anyhow(e.into()))?;
             (chain_config, producer_config)
         }
         None => (ChainConfig::default(), ProducerConfig::default()),
@@ -56,11 +56,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let feed = match args.command {
         Commands::Substrate => {
-            let polkadot_client = PolkadotFeed::<PolkadotConfig>::new(chain_config.clone(), logger.clone())
-                .await
-                .map_err(|e| {
-                    IOError::Other(format!("Error initializing POLKADOT client : {}", e))
-                })?;
+            let polkadot_client =
+                PolkadotFeed::<PolkadotConfig>::new(chain_config.clone(), logger.clone())
+                    .await
+                    .map_err(|e| {
+                        IOError::Other(format!("Error initializing POLKADOT client : {}", e))
+                    })?;
             Context::PolkadotFeed(polkadot_client)
         }
         Commands::Icon => {
