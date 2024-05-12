@@ -211,7 +211,7 @@ impl Context {
     pub fn update_document(&self, id: &str, rev: &str, doc: &Value) -> Result<String, Error> {
         match self.db.update(doc, id, rev).send() {
             Ok(r) => Ok(r.id),
-            Err(err) => Err(format!("error updating document {}: {:?}", doc, err))
+            Err(err) => Err(format!("error updating document {doc}: {err:?}"))
                 .map_err(serde::de::Error::custom),
         }
     }
@@ -223,7 +223,7 @@ impl Context {
     pub fn insert_document(&self, doc: &Value, id: Option<String>) -> Result<String, Error> {
         match self.db.insert(doc, id).send() {
             Ok(r) => Ok(r.id),
-            Err(err) => Err(format!("error creating document {}: {:?}", doc, err))
+            Err(err) => Err(format!("error creating document {doc}: {err:?}"))
                 .map_err(serde::de::Error::custom),
         }
     }
@@ -231,14 +231,14 @@ impl Context {
     pub fn get_document(&self, id: &str) -> Result<Value, Error> {
         match self.db.get(id).send::<Value>() {
             Ok(v) => Ok(v.into_inner().unwrap()),
-            Err(err) => Err(format!("error fetching document {}: {:?}", id, err))
+            Err(err) => Err(format!("error fetching document {id}: {err:?}"))
                 .map_err(serde::de::Error::custom),
         }
     }
 
     pub fn get_list(&self, db_url: &str, db_name: &str) -> Result<Value, Error> {
         let client = client();
-        let url = format!("{}/{}/_all_docs?include_docs=true", db_url, db_name);
+        let url = format!("{db_url}/{db_name}/_all_docs?include_docs=true");
         if let Ok(response) = invoke_client(client.get(url)) {
             return match response.status() {
                 StatusCode::OK => {
@@ -254,12 +254,13 @@ impl Context {
                         .map_err(serde::de::Error::custom);
                     }
                 }
-                _ => Err(format!("error fetching list {}", db_name))
-                    .map_err(serde::de::Error::custom),
+                _ => {
+                    Err(format!("error fetching list {db_name}")).map_err(serde::de::Error::custom)
+                }
             };
         };
 
-        Err(format!("error fetching list {}", db_name)).map_err(serde::de::Error::custom)
+        Err(format!("error fetching list {db_name}")).map_err(serde::de::Error::custom)
     }
 }
 

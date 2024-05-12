@@ -51,8 +51,9 @@ pub fn main(args: Value) -> Result<Value, Error> {
         StatusCode::OK => Ok(serde_json::json!({
             "action": "success"
         })),
-        error => Err(format!("failed to push notification {:?}", error))
-            .map_err(serde::de::Error::custom),
+        error => {
+            Err(format!("failed to push notification {error:?}")).map_err(serde::de::Error::custom)
+        }
     }
 }
 

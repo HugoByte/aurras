@@ -16,7 +16,7 @@ struct Input {
     db_name: String,
     db_url: String,
     feed: String,
-    brokers: Vec<String>
+    brokers: Vec<String>,
 }
 
 struct Action {
@@ -84,7 +84,7 @@ impl Action {
             &serde_json::json!({
                 "annotations": [{
                     "key": "feed",
-                    "value": format!("/{}/{}", namespace, feed)
+                    "value": format!("/{namespace}/{feed}")
                 }],
                 "parameters": [{
                     "key": "topic",
@@ -95,7 +95,7 @@ impl Action {
         self.get_context().invoke_action(
             &feed,
             &serde_json::json!({
-                "triggerName": format!("/{}/{}", namespace, topic),
+                "triggerName": format!("/{namespace}/{topic}"),
                 "lifecycleEvent": "CREATE",
                 "authKey": auth_key,
                 "topic": topic,

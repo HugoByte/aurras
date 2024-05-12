@@ -87,8 +87,7 @@ fn impl_polkadot(ast: DeriveInput) -> TokenStream {
         operation_methods = impl_batched_payout(polka);
     } else if operation.to_lowercase() == "transfer" {
         operation_methods = impl_transfer(polka);
-    } else {
-    }
+    } 
 
     let structs = impl_structs();
     let imports = impl_imports();

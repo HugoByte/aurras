@@ -3,15 +3,14 @@ pub mod source;
 pub mod topic;
 pub use message::{Era, Message};
 pub use source::Source;
-pub use topic::Topic;
 mod data;
-pub use data::*;
+pub use data::{Topic, UserData};
 
 pub fn update_with(dest: &mut serde_json::Value, src: &serde_json::Value) {
     use serde_json::Value::{Null, Object};
 
     match (dest, src) {
-        (&mut Object(ref mut map_dest), &Object(ref map_src)) => {
+        (&mut Object(ref mut map_dest), Object(map_src)) => {
             // map_dest and map_src both are Map<String, Value>
             for (key, value) in map_src {
                 // if key is not in map_dest, create a Null object

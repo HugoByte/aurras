@@ -33,7 +33,10 @@ actions-common = { git = "https://github.com/HugoByte/aurras", rev = '1f7e117' }
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 bcrypt = "0.13.0"
 jsonwebtoken = "7.1"
+chrono = { version = "0.4", features = ["serde"] }
 
 [dev-dependencies]
-actions-common = { git = "https://github.com/HugoByte/aurras", rev = '1f7e117', features = ["mock_containers"] }
+actions-common = { git = "https://github.com/HugoByte/aurras", rev = '1f7e117', features = [
+    "mock_containers",
+] }
 tokio = { version = "1.0.0", features = ["macros"] }

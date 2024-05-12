@@ -67,11 +67,11 @@ impl Action {
         let user_mail_id = self.params.email.clone();
         let user = User::new(self.params.name.clone(), user_mail_id.clone(), hash);
         let user_id = self.generate_event_id();
-        let doc = serde_json::to_value(user.clone()).unwrap();
+        let doc = serde_json::to_value(user).unwrap();
         let uder_id_doc = serde_json::to_value(user_id.clone()).unwrap();
 
         self.get_context()
-            .insert_document(&uder_id_doc, Some(user_mail_id.clone()))?;
+            .insert_document(&uder_id_doc, Some(user_mail_id))?;
         if let Ok(id) = self
             .get_context()
             .insert_document(&doc, Some(user_id.user_id))
