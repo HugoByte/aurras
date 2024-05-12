@@ -58,7 +58,7 @@ impl Action {
     }
 
     pub fn fetch_input(&mut self) -> Result<Vec<UserData>, Error> {
-        let id = self.params.messages.clone()[0].topic.clone();
+        let id: String = self.params.messages.clone()[0].topic.clone();
         let data = self.get_context().get_document(&id)?;
         let parsed = serde_json::from_value::<Topic>(data)?;
         Ok(parsed.data)
@@ -93,14 +93,14 @@ impl Action {
         Ok(action_name)
     }
 
-    pub fn invoke_action(&mut self, payload: &mut Vec<Value>) -> Result<Value, Error> {
+    pub fn invoke_action(&mut self, payload: &mut [UserData]) -> Result<Value, Error> {
         let mut failed_actions = vec![];
 
         let action_name = self.get_action_name().unwrap();
 
         for message in payload.iter_mut() {
             let data = serde_json::from_str::<Value>(&self.params.messages[0].value).unwrap();
-            update_with(&mut user.input_data, &data);
+            update_with(&mut message.input_data, &data);
 
             if self
                 .get_context()
