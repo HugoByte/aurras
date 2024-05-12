@@ -12,6 +12,8 @@ members = [
     "actions/workflow-invoker",
     "actions/workflow-management",
     "actions/workflow-registration",
+    "actions/icon-event-processor",
+    "actions/eth-event-processor",
     "workflow/openwhisk_macro",
     "workflow/workflow_macro",
     "workflow/polkadot_macro",
