@@ -144,7 +144,6 @@ async fn handle_client(
     let body = serde_json::from_slice::<RequestBody>(&buffer)?;
     logger.info("Data Deserialized");
 
-    // Check for unfollow action immediately after deserializing the request body
     if let Some(action) = &body.action {
         logger.debug(&format!("Action received: {}", action));
         if action == "unfollow" {
@@ -156,6 +155,14 @@ async fn handle_client(
                 logger.info("Unfollow not successful, no publisher was unfollowed.");
                 return Ok(());
             }
+        } else if action == "follow" {
+            let follow_result = follow_publisher(&ctx_guard, body.pub_id.clone())?;
+            if follow_result {
+                logger.info("Publisher re-followed successfully.");
+            } else {
+                logger.warn("Error re-following publisher.");
+            }
+            return Ok(());
         }
     }
 
@@ -271,6 +278,37 @@ fn unfollow_publisher(ctx: &MutexGuard<dyn Ctx>, pub_id: String) -> Result<bool,
     } else {
         logger.info(&format!(
             "Cannot unfollow publisher {} as they are not in the follow list.",
+            pub_id
+        ));
+        Ok(false)
+    }
+}
+
+fn follow_publisher(ctx: &MutexGuard<dyn Ctx>, pub_id: String) -> Result<bool, RuntimeError> {
+    let db = ctx.get_db();
+    let logger = ctx.get_logger().clone();
+    let mut follow_list = db
+        .get_value::<Vec<String>>(FOLLOW_LIST_KEY)?
+        .unwrap_or_default();
+    let mut unfollow_list = db
+        .get_value::<Vec<String>>(UNFOLLOW_LIST_KEY)?
+        .unwrap_or_default();
+
+    if !follow_list.contains(&pub_id) {
+        follow_list.push(pub_id.clone());
+        db.insert_value(FOLLOW_LIST_KEY, follow_list)?;
+
+        // Remove from unfollow list if present
+        if unfollow_list.contains(&pub_id) {
+            unfollow_list.retain(|x| x != &pub_id);
+            db.insert_value(UNFOLLOW_LIST_KEY, unfollow_list)?;
+        }
+
+        logger.info(&format!("Publisher {} re-followed successfully.", pub_id));
+        Ok(true)
+    } else {
+        logger.warn(&format!(
+            "Publisher {} is already in the follow list.",
             pub_id
         ));
         Ok(false)
