@@ -55,9 +55,9 @@ impl EthFeed {
         let last_block = match client.get_block(BlockNumber::Latest).await {
             Ok(Some(block)) => block.number.unwrap(),
             Ok(None) => {
-                return Err(IOError::Other(
-                    "Failed to fetch the latest block number".to_string(),
-                ).into())
+                return Err(
+                    IOError::Other("Failed to fetch the latest block number".to_string()).into(),
+                )
             }
             Err(err) => return Err(IOError::Other(err.to_string()).into()),
         };
@@ -66,10 +66,7 @@ impl EthFeed {
 
         let filter = Filter::new().from_block(last_block - 25).events(events);
 
-        let mut stream = match client.subscribe_logs(&filter).await {
-            Ok(stream) => stream,
-            Err(e) => return Err(IOError::Other(e.to_string()).into()),
-        };
+        let mut stream = client.subscribe_logs(&filter).await?;
         self.logger.info(&format!(
             "Subscribed to events with the filter : {:?}",
             filter
