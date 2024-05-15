@@ -5,7 +5,7 @@ use runtime::{
             DEFAULT_CACHE_LIFETIME, DEFAULT_SSB_IP, DEFAULT_SSB_PORT, FOLLOW_LIST_KEY,
             HTTP_SERVER_ADDRESS, UNFOLLOW_LIST_KEY,
         },
-        RequestBody,
+        Action, RequestBody,
     },
     logger::CoreLogger,
     modules::kuska_ssb_client::client::Client,
@@ -144,18 +144,17 @@ async fn handle_client(
     let body = serde_json::from_slice::<RequestBody>(&buffer)?;
     logger.info("Data Deserialized");
 
-    if let Some(action) = &body.action {
-        logger.debug(&format!("Action received: {}", action));
-        if action == "unfollow" {
+    match body.action {
+        Action::UnFollow => {
             let unfollow_result = unfollow_publisher(&ctx_guard, body.pub_id.clone())?;
             if unfollow_result {
                 logger.info("Unfollow successful");
-                return Ok(());
             } else {
                 logger.info("Unfollow not successful, no publisher was unfollowed.");
-                return Ok(());
             }
-        } else if action == "follow" {
+            return Ok(());
+        }
+        Action::ReFollow => {
             let follow_result = follow_publisher(&ctx_guard, body.pub_id.clone())?;
             if follow_result {
                 logger.info("Publisher re-followed successfully.");
@@ -164,63 +163,65 @@ async fn handle_client(
             }
             return Ok(());
         }
-    }
-
-    // Additional checks for follow actions or other operations
-    let db = ctx_guard.get_db();
-    let unfollowed_list = db
-        .get_value::<Vec<String>>(UNFOLLOW_LIST_KEY)?
-        .unwrap_or_default();
-    if unfollowed_list.contains(&body.pub_id) {
-        logger.info(&format!(
-            "Publisher {} is unfollowed. Ignoring invite.",
-            body.pub_id
-        ));
-        return Ok(());
-    }
-
-    let mut follow_list = db
-        .get_value::<Vec<String>>(FOLLOW_LIST_KEY)?
-        .unwrap_or_default();
-    if follow_list.contains(&body.pub_id) {
-        logger.info("Already following the publisher.");
-    } else {
-        let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
-            RuntimeError::AppError(AppError::new(format!("Error accepting invite: {}", err)))
-        })?;
-        let timestamp = connect_feed[1].value.get("timestamp").ok_or_else(|| {
-            RuntimeError::AppError(AppError::new(
-                "Error getting timestamp from the accepted invite-contact feed".to_string(),
-            ))
-        })?;
-        follow_list.push(body.pub_id.clone());
-        db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
-        db.insert_value(FOLLOW_LIST_KEY, follow_list)?;
-        logger.info(&format!("Following the publisher {}", body.pub_id));
-    }
-
-    // Handle existing data updates
-    let existing_data: Option<Vec<RequestBody>> = db.get_value(&body.pub_id.to_string())?;
-    match existing_data {
-        Some(mut existing_body) => {
-            if let Some(position) = existing_body
-                .iter()
-                .position(|r| r.workflow_id == body.workflow_id)
-            {
-                existing_body.remove(position);
-                existing_body.push(body.clone());
-                db.insert_value(&body.pub_id.clone(), existing_body)?;
-                logger.info("Existing data updated successfully");
-            } else {
-                existing_body.push(body.clone());
-                db.insert_value(&body.pub_id.clone(), existing_body)?;
-                logger.info("Data updated successfully");
+        Action::Follow => {
+            let db = ctx_guard.get_db();
+            let unfollowed_list = db
+                .get_value::<Vec<String>>(UNFOLLOW_LIST_KEY)?
+                .unwrap_or_default();
+            if unfollowed_list.contains(&body.pub_id) {
+                logger.info(&format!(
+                    "Publisher {} is unfollowed. Ignoring invite.",
+                    body.pub_id
+                ));
+                return Ok(());
             }
-        }
-        None => {
-            let new_data = vec![body.clone()];
-            db.insert_value(&body.pub_id.clone(), new_data)?;
-            logger.info("Data added");
+            let mut follow_list = db
+                .get_value::<Vec<String>>(FOLLOW_LIST_KEY)?
+                .unwrap_or_default();
+            if follow_list.contains(&body.pub_id) {
+                logger.info("Already following the publisher.");
+            } else {
+                let connect_feed = client.accept_invite(&body.invite).await.map_err(|err| {
+                    RuntimeError::AppError(AppError::new(format!(
+                        "Error accepting invite: {}",
+                        err
+                    )))
+                })?;
+                let timestamp = connect_feed[1].value.get("timestamp").ok_or_else(|| {
+                    RuntimeError::AppError(AppError::new(
+                        "Error getting timestamp from the accepted invite-contact feed".to_string(),
+                    ))
+                })?;
+                follow_list.push(body.pub_id.clone());
+                db.insert_value(&format!("{}offset", body.pub_id), timestamp)?;
+                db.insert_value(FOLLOW_LIST_KEY, follow_list)?;
+                logger.info(&format!("Following the publisher {}", body.pub_id));
+            }
+
+            // Handle existing data updates
+            let existing_data: Option<Vec<RequestBody>> = db.get_value(&body.pub_id.to_string())?;
+            match existing_data {
+                Some(mut existing_body) => {
+                    if let Some(position) = existing_body
+                        .iter()
+                        .position(|r| r.workflow_id == body.workflow_id)
+                    {
+                        existing_body.remove(position);
+                        existing_body.push(body.clone());
+                        db.insert_value(&body.pub_id.clone(), existing_body)?;
+                        logger.info("Existing data updated successfully");
+                    } else {
+                        existing_body.push(body.clone());
+                        db.insert_value(&body.pub_id.clone(), existing_body)?;
+                        logger.info("Data updated successfully");
+                    }
+                }
+                None => {
+                    let new_data = vec![body.clone()];
+                    db.insert_value(&body.pub_id.clone(), new_data)?;
+                    logger.info("Data added");
+                }
+            }
         }
     }
 
