@@ -1,6 +1,7 @@
 use super::*;
 
 use crate::{
+    constants::UNFOLLOW_LIST_KEY,
     modules::{
         logger::Logger, state_manager::traits::GlobalStateManager, storage::Storage,
         wasmtime_wasi_module,
@@ -13,21 +14,21 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 impl Client {
     /// Processes the feed and executes workflows based on the events received.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `display`: The feed being processed.
     /// * `logger`: A logger implementation of the `Logger` trait. This is used to log the events received.
-    /// * `state_manager`: A state manager implementation of the `GlobalStateManager` trait. This is used to store 
+    /// * `state_manager`: A state manager implementation of the `GlobalStateManager` trait. This is used to store
     /// and retrieve the state data.
-    /// * `db`: A database implementation of the `Storage` trait. Workflows will be retrieved from this database. 
+    /// * `db`: A database implementation of the `Storage` trait. Workflows will be retrieved from this database.
     /// * `cache`: A cache implementation of the `Storage` trait. This is used to store the state data.
     fn process_feed<T, U, V>(
         display: Feed,
         logger: &mut MutexGuard<T>,
         state_manager: &mut MutexGuard<U>,
         db: &MutexGuard<V>,
-        cache: &MutexGuard<V>
+        cache: &MutexGuard<V>,
     ) -> Result<()>
     where
         T: Logger + Clone + std::marker::Send + 'static,
@@ -48,6 +49,27 @@ impl Client {
                                 event
                             ))));
                         };
+
+                        // Check unfollow list before processing
+                        let unfollowed_list_result = db.get_value::<Vec<String>>(UNFOLLOW_LIST_KEY);
+                        let unfollowed_list = match unfollowed_list_result {
+                            Ok(Some(list)) => list,
+                            Ok(None) => vec![],
+                            Err(err) => {
+                                logger.error(&format!("Error getting unfollow list: {}", err));
+                                return Err(Box::new(AppError::new(
+                                    "Error retrieving unfollow list".to_string(),
+                                )));
+                            }
+                        };
+
+                        if unfollowed_list.contains(&pub_id) {
+                            logger.info(&format!(
+                                "Publisher {} is unfollowed. So workflow cannot be executed.",
+                                pub_id
+                            ));
+                            return Ok(());
+                        }
 
                         let offset = db
                             .get_value::<f64>(&format!("{}offset", pub_id))
@@ -157,7 +179,13 @@ impl Client {
                     RecvMsg::RpcResponse(_type, body) => match feed_res_parse(&body) {
                         Ok(display) => {
                             if is_synced {
-                                Self::process_feed(display, &mut logger, &mut state_manager, &db, &cache_db)?;
+                                Self::process_feed(
+                                    display,
+                                    &mut logger,
+                                    &mut state_manager,
+                                    &db,
+                                    &cache_db,
+                                )?;
                             }
                         }
                         Err(err) => {

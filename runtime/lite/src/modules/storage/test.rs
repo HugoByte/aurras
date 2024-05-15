@@ -3,6 +3,7 @@ mod tests {
     use crate::common::RequestBody;
     use crate::modules::storage::CoreStorage;
     use crate::modules::storage::Storage;
+    use crate::Action;
     pub use rocksdb::{Options, DB};
     use std::time::Duration;
     use std::{fs, thread};
@@ -105,6 +106,7 @@ mod tests {
             input: serde_json::json!({ "test": "test"}),
             workflow_id: "1".to_string(),
             workflow_name: "hello".to_string(),
+            action: Action::Follow,
         };
 
         let key = "test";
