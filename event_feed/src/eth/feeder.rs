@@ -1,4 +1,7 @@
 use super::*;
+use crate::error::IOError;
+use core::result::Result::Ok;
+
 use runtime::{logger::CoreLogger, Logger};
 /// Represents an Ethereum blockchain event feed.
 pub struct EthFeed {
@@ -49,12 +52,15 @@ impl EthFeed {
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<Value>)) -> Result<()> {
         let client = Arc::new(&self.eth_service);
 
-        let last_block = client
-            .get_block(BlockNumber::Latest)
-            .await?
-            .unwrap()
-            .number
-            .unwrap();
+        let last_block = match client.get_block(BlockNumber::Latest).await {
+            Ok(Some(block)) => block.number.unwrap(),
+            Ok(None) => {
+                return Err(
+                    IOError::Other("Failed to fetch the latest block number".to_string()).into(),
+                )
+            }
+            Err(err) => return Err(IOError::Other(err.to_string()).into()),
+        };
 
         let events = self.events.iter().map(|e| e.0.clone());
 

@@ -1,4 +1,5 @@
 use super::*;
+use crate::error::IOError;
 use anyhow::anyhow;
 use anyhow::Result;
 use runtime::api::dto::content::Mention;
@@ -61,7 +62,8 @@ impl Producer {
             .publish(&message.to_string(), Some(vec![mention]))
             .await;
 
-        result.unwrap();
+        // result.map_err(|e| IOError::Anyhow(e))?;
+        result.map_err(|e| IOError::Anyhow(anyhow!("{e}")))?;
 
         Ok(())
     }

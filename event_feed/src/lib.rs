@@ -1,18 +1,18 @@
-
 pub mod common;
 pub mod cosmos;
+pub mod error;
 pub mod eth;
 pub mod icon;
 pub mod substrate;
 
-/// can use this library to fetch events from multiple chain like 
+/// can use this library to fetch events from multiple chain like
 /// - substrate
 /// - icon
 /// - eth
 /// - cosmos
-/// 
+///
 /// use event_feed::*;
-/// 
+///
 /// #[tokio::main]
 /// async fn main() {
 ///     dotenv::dotenv().ok();
@@ -59,12 +59,10 @@ pub mod substrate;
 ///         })
 ///         .await;
 /// }
-/// 
+///
 pub use common::*;
 pub use cosmos::*;
+pub use error::*;
 pub use eth::*;
 pub use icon::*;
 pub use substrate::*;
-
-
-

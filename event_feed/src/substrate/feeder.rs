@@ -1,5 +1,8 @@
 use super::*;
 use crate::common::ChainConfig;
+use crate::error::IOError;
+use anyhow::*;
+use core::result::Result::Ok;
 use runtime::{logger::CoreLogger, Logger};
 
 #[derive(Debug, Clone)]
@@ -48,23 +51,57 @@ impl<T: subxt::Config> PolkadotFeed<T> {
     ///
     /// * `cb`: A callback function to return the events to the caller.
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
-        let mut blocks_sub = self.client.blocks().subscribe_finalized().await?;
+        let mut blocks_sub = self
+            .client
+            .blocks()
+            .subscribe_finalized()
+            .await
+            .map_err(|err| IOError::Subxt(err))?;
 
         // For each block, print a bunch of information about it:
         loop {
             if let Some(block) = blocks_sub.next().await {
-                let block = block.unwrap();
+                let block = block.map_err(IOError::Subxt)?;
                 let mut fetched_events = Vec::new();
-                let extrinsics = block.extrinsics().await.unwrap();
+                let extrinsics = block
+                    .extrinsics()
+                    .await
+                    .map_err(|err| IOError::Subxt(err))?;
                 for ext in extrinsics.iter() {
-                    let ext = ext.unwrap();
-                    let events = ext.events().await.unwrap();
-                    let event_details = events.iter().collect::<Result<Vec<_>, _>>().unwrap();
+                    let ext = match ext {
+                        Ok(ext) => ext,
+                        Err(err) => return Err(IOError::Subxt(err).into()),
+                    };
+                    let events = match ext.events().await {
+                        Ok(events) => events,
+                        Err(err) => {
+                            return Err(
+                                IOError::Other(format!("Error fetching events: {}", err)).into()
+                            )
+                        }
+                    };
+                    let event_details = match events.iter().collect::<Result<Vec<_>, _>>() {
+                        Ok(event_details) => event_details,
+                        Err(err) => {
+                            return Err(
+                                IOError::Other(format!("Error collecting events: {}", err)).into()
+                            )
+                        }
+                    };
 
                     let filter = self.split_filter();
 
                     for event in event_details.iter() {
-                        let s = event.field_values().unwrap();
+                        let s = match event.field_values() {
+                            Ok(data) => data,
+                            Err(err) => {
+                                return Err(IOError::Other(format!(
+                                    "Error getting event field values: {}",
+                                    err
+                                ))
+                                .into())
+                            }
+                        };
                         let data = format!("{}", s).replace("((", "[").replace("))", "]");
 
                         let pallet_name = event.pallet_name().to_lowercase();
@@ -88,7 +125,10 @@ impl<T: subxt::Config> PolkadotFeed<T> {
                                 method: event.variant_name().to_string(),
                                 field_value: data,
                             };
-                            let serialize_event = serde_json::to_value(&decode_event)?;
+                            let serialize_event =
+                                serde_json::to_value(&decode_event).map_err(|err| {
+                                    IOError::Other(format!("Serialising error {}", err))
+                                })?;
                             fetched_events.push(serialize_event);
                         }
                     }

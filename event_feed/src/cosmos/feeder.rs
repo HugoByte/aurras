@@ -1,7 +1,8 @@
 use super::*;
 use crate::common;
+use crate::error::IOError;
 use anyhow::*;
-use futures::StreamExt;
+use core::result::Result::Ok;
 use runtime::{logger::CoreLogger, Logger};
 use serde_json::Value;
 use tendermint_rpc::event::{Event, EventData};
@@ -41,36 +42,57 @@ impl CosmosFeed {
     pub async fn event_feed(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
         let (client, driver) = WebSocketClient::new(&*self.chain_config.node_url)
             .await
-            .unwrap();
+            .map_err(|err| IOError::Other(format!("Client not created {}", err)))?;
         self.logger.info(&format!(
             "Following the chain at {}",
             self.chain_config.node_url
         ));
         let driver_handle = tokio::spawn(async move { driver.run().await });
 
-        let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+        let mut subs = client
+            .subscribe(EventType::NewBlock.into())
+            .await
+            .map_err(|err| IOError::Other(format!("Error in subscribing the client {}", err)))?;
         let mut events: Vec<Event> = Vec::new();
 
         while let Some(res) = subs.next().await {
-            let ev = res.unwrap();
-            events.push(ev.clone());
-
-            let filter_events = events
-                .iter()
-                .filter(|tendermint_event| {
-                    Self::convert_to_feeder_event(self, tendermint_event, &self.chain_config)
-                        .is_some()
-                })
-                .flat_map(|tendermint_event| {
-                    Self::convert_to_feeder_event(self, tendermint_event, &self.chain_config)
-                        .unwrap()
-                })
-                .collect::<Vec<serde_json::Value>>();
-
-            // Call the callback with all or filtered events
-            cb(filter_events);
-
-            events.clear();
+            match res {
+                Ok(ev) => {
+                    events.push(ev.clone());
+                    let filter_events = events
+                        .iter()
+                        .filter(|tendermint_event| {
+                            Self::convert_to_feeder_event(
+                                self,
+                                tendermint_event,
+                                &self.chain_config,
+                            )
+                            .is_some()
+                        })
+                        .flat_map(|tendermint_event| {
+                            match Self::convert_to_feeder_event(
+                                self,
+                                tendermint_event,
+                                &self.chain_config,
+                            ) {
+                                Some(value) => value,
+                                None => {
+                                    let _ = Err::<IOError, _>(IOError::Other(
+                                        "Error converting to FeederEvent".to_string(),
+                                    ));
+                                    vec![serde_json::Value::Null]
+                                }
+                            }
+                        })
+                        .collect::<Vec<serde_json::Value>>();
+                    cb(filter_events);
+                    events.clear();
+                }
+                Err(err) => {
+                    // Consider retry logic or other actions here
+                    return Err(IOError::Other(format!("Error receving event {} ", err)).into());
+                }
+            }
         }
 
         drop(subs);
@@ -102,7 +124,7 @@ impl CosmosFeed {
                 result_begin_block,
                 result_end_block: _,
             } => {
-                let block = block.as_ref().unwrap();
+                let block = block.as_ref()?;
                 let block_number = block.header.version.block as usize;
                 let hash_string = block.header.last_commit_hash.map(|h| h.to_string());
                 self.logger.info(&format!(
@@ -127,7 +149,12 @@ impl CosmosFeed {
                             tx_hash: hash_string.clone(),
                             log_index: 0,
                         })
-                        .map(|e| serde_json::to_value(e).unwrap())
+                        .map(|e| {
+                            serde_json::to_value(e).unwrap_or_else(|err| {
+                                eprintln!("Error converting FeederEvent to Json: {}", err);
+                                serde_json::Value::Null
+                            })
+                        })
                         .collect()
                 } else {
                     self.logger.info("Filtering events based on the event name");
@@ -146,7 +173,12 @@ impl CosmosFeed {
                         })
                         .collect::<Vec<common::FeederEvent>>()
                         .into_iter()
-                        .map(|e| serde_json::to_value(e).unwrap())
+                        .map(|e| {
+                            serde_json::to_value(e).unwrap_or_else(|err| {
+                                eprintln!("Error converting FeederEvent to Json: {}", err);
+                                serde_json::Value::Null
+                            })
+                        })
                         .collect()
                 };
 

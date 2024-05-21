@@ -26,7 +26,8 @@ tendermint-rpc = { version = "0.35.0", features = [
 ] }
 futures = "0.3.30"
 base64 = "0.22.0"
-clap ={ version = "4.5.4", features = [ "derive", "env" ]}
+clap = { version = "4.5.4", features = ["derive", "env"] }
+thiserror = "1.0.59"
 
 [dependencies.ethers]
 version = '2.0.8'

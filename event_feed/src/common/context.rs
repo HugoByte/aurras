@@ -1,10 +1,10 @@
 use super::CosmosFeed;
 use super::EthFeed;
+// use crate::error::IOError;
 use crate::IconFeed;
 use crate::PolkadotFeed;
-use anyhow::Result;
 use subxt::PolkadotConfig;
-
+use anyhow::Result;
 /// Represents the main context of the event feed. This is used to configure the event feed with the
 /// appropriate chain.
 pub enum Context {
@@ -15,7 +15,6 @@ pub enum Context {
 }
 
 impl Context {
-
     /// Starts the event feed.
     pub async fn feed_events(&self, cb: &dyn Fn(Vec<serde_json::Value>)) -> Result<()> {
         match self {
